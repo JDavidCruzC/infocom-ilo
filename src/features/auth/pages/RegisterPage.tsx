@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
 import logoDark from "@/assets/logo-dark-theme.png";
+import { registerSchema, sanitizeEmail, sanitizeText } from "@/lib/sanitize";
 
 const RegisterPage = () => {
   const [fullName, setFullName] = useState("");
@@ -20,20 +21,25 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error("Las contraseñas no coinciden");
+
+    const parsed = registerSchema.safeParse({
+      fullName: sanitizeText(fullName, { maxLength: 80 }),
+      email: sanitizeEmail(email),
+      password,
+      confirmPassword,
+    });
+
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Datos no válidos");
       return;
     }
-    if (password.length < 6) {
-      toast.error("La contraseña debe tener al menos 6 caracteres");
-      return;
-    }
+
     setLoading(true);
     const { error } = await supabase.auth.signUp({
-      email,
-      password,
+      email: parsed.data.email,
+      password: parsed.data.password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: parsed.data.fullName },
         emailRedirectTo: window.location.origin,
       },
     });
@@ -58,19 +64,45 @@ const RegisterPage = () => {
           <CardDescription>Únete a INFOCOM TECNOLOGY</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="fullName">Nombre completo</Label>
-              <Input id="fullName" placeholder="Juan Pérez" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <Input
+                id="fullName"
+                placeholder="Juan Pérez"
+                value={fullName}
+                onChange={(e) => setFullName(sanitizeText(e.target.value, { maxLength: 80 }))}
+                maxLength={80}
+                autoComplete="name"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" placeholder="tu@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input
+                id="email"
+                type="email"
+                placeholder="tu@correo.com"
+                value={email}
+                onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
+                maxLength={254}
+                autoComplete="email"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
               <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Mínimo 8, letras + números"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value.slice(0, 72))}
+                  maxLength={72}
+                  autoComplete="new-password"
+                  required
+                />
                 <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
@@ -78,7 +110,16 @@ const RegisterPage = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-              <Input id="confirmPassword" type="password" placeholder="Repite tu contraseña" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Repite tu contraseña"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value.slice(0, 72))}
+                maxLength={72}
+                autoComplete="new-password"
+                required
+              />
             </div>
             <Button type="submit" className="w-full glow-green-sm" disabled={loading}>
               <UserPlus className="h-4 w-4 mr-2" />

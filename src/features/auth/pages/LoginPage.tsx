@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import logoDark from "@/assets/logo-dark-theme.png";
+import { loginSchema, sanitizeEmail, sanitizeText } from "@/lib/sanitize";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -18,9 +19,23 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    // Sanitización + validación con zod
+    const parsed = loginSchema.safeParse({
+      email: sanitizeEmail(email),
+      password: sanitizeText(password, { maxLength: 72 }),
+    });
+
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Datos no válidos");
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: parsed.data.email,
+      password: parsed.data.password,
+    });
     setLoading(false);
 
     if (error) {
@@ -55,15 +70,34 @@ const LoginPage = () => {
           <CardDescription>Ingresa a tu cuenta INFOCOM</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" placeholder="tu@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input
+                id="email"
+                type="email"
+                placeholder="tu@correo.com"
+                value={email}
+                onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
+                maxLength={254}
+                autoComplete="email"
+                inputMode="email"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
               <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value.slice(0, 72))}
+                  maxLength={72}
+                  autoComplete="current-password"
+                  required
+                />
                 <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>

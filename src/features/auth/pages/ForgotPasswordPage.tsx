@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Mail, ArrowLeft } from "lucide-react";
 import logoDark from "@/assets/logo-dark-theme.png";
+import { emailSchema, sanitizeEmail } from "@/lib/sanitize";
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
@@ -16,8 +17,13 @@ const ForgotPasswordPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const parsed = emailSchema.safeParse(sanitizeEmail(email));
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Correo no válido");
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
@@ -49,7 +55,7 @@ const ForgotPasswordPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Correo electrónico</Label>
-                <Input id="email" type="email" placeholder="tu@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input id="email" type="email" placeholder="tu@correo.com" value={email} onChange={(e) => setEmail(sanitizeEmail(e.target.value))} maxLength={254} autoComplete="email" required />
               </div>
               <Button type="submit" className="w-full glow-green-sm" disabled={loading}>
                 {loading ? "Enviando..." : "Enviar enlace"}
