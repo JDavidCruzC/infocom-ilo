@@ -9,6 +9,7 @@ import { COMPANY_EMAIL, COMPANY_PHONE, COMPANY_ADDRESS, WHATSAPP_NUMBER } from "
 import { Mail, Phone, MapPin, MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { sanitizeText, sanitizeEmail, fullNameSchema, emailSchema, messageSchema } from "@/lib/sanitize";
 
 const ContactPage = () => {
   const [name, setName] = useState("");
@@ -17,7 +18,13 @@ const ContactPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const msg = `Hola, soy ${name} (${email}). ${message}`;
+    const n = fullNameSchema.safeParse(name);
+    const em = emailSchema.safeParse(email);
+    const ms = messageSchema.safeParse(message);
+    if (!n.success) return toast.error(n.error.issues[0].message);
+    if (!em.success) return toast.error(em.error.issues[0].message);
+    if (!ms.success) return toast.error(ms.error.issues[0].message);
+    const msg = `Hola, soy ${n.data} (${em.data}). ${ms.data}`;
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
     toast.success("Redirigiendo a WhatsApp...");
   };
@@ -63,15 +70,15 @@ const ContactPage = () => {
             <h2 className="font-display font-bold text-lg">Envíanos un mensaje</h2>
             <div className="space-y-2">
               <Label>Nombre</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Tu nombre" />
+              <Input value={name} onChange={(e) => setName(sanitizeText(e.target.value, { maxLength: 80 }))} maxLength={80} required placeholder="Tu nombre" />
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="tu@correo.com" />
+              <Input type="email" value={email} onChange={(e) => setEmail(sanitizeEmail(e.target.value))} maxLength={254} required placeholder="tu@correo.com" />
             </div>
             <div className="space-y-2">
               <Label>Mensaje</Label>
-              <Textarea value={message} onChange={(e) => setMessage(e.target.value)} required placeholder="¿En qué podemos ayudarte?" rows={4} />
+              <Textarea value={message} onChange={(e) => setMessage(sanitizeText(e.target.value, { maxLength: 2000, preserveNewlines: true }))} maxLength={2000} required placeholder="¿En qué podemos ayudarte?" rows={4} />
             </div>
             <Button type="submit" className="w-full gap-2"><Send className="h-4 w-4" /> Enviar por WhatsApp</Button>
           </form>

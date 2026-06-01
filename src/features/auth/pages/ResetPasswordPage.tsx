@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import logoDark from "@/assets/logo-dark-theme.png";
+import { resetPasswordSchema } from "@/lib/sanitize";
 
 const ResetPasswordPage = () => {
   const [password, setPassword] = useState("");
@@ -24,12 +25,13 @@ const ResetPasswordPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error("Las contraseñas no coinciden");
+    const parsed = resetPasswordSchema.safeParse({ password, confirmPassword });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Datos no válidos");
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -50,11 +52,11 @@ const ResetPasswordPage = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>Nueva contraseña</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value.slice(0, 72))} maxLength={72} autoComplete="new-password" required />
             </div>
             <div className="space-y-2">
               <Label>Confirmar contraseña</Label>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value.slice(0, 72))} maxLength={72} autoComplete="new-password" required />
             </div>
             <Button type="submit" className="w-full glow-green-sm" disabled={loading}>
               {loading ? "Actualizando..." : "Actualizar Contraseña"}
