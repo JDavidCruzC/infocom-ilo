@@ -834,10 +834,10 @@ const AttendancePage = () => {
                 className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
                 onClick={() => {
                   const statsMap: Record<string, any> = {};
-                  staff.forEach((s: any) => { statsMap[s.id] = getStats(s.id); });
+                  attendanceStaff.forEach((s: any) => { statsMap[s.id] = getStats(s.id); });
                   generateMonthlyAttendancePdf({
                     month, year,
-                    staffList: staff.map((s: any) => ({ id: s.id, full_name: s.full_name, position: s.position })),
+                    staffList: attendanceStaff.map((s: any) => ({ id: s.id, full_name: s.full_name, position: s.position })),
                     recordsByStaff: recordMap,
                     statsByStaff: statsMap,
                     isRestDay,
@@ -851,7 +851,7 @@ const AttendancePage = () => {
                 <Select value={pdfStaffId} onValueChange={setPdfStaffId}>
                   <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue placeholder="Trabajador..." /></SelectTrigger>
                   <SelectContent>
-                    {staff.map((s: any) => (
+                    {attendanceStaff.map((s: any) => (
                       <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -862,7 +862,7 @@ const AttendancePage = () => {
                   className="gap-1 border-accent/30 text-accent hover:bg-accent/10"
                   disabled={!pdfStaffId}
                   onClick={() => {
-                    const s = staff.find((x: any) => x.id === pdfStaffId);
+                    const s = attendanceStaff.find((x: any) => x.id === pdfStaffId);
                     if (!s) return;
                     const stats = getStats(s.id);
                     generateMonthlyAttendancePdf({
@@ -903,7 +903,7 @@ const AttendancePage = () => {
                   const rest = isRestDay(s.id, todayDow);
                   const todaySchedules = getScheduleForDay(s.id, todayDow);
 
-                  const canUseQuickPunch = canMarkOthers || (isTerminal && s.user_id === user?.id);
+                  const canUseQuickPunch = canMarkOthers || isTerminal;
 
                   return (
                     <div key={s.id} className={`rounded-lg p-3 text-center border transition-colors ${
