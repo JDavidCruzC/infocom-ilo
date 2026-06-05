@@ -1781,6 +1781,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      terminal_mark_attendance: { Args: { _staff_id: string }; Returns: Json }
     }
     Enums: {
       app_role:

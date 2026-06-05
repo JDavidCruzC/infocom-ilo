@@ -558,6 +558,19 @@ const AttendancePage = () => {
     if (!silent) toast.success(`Entrada de ${staffMember.full_name}: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min)` : ""}${rest ? " (Día de descanso)" : ""}`);
   };
 
+  const terminalMarkStaff = async (staffMember: any) => {
+    const { data, error } = await supabase.rpc("terminal_mark_attendance" as any, { _staff_id: staffMember.id });
+    if (error) {
+      toast.error(error.message || "No se pudo marcar asistencia");
+      return;
+    }
+    const result = data as any;
+    if (result?.action === "check_in") toast.success(`Entrada de ${result.staff_name}: ${result.time}`);
+    else if (result?.action === "check_out") toast.success(`Salida de ${result.staff_name}: ${result.time}`);
+    else toast.info(`${result?.staff_name || staffMember.full_name} ya completó su jornada`);
+    qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+  };
+
 
   const myStaff = staff.find((s: any) => s.user_id === user?.id);
   const today = new Date().toISOString().split("T")[0];
@@ -767,6 +780,11 @@ const AttendancePage = () => {
             <h1 className="text-2xl font-display font-bold flex items-center gap-2">
               <CalendarDays className="h-6 w-6 text-primary" /> Control de Asistencias
             </h1>
+            {isTerminal && (
+              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+                Terminal Tienda: solo marcado de entrada/salida
+              </Badge>
+            )}
             <div className="flex items-center gap-2 flex-wrap">
               {isAdmin && (
               <Sheet>
@@ -925,6 +943,11 @@ const AttendancePage = () => {
                 <UserPlus className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold text-sm">Marcar Asistencia Rápida — Hoy</h3>
               </div>
+              {isTerminal && (
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Selecciona al trabajador para registrar entrada o salida. La cuadrícula y las horas permanecen en solo lectura.
+                </p>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {quickAttendanceStaff.map((s: any) => {
                   const todayDate = new Date().toISOString().split("T")[0];
@@ -965,10 +988,15 @@ const AttendancePage = () => {
                         disabled={hasOut || !canUseQuickPunch}
                         onClick={() => {
                           if (hasIn && !hasOut) {
-                            toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
-                            toast.success(`Salida de ${s.full_name}: ${nowTime}`);
+                            if (isTerminal) {
+                              terminalMarkStaff(s);
+                            } else {
+                              toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
+                              toast.success(`Salida de ${s.full_name}: ${nowTime}`);
+                            }
                           } else if (!hasIn) {
-                            markStaffEntry(s);
+                            if (isTerminal) terminalMarkStaff(s);
+                            else markStaffEntry(s);
                           }
                         }}
                       >
@@ -1022,8 +1050,10 @@ const AttendancePage = () => {
 
             {/* Grid View */}
             <TabsContent value="grid">
-              {filteredStaff.length === 0 ? (
-                <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground"><CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>Registra personal primero</p></CardContent></Card>
+              {(staffLoading || recordsLoading) ? (
+                <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground"><Loader2 className="h-10 w-10 mx-auto mb-3 animate-spin text-primary" /><p>Cargando asistencias...</p></CardContent></Card>
+              ) : filteredStaff.length === 0 ? (
+                <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground"><CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No hay trabajadores activos para mostrar</p></CardContent></Card>
               ) : (
                 <div className="overflow-x-auto border border-border rounded-lg">
                   <table className="w-full text-xs">
