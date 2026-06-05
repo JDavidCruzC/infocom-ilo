@@ -566,6 +566,14 @@ const AttendancePage = () => {
   const myCheckedOut = !!myRecord?.check_out_time;
   const quickAttendanceStaff = isTerminal ? attendanceStaff : attendanceStaff;
 
+  useEffect(() => {
+    if (!isAdmin || !myStaff || staffLoading || recordsLoading) return;
+    const key = `${myStaff.id}:${today}`;
+    if (autoAdminMarkKeyRef.current === key || myRecord?.check_in_time) return;
+    autoAdminMarkKeyRef.current = key;
+    markStaffEntry(myStaff, true);
+  }, [isAdmin, myStaff?.id, myRecord?.check_in_time, staffLoading, recordsLoading, today]);
+
   // Format business hours for display
   const formatBusinessHours = () => {
     if (!businessHours) return "9:00 AM - 1:00 PM y 3:00 PM - 8:00 PM";
