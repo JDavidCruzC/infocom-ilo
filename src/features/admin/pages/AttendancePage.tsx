@@ -35,7 +35,18 @@ interface BusinessHours {
   afternoon_end: string;
   work_days: number[];
   tolerance_minutes: number;
+  timezone?: string;
 }
+
+const TIMEZONE_OPTIONS = [
+  { value: "America/Lima", label: "Perú (Lima) — GMT-5" },
+  { value: "America/Bogota", label: "Colombia (Bogotá) — GMT-5" },
+  { value: "America/Mexico_City", label: "México (CDMX) — GMT-6" },
+  { value: "America/Santiago", label: "Chile (Santiago) — GMT-4" },
+  { value: "America/Argentina/Buenos_Aires", label: "Argentina (Buenos Aires) — GMT-3" },
+  { value: "America/La_Paz", label: "Bolivia (La Paz) — GMT-4" },
+  { value: "America/Guayaquil", label: "Ecuador (Guayaquil) — GMT-5" },
+];
 
 const DEFAULT_BUSINESS_HOURS: BusinessHours = {
   morning_start: "09:00",
@@ -44,7 +55,9 @@ const DEFAULT_BUSINESS_HOURS: BusinessHours = {
   afternoon_end: "20:00",
   work_days: [1, 2, 3, 4, 5, 6],
   tolerance_minutes: 5,
+  timezone: "America/Lima",
 };
+
 
 
 const AttendancePage = () => {
@@ -850,10 +863,26 @@ const AttendancePage = () => {
                         <span className="text-xs text-muted-foreground">minutos. Entradas dentro de este margen no contarán como tardanza.</span>
                       </div>
                     </div>
+                    <div className="space-y-2 p-3 rounded-lg bg-secondary/30">
+                      <p className="text-xs font-semibold">🌎 Zona horaria del marcado</p>
+                      <Select
+                        value={editHours.timezone ?? "America/Lima"}
+                        onValueChange={(v) => setEditHours(p => ({ ...p, timezone: v }))}
+                      >
+                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {TIMEZONE_OPTIONS.map(tz => (
+                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-muted-foreground">Las horas marcadas desde Terminal Tienda se registrarán según esta zona.</p>
+                    </div>
                     <Button onClick={saveBusinessHours} disabled={savingHours} className="w-full">
                       {savingHours ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                       Guardar Horario
                     </Button>
+
 
                   </div>
                 </SheetContent>

@@ -76,6 +76,8 @@ const SeasonalWrapper = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+import PermissionRoute from "@/features/auth/components/PermissionRoute";
+
 const AdminOnlyRoute = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute allowedRoles={["admin"]} fallbackPath="/admin">
     {children}
@@ -135,24 +137,25 @@ const App = () => (
                   <Route path="soporte" element={<SupportPage />} />
                   <Route path="ventas/pos" element={<SalesPage />} />
 
-                  <Route path="categorias" element={<AdminOnlyRoute><CategoriesPage /></AdminOnlyRoute>} />
-                  <Route path="vitrinas" element={<AdminOnlyRoute><VitrinasPage /></AdminOnlyRoute>} />
-                  <Route path="marcas" element={<AdminOnlyRoute><BrandsPage /></AdminOnlyRoute>} />
-                  <Route path="kardex" element={<KardexPage />} />
-                  <Route path="combos" element={<CombosPage />} />
-                  <Route path="compras" element={<PurchasesPage />} />
-                  <Route path="proveedores" element={<AdminOnlyRoute><SuppliersPage /></AdminOnlyRoute>} />
-                  <Route path="banners" element={<AdminOnlyRoute><BannersPage /></AdminOnlyRoute>} />
-                  <Route path="empresa" element={<AdminOnlyRoute><CompanyPage /></AdminOnlyRoute>} />
+                  <Route path="categorias" element={<PermissionRoute module="categorias"><CategoriesPage /></PermissionRoute>} />
+                  <Route path="vitrinas" element={<PermissionRoute module="vitrinas"><VitrinasPage /></PermissionRoute>} />
+                  <Route path="marcas" element={<PermissionRoute module="marcas"><BrandsPage /></PermissionRoute>} />
+                  <Route path="kardex" element={<PermissionRoute module="kardex"><KardexPage /></PermissionRoute>} />
+                  <Route path="combos" element={<PermissionRoute module="combos"><CombosPage /></PermissionRoute>} />
+                  <Route path="compras" element={<PermissionRoute module="compras"><PurchasesPage /></PermissionRoute>} />
+                  <Route path="proveedores" element={<PermissionRoute module="proveedores"><SuppliersPage /></PermissionRoute>} />
+                  <Route path="banners" element={<PermissionRoute module="banners"><BannersPage /></PermissionRoute>} />
+                  <Route path="empresa" element={<PermissionRoute module="empresa"><CompanyPage /></PermissionRoute>} />
                   <Route path="roles" element={<AdminOnlyRoute><RolesPage /></AdminOnlyRoute>} />
                   <Route path="permisos" element={<AdminOnlyRoute><PermissionsConfigPage /></AdminOnlyRoute>} />
-                  <Route path="personal" element={<AdminOnlyRoute><StaffPage /></AdminOnlyRoute>} />
-                  <Route path="asistencias" element={<AttendancePage />} />
-                  <Route path="contabilidad" element={<AdminOnlyRoute><AccountingPage /></AdminOnlyRoute>} />
-                  <Route path="clientes" element={<CustomersPage />} />
-                  <Route path="agenda" element={<AppointmentsPage />} />
+                  <Route path="personal" element={<PermissionRoute module="personal"><StaffPage /></PermissionRoute>} />
+                  <Route path="asistencias" element={<PermissionRoute module="asistencias"><AttendancePage /></PermissionRoute>} />
+                  <Route path="contabilidad" element={<PermissionRoute module="contabilidad"><AccountingPage /></PermissionRoute>} />
+                  <Route path="clientes" element={<PermissionRoute module="clientes"><CustomersPage /></PermissionRoute>} />
+                  <Route path="agenda" element={<PermissionRoute module="agenda"><AppointmentsPage /></PermissionRoute>} />
                   <Route path="configuracion" element={<AdminOnlyRoute><SettingsPage /></AdminOnlyRoute>} />
-                  <Route path="pagos" element={<AdminOnlyRoute><PaymentAccountsPage /></AdminOnlyRoute>} />
+                  <Route path="pagos" element={<PermissionRoute module="pagos"><PaymentAccountsPage /></PermissionRoute>} />
+
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
