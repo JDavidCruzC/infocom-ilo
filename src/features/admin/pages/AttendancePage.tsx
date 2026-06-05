@@ -558,6 +558,19 @@ const AttendancePage = () => {
     if (!silent) toast.success(`Entrada de ${staffMember.full_name}: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min)` : ""}${rest ? " (Día de descanso)" : ""}`);
   };
 
+  const terminalMarkStaff = async (staffMember: any) => {
+    const { data, error } = await supabase.rpc("terminal_mark_attendance" as any, { _staff_id: staffMember.id });
+    if (error) {
+      toast.error(error.message || "No se pudo marcar asistencia");
+      return;
+    }
+    const result = data as any;
+    if (result?.action === "check_in") toast.success(`Entrada de ${result.staff_name}: ${result.time}`);
+    else if (result?.action === "check_out") toast.success(`Salida de ${result.staff_name}: ${result.time}`);
+    else toast.info(`${result?.staff_name || staffMember.full_name} ya completó su jornada`);
+    qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+  };
+
 
   const myStaff = staff.find((s: any) => s.user_id === user?.id);
   const today = new Date().toISOString().split("T")[0];
@@ -965,10 +978,15 @@ const AttendancePage = () => {
                         disabled={hasOut || !canUseQuickPunch}
                         onClick={() => {
                           if (hasIn && !hasOut) {
-                            toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
-                            toast.success(`Salida de ${s.full_name}: ${nowTime}`);
+                            if (isTerminal) {
+                              terminalMarkStaff(s);
+                            } else {
+                              toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
+                              toast.success(`Salida de ${s.full_name}: ${nowTime}`);
+                            }
                           } else if (!hasIn) {
-                            markStaffEntry(s);
+                            if (isTerminal) terminalMarkStaff(s);
+                            else markStaffEntry(s);
                           }
                         }}
                       >
