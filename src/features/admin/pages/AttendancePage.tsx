@@ -53,6 +53,8 @@ const AttendancePage = () => {
   const isTerminal = roles.includes("terminal" as any);
   // Asistente puede marcar por otros (igual que admin); user/practicante/terminal solo lo suyo
   const canMarkOthers = isAdmin || roles.includes("moderator" as any) || roles.includes("asistente" as any);
+  const canUseControlView = canMarkOthers || isTerminal;
+  const canEditAttendanceGrid = isAdmin;
   const [pdfStaffId, setPdfStaffId] = useState<string>("");
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
@@ -210,6 +212,7 @@ const AttendancePage = () => {
   };
 
   const updateTime = (staffId: string, day: number, field: "check_in" | "check_out", value: string) => {
+    if (!canEditAttendanceGrid) return;
     const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const existing = recordMap[staffId]?.[date];
     const status = existing?.status || "A";
@@ -522,6 +525,7 @@ const AttendancePage = () => {
   const myRecord = myStaff ? recordMap[myStaff.id]?.[today] : null;
   const myCheckedIn = !!myRecord?.check_in_time;
   const myCheckedOut = !!myRecord?.check_out_time;
+  const quickAttendanceStaff = isTerminal && myStaff ? [myStaff] : staff;
 
   // Format business hours for display
   const formatBusinessHours = () => {
@@ -538,7 +542,7 @@ const AttendancePage = () => {
   return (
     <div className="space-y-6">
       {/* Self check-in card for staff */}
-      {!isAdmin && myStaff && (
+      {!canUseControlView && myStaff && (
         <Card className={`border-2 ${myCheckedIn && !myCheckedOut ? "border-primary/50 bg-primary/5" : myCheckedOut ? "border-success/50 bg-success/5" : "border-warning/50 bg-warning/5"}`}>
           <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -569,7 +573,7 @@ const AttendancePage = () => {
         </Card>
       )}
 
-      {!isAdmin && !myStaff && (
+      {!canUseControlView && !myStaff && (
         <Card className="border-warning/50 bg-warning/5">
           <CardContent className="p-4 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
@@ -579,7 +583,7 @@ const AttendancePage = () => {
       )}
 
       {/* Personal view (non-admin) */}
-      {!isAdmin && myStaff && (() => {
+      {!canUseControlView && myStaff && (() => {
         const myStats = getStats(myStaff.id);
         const mySchedules = scheduleMap[myStaff.id] || [];
         return (
@@ -710,13 +714,14 @@ const AttendancePage = () => {
       })()}
 
       {/* ─── Admin / Asistente view: control total o marcado por otros ──── */}
-      {canMarkOthers && (
+      {canUseControlView && (
         <>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <h1 className="text-2xl font-display font-bold flex items-center gap-2">
               <CalendarDays className="h-6 w-6 text-primary" /> Control de Asistencias
             </h1>
             <div className="flex items-center gap-2 flex-wrap">
+              {isAdmin && (
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -788,6 +793,7 @@ const AttendancePage = () => {
                   </div>
                 </SheetContent>
               </Sheet>
+              )}
               <Button variant="outline" size="sm" className="gap-2" onClick={exportExcel}>
                 <FileSpreadsheet className="h-4 w-4" /> Excel
               </Button>
@@ -873,7 +879,7 @@ const AttendancePage = () => {
                 <h3 className="font-semibold text-sm">Marcar Asistencia Rápida — Hoy</h3>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                {staff.map((s: any) => {
+                {quickAttendanceStaff.map((s: any) => {
                   const todayDate = new Date().toISOString().split("T")[0];
                   const rec = recordMap[s.id]?.[todayDate];
                   const hasIn = !!rec?.check_in_time;
@@ -882,6 +888,8 @@ const AttendancePage = () => {
                   const todayDow = new Date().getDay();
                   const rest = isRestDay(s.id, todayDow);
                   const todaySchedules = getScheduleForDay(s.id, todayDow);
+
+                  const canUseQuickPunch = canMarkOthers || (isTerminal && s.user_id === user?.id);
 
                   return (
                     <div key={s.id} className={`rounded-lg p-3 text-center border transition-colors ${
@@ -907,7 +915,7 @@ const AttendancePage = () => {
                         size="sm"
                         variant={hasOut ? "outline" : hasIn ? "secondary" : rest ? "ghost" : "default"}
                         className="mt-2 h-7 text-[10px] w-full"
-                        disabled={hasOut}
+                        disabled={hasOut || !canUseQuickPunch}
                         onClick={() => {
                           if (hasIn && !hasOut) {
                             toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
@@ -1017,17 +1025,17 @@ const AttendancePage = () => {
                               // Rest day without attendance record
                               if (rest && !rec) {
                                 return (
-                                  <td key={d} className="px-1 py-1 text-center bg-gray-500/5 cursor-pointer hover:bg-gray-500/10 transition-colors"
-                                    onClick={() => cycleStatus(s.id, d)}
-                                    title={`Descanso — Clic para registrar asistencia extra`}>
+                                  <td key={d} className={`px-1 py-1 text-center bg-gray-500/5 transition-colors ${canEditAttendanceGrid ? "cursor-pointer hover:bg-gray-500/10" : "cursor-default"}`}
+                                    onClick={() => canEditAttendanceGrid && cycleStatus(s.id, d)}
+                                    title={canEditAttendanceGrid ? "Descanso — Clic para registrar asistencia extra" : "Descanso"}>
                                     <span className="inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold bg-gray-500/15 text-gray-500">D</span>
                                   </td>
                                 );
                               }
 
                               return (
-                                <td key={d} className={`px-1 py-1 text-center cursor-pointer hover:bg-primary/10 transition-colors ${rest ? "bg-gray-500/5" : ""}`}
-                                  onClick={() => cycleStatus(s.id, d)}>
+                                <td key={d} className={`px-1 py-1 text-center transition-colors ${canEditAttendanceGrid ? "cursor-pointer hover:bg-primary/10" : "cursor-default"} ${rest ? "bg-gray-500/5" : ""}`}
+                                  onClick={() => canEditAttendanceGrid && cycleStatus(s.id, d)}>
                                   {st ? (
                                     <span className={`inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold ${st.color} ${rest ? "ring-1 ring-orange-400/50" : ""}`} 
                                       title={rest ? `${st.full} (trabajó en día de descanso)` : st.full}>
@@ -1142,12 +1150,14 @@ const AttendancePage = () => {
                                         type="time"
                                         value={rec?.check_in_time || ""}
                                         onChange={e => updateTime(s.id, d, "check_in", e.target.value)}
+                                        disabled={!canEditAttendanceGrid}
                                         className="h-5 w-full text-[10px] p-0.5 text-center border-primary/20 [color-scheme:dark] dark:[color-scheme:dark]"
                                       />
                                       <Input
                                         type="time"
                                         value={rec?.check_out_time || ""}
                                         onChange={e => updateTime(s.id, d, "check_out", e.target.value)}
+                                        disabled={!canEditAttendanceGrid}
                                         className="h-5 w-full text-[10px] p-0.5 text-center border-primary/20 [color-scheme:dark] dark:[color-scheme:dark]"
                                       />
                                     </>
