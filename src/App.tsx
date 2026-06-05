@@ -2,12 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, useTheme } from "@/features/theme/ThemeProvider";
 import { FloatingThemeToggle } from "@/features/theme/FloatingThemeToggle";
 import SeasonalParticles from "@/features/theme/SeasonalParticles";
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
 import { AuthProvider } from "@/features/auth/hooks/useAuth";
+import { usePermissions } from "@/features/auth/hooks/usePermissions";
 
 // Shop pages
 import HomePage from "@/features/shop/pages/HomePage";
@@ -81,6 +82,24 @@ const AdminOnlyRoute = ({ children }: { children: React.ReactNode }) => (
   </ProtectedRoute>
 );
 
+const AdminIndexRoute = () => {
+  const { canAccess, loading } = usePermissions();
+
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (canAccess("dashboard")) return <DashboardPage />;
+  if (canAccess("asistencias")) return <Navigate to="/admin/asistencias" replace />;
+  if (canAccess("pos")) return <Navigate to="/admin/ventas/pos" replace />;
+
+  return <Navigate to="/cuenta" replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -109,7 +128,7 @@ const App = () => (
 
                 {/* Admin */}
                 <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>}>
-                  <Route index element={<DashboardPage />} />
+                  <Route index element={<AdminIndexRoute />} />
                   <Route path="recepcion" element={<ReceptionPage />} />
                   <Route path="productos" element={<ProductsPage />} />
                   <Route path="pedidos" element={<OrdersPage />} />
