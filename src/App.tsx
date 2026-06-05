@@ -76,6 +76,8 @@ const SeasonalWrapper = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+import PermissionRoute from "@/features/auth/components/PermissionRoute";
+
 const AdminOnlyRoute = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute allowedRoles={["admin"]} fallbackPath="/admin">
     {children}
