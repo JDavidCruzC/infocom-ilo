@@ -720,6 +720,7 @@ const AttendancePage = () => {
               <CalendarDays className="h-6 w-6 text-primary" /> Control de Asistencias
             </h1>
             <div className="flex items-center gap-2 flex-wrap">
+              {isAdmin && (
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -791,6 +792,7 @@ const AttendancePage = () => {
                   </div>
                 </SheetContent>
               </Sheet>
+              )}
               <Button variant="outline" size="sm" className="gap-2" onClick={exportExcel}>
                 <FileSpreadsheet className="h-4 w-4" /> Excel
               </Button>
