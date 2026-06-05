@@ -22,8 +22,39 @@ const RolesPage = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newRoleKey, setNewRoleKey] = useState("");
+  const [newRoleLabel, setNewRoleLabel] = useState("");
+  const [newRoleDesc, setNewRoleDesc] = useState("");
   const [newUserId, setNewUserId] = useState("");
   const [newRole, setNewRole] = useState("moderator");
+
+  const { data: roleMetadata = [] } = useQuery({
+    queryKey: ["role_metadata"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("role_metadata").select("*").order("sort_order");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const createRoleMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("admin_create_role", {
+        _key: newRoleKey, _label: newRoleLabel, _icon: "Shield",
+        _color: "text-primary", _description: newRoleDesc || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("✅ Rol creado. Configura sus permisos en el panel de Permisos.");
+      queryClient.invalidateQueries({ queryKey: ["role_metadata"] });
+      setCreateOpen(false);
+      setNewRoleKey(""); setNewRoleLabel(""); setNewRoleDesc("");
+    },
+    onError: (e: any) => toast.error(e.message || "Error al crear rol"),
+  });
+
 
   // Fetch profiles to show names
   const { data: profilesMap = {} } = useQuery({
