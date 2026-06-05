@@ -1025,17 +1025,17 @@ const AttendancePage = () => {
                               // Rest day without attendance record
                               if (rest && !rec) {
                                 return (
-                                  <td key={d} className="px-1 py-1 text-center bg-gray-500/5 cursor-pointer hover:bg-gray-500/10 transition-colors"
-                                    onClick={() => cycleStatus(s.id, d)}
-                                    title={`Descanso — Clic para registrar asistencia extra`}>
+                                  <td key={d} className={`px-1 py-1 text-center bg-gray-500/5 transition-colors ${canEditAttendanceGrid ? "cursor-pointer hover:bg-gray-500/10" : "cursor-default"}`}
+                                    onClick={() => canEditAttendanceGrid && cycleStatus(s.id, d)}
+                                    title={canEditAttendanceGrid ? "Descanso — Clic para registrar asistencia extra" : "Descanso"}>
                                     <span className="inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold bg-gray-500/15 text-gray-500">D</span>
                                   </td>
                                 );
                               }
 
                               return (
-                                <td key={d} className={`px-1 py-1 text-center cursor-pointer hover:bg-primary/10 transition-colors ${rest ? "bg-gray-500/5" : ""}`}
-                                  onClick={() => cycleStatus(s.id, d)}>
+                                <td key={d} className={`px-1 py-1 text-center transition-colors ${canEditAttendanceGrid ? "cursor-pointer hover:bg-primary/10" : "cursor-default"} ${rest ? "bg-gray-500/5" : ""}`}
+                                  onClick={() => canEditAttendanceGrid && cycleStatus(s.id, d)}>
                                   {st ? (
                                     <span className={`inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold ${st.color} ${rest ? "ring-1 ring-orange-400/50" : ""}`} 
                                       title={rest ? `${st.full} (trabajó en día de descanso)` : st.full}>
@@ -1150,12 +1150,14 @@ const AttendancePage = () => {
                                         type="time"
                                         value={rec?.check_in_time || ""}
                                         onChange={e => updateTime(s.id, d, "check_in", e.target.value)}
+                                        disabled={!canEditAttendanceGrid}
                                         className="h-5 w-full text-[10px] p-0.5 text-center border-primary/20 [color-scheme:dark] dark:[color-scheme:dark]"
                                       />
                                       <Input
                                         type="time"
                                         value={rec?.check_out_time || ""}
                                         onChange={e => updateTime(s.id, d, "check_out", e.target.value)}
+                                        disabled={!canEditAttendanceGrid}
                                         className="h-5 w-full text-[10px] p-0.5 text-center border-primary/20 [color-scheme:dark] dark:[color-scheme:dark]"
                                       />
                                     </>
