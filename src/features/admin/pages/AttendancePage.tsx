@@ -955,7 +955,8 @@ const AttendancePage = () => {
                         <th className="px-2 py-2 text-center">T</th>
                         <th className="px-2 py-2 text-center">J</th>
                         <th className="px-2 py-2 text-center">%</th>
-                        <th className="px-2 py-2 text-center">Extra</th>
+                        <th className="px-2 py-2 text-center" title="Horas reales trabajadas en el mes (entrada + salidas + turnos extra)">Horas Mes</th>
+                        <th className="px-2 py-2 text-center" title="⚠️ Cálculo en revisión — pendiente de optimización técnica">Extra*</th>
                       </tr>
                     </thead>
                     <tbody>
