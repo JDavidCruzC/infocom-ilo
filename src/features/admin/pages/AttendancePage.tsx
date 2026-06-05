@@ -34,6 +34,7 @@ interface BusinessHours {
   afternoon_start: string;
   afternoon_end: string;
   work_days: number[];
+  tolerance_minutes: number;
 }
 
 const DEFAULT_BUSINESS_HOURS: BusinessHours = {
@@ -42,7 +43,9 @@ const DEFAULT_BUSINESS_HOURS: BusinessHours = {
   afternoon_start: "15:00",
   afternoon_end: "20:00",
   work_days: [1, 2, 3, 4, 5, 6],
+  tolerance_minutes: 5,
 };
+
 
 const AttendancePage = () => {
   const qc = useQueryClient();
@@ -499,14 +502,20 @@ const AttendancePage = () => {
 
     const todaySchedules = getScheduleForDay(currentStaff.id, dayOfWeek);
     let isLate = false;
+    let lateBy = 0;
+    const tolerance = Number(businessHours?.tolerance_minutes ?? 5);
     if (todaySchedules.length > 0) {
       const earliest = todaySchedules.reduce((min: string, s: any) => s.start_time < min ? s.start_time : min, todaySchedules[0].start_time);
-      isLate = nowTime > earliest;
+      const [eh, em] = earliest.split(":").map(Number);
+      const [nh, nm] = nowTime.split(":").map(Number);
+      lateBy = (nh * 60 + nm) - (eh * 60 + em);
+      isLate = lateBy > tolerance;
     }
     const status = isLate ? "T" : "A";
     toggleMutation.mutate({ staffId: currentStaff.id, date: today, status, check_in: nowTime });
-    toast.success(`Entrada registrada: ${nowTime}${isLate ? " (Tardanza)" : ""}`);
+    toast.success(`Entrada registrada: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min, tolerancia ${tolerance} min)` : tolerance > 0 && lateBy > 0 ? ` (Dentro de tolerancia ${tolerance} min)` : ""}`);
   };
+
 
   const myStaff = staff.find((s: any) => s.user_id === user?.id);
   const today = new Date().toISOString().split("T")[0];
@@ -757,16 +766,48 @@ const AttendancePage = () => {
                         ))}
                       </div>
                     </div>
+                    <div className="space-y-2 p-3 rounded-lg bg-secondary/30">
+                      <p className="text-xs font-semibold">⏱️ Tolerancia para marcar entrada</p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={120}
+                          value={editHours.tolerance_minutes ?? 5}
+                          onChange={e => setEditHours(p => ({ ...p, tolerance_minutes: Math.max(0, Number(e.target.value) || 0) }))}
+                          className="w-24"
+                        />
+                        <span className="text-xs text-muted-foreground">minutos. Entradas dentro de este margen no contarán como tardanza.</span>
+                      </div>
+                    </div>
                     <Button onClick={saveBusinessHours} disabled={savingHours} className="w-full">
                       {savingHours ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                       Guardar Horario
                     </Button>
+
                   </div>
                 </SheetContent>
               </Sheet>
               <Button variant="outline" size="sm" className="gap-2" onClick={exportExcel}>
                 <FileSpreadsheet className="h-4 w-4" /> Excel
               </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                  onClick={async () => {
+                    if (!confirm(`¿Marcar como FALTA los días laborales pasados de ${MONTHS[month]} ${year} que no tengan registro?`)) return;
+                    const { data, error } = await supabase.rpc("admin_mark_pending_absences", { _year: year, _month: month + 1 });
+                    if (error) { toast.error("Error: " + error.message); return; }
+                    toast.success(`✅ ${data ?? 0} faltas registradas`);
+                    qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+                  }}
+                >
+                  <AlertTriangle className="h-4 w-4" /> Marcar Faltas
+                </Button>
+              )}
+
               <Button
                 variant="outline"
                 size="sm"

@@ -128,7 +128,7 @@ export interface Profile {
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 export type PaymentMethod = 'yape' | 'plin' | 'bank_transfer' | 'mercadopago' | 'cash' | 'whatsapp' | 'other';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
-export type AppRole = 'admin' | 'moderator' | 'user' | 'terminal';
+export type AppRole = 'admin' | 'moderator' | 'user' | 'terminal' | (string & {});
 
 export interface CartItem {
   product: Product;

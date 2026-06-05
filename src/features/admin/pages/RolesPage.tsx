@@ -22,8 +22,39 @@ const RolesPage = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newRoleKey, setNewRoleKey] = useState("");
+  const [newRoleLabel, setNewRoleLabel] = useState("");
+  const [newRoleDesc, setNewRoleDesc] = useState("");
   const [newUserId, setNewUserId] = useState("");
   const [newRole, setNewRole] = useState("moderator");
+
+  const { data: roleMetadata = [] } = useQuery({
+    queryKey: ["role_metadata"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("role_metadata").select("*").order("sort_order");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const createRoleMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("admin_create_role", {
+        _key: newRoleKey, _label: newRoleLabel, _icon: "Shield",
+        _color: "text-primary", _description: newRoleDesc || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("✅ Rol creado. Configura sus permisos en el panel de Permisos.");
+      queryClient.invalidateQueries({ queryKey: ["role_metadata"] });
+      setCreateOpen(false);
+      setNewRoleKey(""); setNewRoleLabel(""); setNewRoleDesc("");
+    },
+    onError: (e: any) => toast.error(e.message || "Error al crear rol"),
+  });
+
 
   // Fetch profiles to show names
   const { data: profilesMap = {} } = useQuery({
@@ -116,48 +147,90 @@ const RolesPage = () => {
         <h1 className="text-2xl font-display font-bold flex items-center gap-2">
           <Shield className="h-6 w-6 text-primary" /> Gestión de Roles
         </h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" /> Asignar Rol</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Asignar Rol a Usuario</DialogTitle></DialogHeader>
-            <form onSubmit={e => { e.preventDefault(); addRoleMutation.mutate({ userId: newUserId, role: newRole }); }} className="space-y-4">
-              <div>
-                <Label>Usuario</Label>
-                {allUserOptions.length > 0 ? (
-                  <Select value={newUserId} onValueChange={setNewUserId}>
-                    <SelectTrigger><SelectValue placeholder="Seleccionar usuario..." /></SelectTrigger>
+        <div className="flex flex-wrap gap-2">
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2"><Plus className="h-4 w-4" /> Crear Rol</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Crear Nuevo Rol</DialogTitle></DialogHeader>
+              <form
+                onSubmit={e => { e.preventDefault(); createRoleMutation.mutate(); }}
+                className="space-y-4"
+              >
+                <div>
+                  <Label>Clave técnica</Label>
+                  <Input
+                    required value={newRoleKey}
+                    onChange={e => setNewRoleKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_"))}
+                    placeholder="ej. supervisor"
+                    className="font-mono"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Solo minúsculas, números y guion bajo.</p>
+                </div>
+                <div>
+                  <Label>Nombre visible</Label>
+                  <Input required value={newRoleLabel} onChange={e => setNewRoleLabel(e.target.value)} placeholder="ej. Supervisor de Tienda" />
+                </div>
+                <div>
+                  <Label>Descripción (opcional)</Label>
+                  <Input value={newRoleDesc} onChange={e => setNewRoleDesc(e.target.value)} placeholder="Función general del rol" />
+                </div>
+                <div className="text-xs p-3 rounded-md bg-warning/10 border border-warning/30 text-warning">
+                  ⚠️ Tras crear el rol, debes <strong>recargar</strong> la página para poder asignarlo, y configurar sus permisos en el panel <strong>Permisos</strong>.
+                </div>
+                <Button type="submit" className="w-full" disabled={createRoleMutation.isPending || !newRoleKey || !newRoleLabel}>
+                  Crear Rol
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2"><Plus className="h-4 w-4" /> Asignar Rol</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Asignar Rol a Usuario</DialogTitle></DialogHeader>
+              <form onSubmit={e => { e.preventDefault(); addRoleMutation.mutate({ userId: newUserId, role: newRole }); }} className="space-y-4">
+                <div>
+                  <Label>Usuario</Label>
+                  {allUserOptions.length > 0 ? (
+                    <Select value={newUserId} onValueChange={setNewUserId}>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar usuario..." /></SelectTrigger>
+                      <SelectContent>
+                        {allUserOptions.map(u => (
+                          <SelectItem key={u.uid} value={u.uid}>
+                            {u.name} {u.isStaff ? "(Personal)" : "(Cliente)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input required value={newUserId} onChange={e => setNewUserId(e.target.value)} placeholder="UUID del usuario" className="font-mono text-xs" />
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">Selecciona el usuario al que deseas asignar un rol</p>
+                </div>
+                <div>
+                  <Label>Rol</Label>
+                  <Select value={newRole} onValueChange={setNewRole}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {allUserOptions.map(u => (
-                        <SelectItem key={u.uid} value={u.uid}>
-                          {u.name} {u.isStaff ? "(Personal)" : "(Cliente)"}
+                      {roleMetadata.map((r: any) => (
+                        <SelectItem key={r.role_key} value={r.role_key}>
+                          {r.label}{!r.is_system && " (personalizado)"}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                ) : (
-                  <Input required value={newUserId} onChange={e => setNewUserId(e.target.value)} placeholder="UUID del usuario" className="font-mono text-xs" />
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Selecciona el usuario al que deseas asignar un rol</p>
-              </div>
-              <div>
-                <Label>Rol</Label>
-                <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">👑 Administrador</SelectItem>
-                    <SelectItem value="moderator">🛡️ Moderador (Recepcionista/Técnico)</SelectItem>
-                    <SelectItem value="terminal">🖥️ Terminal Tienda (Vendedor/Marcado)</SelectItem>
-                    <SelectItem value="user">👤 Usuario</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" className="w-full" disabled={addRoleMutation.isPending || !newUserId}>Asignar Rol</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+                </div>
+                <Button type="submit" className="w-full" disabled={addRoleMutation.isPending || !newUserId}>Asignar Rol</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
