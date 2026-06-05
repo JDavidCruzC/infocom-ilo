@@ -11,14 +11,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, Plus, Search, UserCheck, UserX, Briefcase, Phone, Mail, IdCard, Clock, Trash2, CalendarClock, KeyRound, Eye, EyeOff } from "lucide-react";
+import { Users, Plus, Search, UserCheck, UserX, Briefcase, Phone, Mail, IdCard, Clock, Trash2, CalendarClock, KeyRound, Eye, EyeOff, FileText, Upload, Download, MapPin, Loader2 } from "lucide-react";
 import { usePersistentDraft } from "@/hooks/use-persistent-draft";
+import { sanitizeText } from "@/lib/sanitize";
+import { StaffDocumentsSection } from "@/features/admin/components/StaffDocumentsSection";
 
 const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const DAY_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 const emptyForm = {
-  full_name: "", position: "Practicante", phone: "", email: "", document_number: "", user_id: "", institution: "",
+  full_name: "", position: "Practicante", phone: "", email: "", document_number: "", user_id: "", institution: "", address: "",
 };
 
 const emptyScheduleForm = {
@@ -95,10 +97,11 @@ const StaffPage = () => {
   const saveMutation = useMutation({
     mutationFn: async (f: typeof emptyForm) => {
       const payload: any = {
-        full_name: f.full_name, position: f.position,
+        full_name: sanitizeText(f.full_name, { maxLength: 120 }), position: f.position,
         phone: f.phone || null, email: f.email || null,
         document_number: f.document_number || null, user_id: f.user_id || null,
         institution: f.institution || null,
+        address: sanitizeText(f.address, { maxLength: 240 }) || null,
       };
       if (editingId) {
         const { error } = await supabase.from("staff_members").update(payload).eq("id", editingId);
@@ -235,6 +238,7 @@ const StaffPage = () => {
       full_name: s.full_name, position: s.position, phone: s.phone || "",
       email: s.email || "", document_number: s.document_number || "", user_id: s.user_id || "",
       institution: s.institution || "",
+      address: s.address || "",
     });
     setEditingId(s.id); setDialogOpen(true);
   };
@@ -257,7 +261,7 @@ const StaffPage = () => {
           <DialogTrigger asChild>
             <Button className="gap-2" onClick={openNew}><Plus className="h-4 w-4" /> Agregar Personal</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Editar" : "Registrar"} Personal</DialogTitle></DialogHeader>
             <form onSubmit={e => { e.preventDefault(); saveMutation.mutate(form); }} className="space-y-4">
               <div><Label>Nombre Completo *</Label><Input required value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
@@ -280,6 +284,16 @@ const StaffPage = () => {
                 <div><Label>DNI / Documento</Label><Input value={form.document_number} onChange={e => setForm({ ...form, document_number: e.target.value })} /></div>
               </div>
               <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+              <div>
+                <Label className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-primary" /> Dirección de domicilio *</Label>
+                <Input
+                  required
+                  value={form.address}
+                  onChange={e => setForm({ ...form, address: e.target.value })}
+                  placeholder="Av. / Calle / Mz / Lt — Distrito, Provincia"
+                  maxLength={240}
+                />
+              </div>
               {(form.position === "Practicante") && (
                 <div><Label>Institución / Entidad de origen</Label><Input value={form.institution} onChange={e => setForm({ ...form, institution: e.target.value })} placeholder="SENATI, TECSUP, Universidad..." /></div>
               )}
@@ -303,11 +317,18 @@ const StaffPage = () => {
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">Vincula la cuenta para que el personal pueda marcar y ver su asistencia</p>
               </div>
+              {editingId && <StaffDocumentsSection staffId={editingId} />}
+              {!editingId && (
+                <p className="text-[11px] text-muted-foreground italic border border-dashed border-primary/20 rounded p-2">
+                  💡 Guarda primero al personal para poder cargar documentos adjuntos (CV en PDF, contratos, etc.).
+                </p>
+              )}
               <Button type="submit" className="w-full" disabled={saveMutation.isPending}>{editingId ? "Guardar Cambios" : "Registrar"}</Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
+
 
       <div className="grid grid-cols-3 gap-3">
         <Card className="border-green-500/20"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-green-400">{activeCount}</p><p className="text-xs text-muted-foreground">Activos</p></CardContent></Card>

@@ -1,56 +1,52 @@
+# Plan de implementación
 
-# INFOCOM TECNOLOGY - Tienda Online Completa
+## 1. Nuevo rol `terminal` (Semi-Administrador / Terminal Tienda)
 
-## Visión General
-Crear una tienda online profesional para INFOCOM TECNOLOGY, replicando el diseño y estructura de infocomilo.com pero con un sistema administrable completo, donde los productos, categorías y precios se gestionan desde un panel de administración.
+**Base de datos (migración):**
+- Añadir valor `'terminal'` al enum `app_role`.
+- Insertar permisos por defecto en `role_permissions` para `terminal`: solo `pos` y `asistencias` activos; el resto bloqueados.
+- Las políticas RLS existentes (`has_role(_, 'admin')`, `'moderator'`) ya cubren acceso; `terminal` queda restringido salvo lo que se habilite explícitamente vía `role_permissions`.
 
----
+**Frontend:**
+- `usePermissions.tsx`: agregar `terminal` como rol soportado (admin sigue siendo "todo permitido"; terminal pasa por `role_permissions` igual que moderator).
+- `PermissionsConfigPage.tsx`: añadir tab "Terminal Tienda" con icono y conteo. Admin lo edita.
+- `RolesPage.tsx`: opción en el `Select` para asignar rol `terminal`.
+- `ProtectedRoute.tsx`: incluir `terminal` en `ADMIN_PANEL_ROLES` (puede entrar al panel admin, pero solo verá módulos permitidos).
+- `AttendancePage.tsx`: detectar rol `terminal` y:
+  - Bloquear edición manual de celdas (A/F/T/J/D) y horas en la grilla mensual (read-only).
+  - Mantener habilitada únicamente la tarjeta superior "Marcar Asistencia Rápida — Hoy" para su propio `staff_id` (filtrar selector al usuario actual).
 
-## Fase 1: Página Principal y Diseño
-- **Header**: Logo de INFOCOM, barra de búsqueda de productos, iconos de carrito, cuenta de usuario y enlace a WhatsApp
-- **Menú de navegación**: Inicio, Catálogo de Productos (con subcategorías desplegables), Contacto, Sobre Nosotros
-- **Banner/Slider** principal con imágenes promocionales rotativas
-- **Productos Destacados**: Grilla de productos con imagen, nombre, marca, precio, descuento y botón de agregar al carrito
-- **Recién Llegados**: Sección de productos nuevos
-- **Beneficios**: Envío gratis (+S/800), pagos seguros, atención 24/7, garantía de calidad
-- **Marcas asociadas**: Carrusel con logos de marcas (Lenovo, MSI, Epson, Teros, etc.)
-- **Botón flotante de WhatsApp** para contacto directo
-- **Footer** con información de la empresa, redes sociales y enlaces útiles
+## 2. Reportes mensuales en PDF
 
-## Fase 2: Catálogo de Productos
-- **Página de catálogo** con filtros por categoría, marca, rango de precio y búsqueda
-- **Subcategorías**: Laptops, Monitores, Periféricos, Proyectores, Accesorios, etc.
-- **Página de detalle de producto**: Galería de imágenes, descripción completa, especificaciones técnicas, precio, disponibilidad, productos relacionados y botón de agregar al carrito
-- **Etiquetas visuales**: Descuentos (% OFF), "Nuevo", "Agotado"
-- **Ordenamiento**: Por precio, nombre, más recientes, más vendidos
+**Cálculo de horas:**
+- Helper `calcMonthlyHours(records, schedules)` que sume horas reales por empleado: `(check_out - check_in)` + extra_punches pares, ignorando faltas/justificadas/descansos.
+- Mostrar columna/resumen "Total Horas" en la vista mensual.
 
-## Fase 3: Sistema de Usuarios y Carrito (Backend con Lovable Cloud)
-- **Registro e inicio de sesión** de clientes (email/contraseña)
-- **Carrito de compras**: Agregar, eliminar, modificar cantidades, ver total
-- **Proceso de checkout**: Datos de envío, selección de método de pago, resumen del pedido
-- **Historial de pedidos**: Los clientes pueden ver el estado de sus compras
-- **Opción de comprar por WhatsApp**: Botón para enviar el pedido directamente a WhatsApp con los productos seleccionados
+**Exportación (usando `jspdf` + `jspdf-autotable`, ya estilo dark tech):**
+- Botón **"PDF General del Mes"**: una tabla por trabajador con días, estado, entrada/salida, horas, totales (A/F/T/J/D, horas trabajadas, extras placeholder).
+- Selector de empleado + botón **"PDF Individual"**: mismo formato pero un solo trabajador.
+- Estilo: fondo oscuro, header verde corporativo, fuente sans, encabezado con logo/empresa, footer con `© {YYYY} INFOCOM SOLUCIONES` y página X/Y.
 
-## Fase 4: Métodos de Pago
-- **Consulta por WhatsApp**: Enviar resumen del pedido al WhatsApp de la empresa
-- **Transferencia bancaria**: Mostrar datos de cuenta y subir comprobante de pago
-- **Pasarela de pago online**: Integración con pasarela de pago para tarjetas de crédito/débito
+## 3. Personal: dirección y documentos adjuntos
 
-## Fase 5: Panel de Administración
-- **Dashboard** con estadísticas de ventas, pedidos recientes, productos más vendidos
-- **Gestión de productos**: Crear, editar, eliminar productos con imágenes, precios, categorías, stock y descuentos
-- **Importación masiva**: Cargar productos desde archivo Excel/CSV
-- **Gestión de categorías y subcategorías**
-- **Gestión de pedidos**: Ver pedidos, cambiar estados (pendiente, confirmado, enviado, entregado)
-- **Gestión de banners**: Cambiar imágenes del slider principal
-- **Gestión de marcas**: Agregar/editar logos de marcas asociadas
+**Migración:**
+- `staff_members`: añadir `address text`.
+- Nueva tabla `staff_documents` (id, staff_id, name, file_url, file_type, size_bytes, uploaded_by, created_at) + GRANTs + RLS (admin gestiona, moderator/usuario ve sus propios).
+- Bucket de Storage privado `staff-documents` con políticas: admins all, staff lee solo carpeta `{user_id}/`.
 
-## Base de Datos (Lovable Cloud / Supabase)
-- Tablas para: productos, categorías, marcas, usuarios, pedidos, ítems de pedido, banners, configuración de la tienda
-- Almacenamiento de imágenes de productos
-- Autenticación de usuarios y roles (admin/cliente)
+**Frontend (`StaffPage.tsx`):**
+- Añadir input "Dirección" (requerido) en el formulario crear/editar.
+- Sección "Documentos Adjuntos" en el dialog: dropzone que acepta PDF (otros formatos opcionales), lista los documentos con botones Ver (abre signed URL en nueva pestaña) y Descargar; admin puede eliminar.
 
-## Diseño
-- Estilo visual similar al sitio actual: fondo oscuro con acentos de color, diseño limpio y profesional
-- Totalmente responsive (móvil, tablet, escritorio)
-- Moneda en Soles peruanos (PEN)
+## 4. Columna "Extra" (placeholder)
+
+- Mantener visualización actual en la tabla con un tooltip "Cálculo en revisión — pendiente de optimización" y dejar comentario `// TODO: refactor overtime logic` en el helper de cálculo. Sin cambios funcionales.
+
+## Detalles técnicos
+
+- Librerías ya instaladas: `jspdf`, `jspdf-autotable` (verificar; si faltan, `bun add`).
+- Storage: `supabase--storage_create_bucket` para `staff-documents` privado, luego RLS en `storage.objects`.
+- Migración corre primero (enum + tabla + columna). Tras aprobación, regenero types y aplico cambios de código.
+- Sanitización: aplicar `sanitizeText` al campo de dirección y nombre de documento usando el helper ya existente en `src/lib/sanitize.ts`.
+
+¿Procedo con la migración y la implementación?

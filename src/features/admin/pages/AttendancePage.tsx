@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Clock, UserCheck, Filter, AlertTriangle, UserPlus, Sun, Moon, Settings2, Save, Loader2, FileSpreadsheet } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Clock, UserCheck, Filter, AlertTriangle, UserPlus, Sun, Moon, Settings2, Save, Loader2, FileSpreadsheet, FileText, User } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import XLSX from "xlsx-js-style";
+import { generateMonthlyAttendancePdf } from "@/features/admin/utils/attendancePdf";
 
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const STATUS_LABELS: Record<string,{ label: string; color: string; full: string }> = {
@@ -46,8 +47,10 @@ const DEFAULT_BUSINESS_HOURS: BusinessHours = {
 const AttendancePage = () => {
   const qc = useQueryClient();
   const { isAdmin, user, roles } = useAuth();
-  // Asistente puede marcar por otros (igual que admin); user/practicante solo lo suyo
+  const isTerminal = roles.includes("terminal" as any);
+  // Asistente puede marcar por otros (igual que admin); user/practicante/terminal solo lo suyo
   const canMarkOthers = isAdmin || roles.includes("moderator" as any) || roles.includes("asistente" as any);
+  const [pdfStaffId, setPdfStaffId] = useState<string>("");
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
@@ -764,6 +767,57 @@ const AttendancePage = () => {
               <Button variant="outline" size="sm" className="gap-2" onClick={exportExcel}>
                 <FileSpreadsheet className="h-4 w-4" /> Excel
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => {
+                  const statsMap: Record<string, any> = {};
+                  staff.forEach((s: any) => { statsMap[s.id] = getStats(s.id); });
+                  generateMonthlyAttendancePdf({
+                    month, year,
+                    staffList: staff.map((s: any) => ({ id: s.id, full_name: s.full_name, position: s.position })),
+                    recordsByStaff: recordMap,
+                    statsByStaff: statsMap,
+                    isRestDay,
+                  });
+                  toast.success("📄 PDF general descargado");
+                }}
+              >
+                <FileText className="h-4 w-4" /> PDF General
+              </Button>
+              <div className="flex items-center gap-1">
+                <Select value={pdfStaffId} onValueChange={setPdfStaffId}>
+                  <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue placeholder="Trabajador..." /></SelectTrigger>
+                  <SelectContent>
+                    {staff.map((s: any) => (
+                      <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 border-accent/30 text-accent hover:bg-accent/10"
+                  disabled={!pdfStaffId}
+                  onClick={() => {
+                    const s = staff.find((x: any) => x.id === pdfStaffId);
+                    if (!s) return;
+                    const stats = getStats(s.id);
+                    generateMonthlyAttendancePdf({
+                      month, year,
+                      staffList: [{ id: s.id, full_name: s.full_name, position: s.position }],
+                      recordsByStaff: { [s.id]: recordMap[s.id] || {} },
+                      statsByStaff: { [s.id]: stats },
+                      isRestDay,
+                      individual: true,
+                    });
+                    toast.success(`📄 PDF individual de ${s.full_name} descargado`);
+                  }}
+                >
+                  <User className="h-4 w-4" /> PDF
+                </Button>
+              </div>
               <Button variant="outline" size="icon" onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
               <span className="font-semibold text-sm min-w-[160px] text-center">{MONTHS[month]} {year}</span>
               <Button variant="outline" size="icon" onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
@@ -901,7 +955,8 @@ const AttendancePage = () => {
                         <th className="px-2 py-2 text-center">T</th>
                         <th className="px-2 py-2 text-center">J</th>
                         <th className="px-2 py-2 text-center">%</th>
-                        <th className="px-2 py-2 text-center">Extra</th>
+                        <th className="px-2 py-2 text-center" title="Horas reales trabajadas en el mes (entrada + salidas + turnos extra)">Horas Mes</th>
+                        <th className="px-2 py-2 text-center" title="⚠️ Cálculo en revisión — pendiente de optimización técnica">Extra*</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -950,7 +1005,10 @@ const AttendancePage = () => {
                             <td className={`px-2 py-2 text-center font-bold ${stats.pct >= 80 ? "text-success" : stats.pct >= 50 ? "text-warning" : "text-destructive"}`}>
                               {stats.pct > 0 ? `${stats.pct}%` : ""}
                             </td>
-                            <td className="px-2 py-2 text-center font-bold text-orange-400">
+                            <td className="px-2 py-2 text-center font-bold text-primary" title="Horas reales trabajadas en el mes">
+                              {stats.totalHours > 0 ? `${stats.totalHours}h` : ""}
+                            </td>
+                            <td className="px-2 py-2 text-center font-bold text-orange-400" title="Cálculo en revisión">
                               {stats.overtime > 0 ? `${stats.overtime}h` : ""}
                             </td>
                           </tr>
