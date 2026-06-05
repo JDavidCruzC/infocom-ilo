@@ -108,7 +108,7 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                 {/* Admin */}
-                <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin", "moderator", "user"]}><AdminLayout /></ProtectedRoute>}>
+                <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>}>
                   <Route index element={<DashboardPage />} />
                   <Route path="recepcion" element={<ReceptionPage />} />
                   <Route path="productos" element={<ProductsPage />} />
