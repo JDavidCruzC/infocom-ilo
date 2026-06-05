@@ -1008,7 +1008,7 @@ const AttendancePage = () => {
                 <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Filtrar personal" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todo el personal</SelectItem>
-                  {staff.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}
+                  {attendanceStaff.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
