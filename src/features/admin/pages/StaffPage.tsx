@@ -96,10 +96,11 @@ const StaffPage = () => {
   const saveMutation = useMutation({
     mutationFn: async (f: typeof emptyForm) => {
       const payload: any = {
-        full_name: f.full_name, position: f.position,
+        full_name: sanitizeText(f.full_name, { maxLength: 120 }), position: f.position,
         phone: f.phone || null, email: f.email || null,
         document_number: f.document_number || null, user_id: f.user_id || null,
         institution: f.institution || null,
+        address: sanitizeText(f.address, { maxLength: 240 }) || null,
       };
       if (editingId) {
         const { error } = await supabase.from("staff_members").update(payload).eq("id", editingId);
@@ -236,6 +237,7 @@ const StaffPage = () => {
       full_name: s.full_name, position: s.position, phone: s.phone || "",
       email: s.email || "", document_number: s.document_number || "", user_id: s.user_id || "",
       institution: s.institution || "",
+      address: s.address || "",
     });
     setEditingId(s.id); setDialogOpen(true);
   };
