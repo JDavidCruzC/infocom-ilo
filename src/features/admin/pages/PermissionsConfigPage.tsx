@@ -6,12 +6,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Shield, Crown, UserCheck, Lock } from "lucide-react";
+import { Shield, Crown, UserCheck, Lock, Monitor } from "lucide-react";
 import { ALL_MODULES } from "@/features/auth/hooks/usePermissions";
 
 const ROLE_CONFIG = {
   admin: { label: "Administrador", icon: Crown, color: "text-destructive", desc: "Acceso total al sistema" },
   moderator: { label: "Moderador / Personal", icon: Shield, color: "text-warning", desc: "Acceso configurable por módulo" },
+  terminal: { label: "Terminal Tienda", icon: Monitor, color: "text-accent", desc: "Cuenta para terminales físicas: ventas y marcado de asistencia. No puede editar manualmente la cuadrícula." },
   user: { label: "Usuario / Practicante", icon: UserCheck, color: "text-primary", desc: "Acceso limitado, ideal para practicantes" },
 } as const;
 
@@ -78,7 +79,7 @@ const PermissionsConfigPage = () => {
       </div>
 
       <Tabs value={activeRole} onValueChange={setActiveRole}>
-        <TabsList className="w-full grid grid-cols-3">
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4">
           {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
             <TabsTrigger key={key} value={key} className="gap-2 text-xs sm:text-sm">
               <cfg.icon className="h-4 w-4" />

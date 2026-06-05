@@ -9,11 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Shield, Plus, Search, UserCheck, UserX, Crown } from "lucide-react";
+import { Shield, Plus, Search, UserCheck, UserX, Crown, Monitor } from "lucide-react";
 
 const ROLE_MAP: Record<string, { label: string; color: string; icon: any }> = {
   admin: { label: "Administrador", color: "bg-destructive/20 text-destructive border-destructive/30", icon: Crown },
   moderator: { label: "Moderador", color: "bg-warning/20 text-warning border-warning/30", icon: Shield },
+  terminal: { label: "Terminal Tienda", color: "bg-accent/20 text-accent border-accent/30", icon: Monitor },
   user: { label: "Usuario", color: "bg-primary/20 text-primary border-primary/30", icon: UserCheck },
 };
 
