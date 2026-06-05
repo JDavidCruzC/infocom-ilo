@@ -148,6 +148,7 @@ const RolesPage = () => {
                   <SelectContent>
                     <SelectItem value="admin">👑 Administrador</SelectItem>
                     <SelectItem value="moderator">🛡️ Moderador (Recepcionista/Técnico)</SelectItem>
+                    <SelectItem value="terminal">🖥️ Terminal Tienda (Vendedor/Marcado)</SelectItem>
                     <SelectItem value="user">👤 Usuario</SelectItem>
                   </SelectContent>
                 </Select>
