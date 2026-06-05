@@ -863,10 +863,26 @@ const AttendancePage = () => {
                         <span className="text-xs text-muted-foreground">minutos. Entradas dentro de este margen no contarán como tardanza.</span>
                       </div>
                     </div>
+                    <div className="space-y-2 p-3 rounded-lg bg-secondary/30">
+                      <p className="text-xs font-semibold">🌎 Zona horaria del marcado</p>
+                      <Select
+                        value={editHours.timezone ?? "America/Lima"}
+                        onValueChange={(v) => setEditHours(p => ({ ...p, timezone: v }))}
+                      >
+                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {TIMEZONE_OPTIONS.map(tz => (
+                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-muted-foreground">Las horas marcadas desde Terminal Tienda se registrarán según esta zona.</p>
+                    </div>
                     <Button onClick={saveBusinessHours} disabled={savingHours} className="w-full">
                       {savingHours ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                       Guardar Horario
                     </Button>
+
 
                   </div>
                 </SheetContent>
