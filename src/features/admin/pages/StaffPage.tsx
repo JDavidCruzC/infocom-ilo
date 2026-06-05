@@ -260,7 +260,7 @@ const StaffPage = () => {
           <DialogTrigger asChild>
             <Button className="gap-2" onClick={openNew}><Plus className="h-4 w-4" /> Agregar Personal</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Editar" : "Registrar"} Personal</DialogTitle></DialogHeader>
             <form onSubmit={e => { e.preventDefault(); saveMutation.mutate(form); }} className="space-y-4">
               <div><Label>Nombre Completo *</Label><Input required value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
@@ -283,6 +283,16 @@ const StaffPage = () => {
                 <div><Label>DNI / Documento</Label><Input value={form.document_number} onChange={e => setForm({ ...form, document_number: e.target.value })} /></div>
               </div>
               <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+              <div>
+                <Label className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-primary" /> Dirección de domicilio *</Label>
+                <Input
+                  required
+                  value={form.address}
+                  onChange={e => setForm({ ...form, address: e.target.value })}
+                  placeholder="Av. / Calle / Mz / Lt — Distrito, Provincia"
+                  maxLength={240}
+                />
+              </div>
               {(form.position === "Practicante") && (
                 <div><Label>Institución / Entidad de origen</Label><Input value={form.institution} onChange={e => setForm({ ...form, institution: e.target.value })} placeholder="SENATI, TECSUP, Universidad..." /></div>
               )}
@@ -306,11 +316,18 @@ const StaffPage = () => {
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">Vincula la cuenta para que el personal pueda marcar y ver su asistencia</p>
               </div>
+              {editingId && <StaffDocumentsSection staffId={editingId} />}
+              {!editingId && (
+                <p className="text-[11px] text-muted-foreground italic border border-dashed border-primary/20 rounded p-2">
+                  💡 Guarda primero al personal para poder cargar documentos adjuntos (CV en PDF, contratos, etc.).
+                </p>
+              )}
               <Button type="submit" className="w-full" disabled={saveMutation.isPending}>{editingId ? "Guardar Cambios" : "Registrar"}</Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
+
 
       <div className="grid grid-cols-3 gap-3">
         <Card className="border-green-500/20"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-green-400">{activeCount}</p><p className="text-xs text-muted-foreground">Activos</p></CardContent></Card>
