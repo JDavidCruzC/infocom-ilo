@@ -1202,8 +1202,53 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_type: string | null
+          id: string
+          name: string
+          size_bytes: number | null
+          staff_id: string
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_type?: string | null
+          id?: string
+          name: string
+          size_bytes?: number | null
+          staff_id: string
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_type?: string | null
+          id?: string
+          name?: string
+          size_bytes?: number | null
+          staff_id?: string
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_documents_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_members: {
         Row: {
+          address: string | null
           created_at: string | null
           deactivated_at: string | null
           deactivated_reason: string | null
@@ -1220,6 +1265,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string | null
           deactivated_at?: string | null
           deactivated_reason?: string | null
@@ -1236,6 +1282,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string | null
           deactivated_at?: string | null
           deactivated_reason?: string | null
@@ -1686,7 +1733,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user" | "asistente"
+      app_role: "admin" | "moderator" | "user" | "asistente" | "terminal"
       item_type: "producto" | "servicio"
       order_status:
         | "pending"
@@ -1833,7 +1880,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user", "asistente"],
+      app_role: ["admin", "moderator", "user", "asistente", "terminal"],
       item_type: ["producto", "servicio"],
       order_status: [
         "pending",
