@@ -533,6 +533,31 @@ const AttendancePage = () => {
     toast.success(`Entrada registrada: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min, tolerancia ${tolerance} min)` : tolerance > 0 && lateBy > 0 ? ` (Dentro de tolerancia ${tolerance} min)` : ""}`);
   };
 
+  const markStaffEntry = (staffMember: any, silent = false) => {
+    const todayDate = new Date().toISOString().split("T")[0];
+    const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
+    const rec = recordMap[staffMember.id]?.[todayDate];
+    if (rec?.check_in_time) return;
+
+    const todayDow = new Date().getDay();
+    const rest = isRestDay(staffMember.id, todayDow);
+    const todaySchedules = getScheduleForDay(staffMember.id, todayDow);
+    let isLate = false;
+    let lateBy = 0;
+    const tolerance = Number(businessHours?.tolerance_minutes ?? 5);
+
+    if (todaySchedules.length > 0) {
+      const earliest = todaySchedules.reduce((min: string, sc: any) => sc.start_time < min ? sc.start_time : min, todaySchedules[0].start_time);
+      const [eh, em] = earliest.split(":").map(Number);
+      const [nh, nm] = nowTime.split(":").map(Number);
+      lateBy = (nh * 60 + nm) - (eh * 60 + em);
+      isLate = lateBy > tolerance;
+    }
+
+    toggleMutation.mutate({ staffId: staffMember.id, date: todayDate, status: isLate ? "T" : "A", check_in: nowTime });
+    if (!silent) toast.success(`Entrada de ${staffMember.full_name}: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min)` : ""}${rest ? " (Día de descanso)" : ""}`);
+  };
+
 
   const myStaff = staff.find((s: any) => s.user_id === user?.id);
   const today = new Date().toISOString().split("T")[0];
