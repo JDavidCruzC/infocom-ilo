@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Users, Plus, Search, UserCheck, UserX, Briefcase, Phone, Mail, IdCard, Clock, Trash2, CalendarClock, KeyRound, Eye, EyeOff, FileText, Upload, Download, MapPin, Loader2 } from "lucide-react";
 import { usePersistentDraft } from "@/hooks/use-persistent-draft";
 import { sanitizeText } from "@/lib/sanitize";
+import { StaffDocumentsSection } from "@/features/admin/components/StaffDocumentsSection";
 
 const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const DAY_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
