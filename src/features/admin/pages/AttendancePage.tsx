@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +63,7 @@ const AttendancePage = () => {
   const [activeTab, setActiveTab] = useState("grid");
   const [editHours, setEditHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
   const [savingHours, setSavingHours] = useState(false);
+  const autoAdminMarkKeyRef = useRef<string | null>(null);
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -76,6 +77,14 @@ const AttendancePage = () => {
       const { data, error } = await supabase.from("staff_members").select("*").eq("is_active", true).order("full_name");
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: terminalUserIds = [] } = useQuery({
+    queryKey: ["terminal_user_ids"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("user_id").eq("role", "terminal" as any);
+      return (data || []).map((r: any) => r.user_id).filter(Boolean);
     },
   });
 
