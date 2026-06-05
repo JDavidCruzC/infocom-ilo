@@ -767,6 +767,57 @@ const AttendancePage = () => {
               <Button variant="outline" size="sm" className="gap-2" onClick={exportExcel}>
                 <FileSpreadsheet className="h-4 w-4" /> Excel
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => {
+                  const statsMap: Record<string, any> = {};
+                  staff.forEach((s: any) => { statsMap[s.id] = getStats(s.id); });
+                  generateMonthlyAttendancePdf({
+                    month, year,
+                    staffList: staff.map((s: any) => ({ id: s.id, full_name: s.full_name, position: s.position })),
+                    recordsByStaff: recordMap,
+                    statsByStaff: statsMap,
+                    isRestDay,
+                  });
+                  toast.success("📄 PDF general descargado");
+                }}
+              >
+                <FileText className="h-4 w-4" /> PDF General
+              </Button>
+              <div className="flex items-center gap-1">
+                <Select value={pdfStaffId} onValueChange={setPdfStaffId}>
+                  <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue placeholder="Trabajador..." /></SelectTrigger>
+                  <SelectContent>
+                    {staff.map((s: any) => (
+                      <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 border-accent/30 text-accent hover:bg-accent/10"
+                  disabled={!pdfStaffId}
+                  onClick={() => {
+                    const s = staff.find((x: any) => x.id === pdfStaffId);
+                    if (!s) return;
+                    const stats = getStats(s.id);
+                    generateMonthlyAttendancePdf({
+                      month, year,
+                      staffList: [{ id: s.id, full_name: s.full_name, position: s.position }],
+                      recordsByStaff: { [s.id]: recordMap[s.id] || {} },
+                      statsByStaff: { [s.id]: stats },
+                      isRestDay,
+                      individual: true,
+                    });
+                    toast.success(`📄 PDF individual de ${s.full_name} descargado`);
+                  }}
+                >
+                  <User className="h-4 w-4" /> PDF
+                </Button>
+              </div>
               <Button variant="outline" size="icon" onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
               <span className="font-semibold text-sm min-w-[160px] text-center">{MONTHS[month]} {year}</span>
               <Button variant="outline" size="icon" onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
