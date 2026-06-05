@@ -71,7 +71,7 @@ const AttendancePage = () => {
   const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const endDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
 
-  const { data: staff = [] } = useQuery({
+  const { data: staff = [], isLoading: staffLoading } = useQuery({
     queryKey: ["staff_members_active"],
     queryFn: async () => {
       const { data, error } = await supabase.from("staff_members").select("*").eq("is_active", true).order("full_name");
@@ -88,7 +88,7 @@ const AttendancePage = () => {
     },
   });
 
-  const { data: records = [] } = useQuery({
+  const { data: records = [], isLoading: recordsLoading } = useQuery({
     queryKey: ["attendance_records", month, year],
     queryFn: async () => {
       const { data, error } = await supabase.from("attendance_records").select("*")
