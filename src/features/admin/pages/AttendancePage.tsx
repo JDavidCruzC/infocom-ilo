@@ -525,6 +525,7 @@ const AttendancePage = () => {
   const myRecord = myStaff ? recordMap[myStaff.id]?.[today] : null;
   const myCheckedIn = !!myRecord?.check_in_time;
   const myCheckedOut = !!myRecord?.check_out_time;
+  const quickAttendanceStaff = isTerminal && myStaff ? [myStaff] : staff;
 
   // Format business hours for display
   const formatBusinessHours = () => {
@@ -878,7 +879,7 @@ const AttendancePage = () => {
                 <h3 className="font-semibold text-sm">Marcar Asistencia Rápida — Hoy</h3>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                {staff.map((s: any) => {
+                {quickAttendanceStaff.map((s: any) => {
                   const todayDate = new Date().toISOString().split("T")[0];
                   const rec = recordMap[s.id]?.[todayDate];
                   const hasIn = !!rec?.check_in_time;
@@ -887,6 +888,8 @@ const AttendancePage = () => {
                   const todayDow = new Date().getDay();
                   const rest = isRestDay(s.id, todayDow);
                   const todaySchedules = getScheduleForDay(s.id, todayDow);
+
+                  const canUseQuickPunch = canMarkOthers || (isTerminal && s.user_id === user?.id);
 
                   return (
                     <div key={s.id} className={`rounded-lg p-3 text-center border transition-colors ${
@@ -912,7 +915,7 @@ const AttendancePage = () => {
                         size="sm"
                         variant={hasOut ? "outline" : hasIn ? "secondary" : rest ? "ghost" : "default"}
                         className="mt-2 h-7 text-[10px] w-full"
-                        disabled={hasOut}
+                        disabled={hasOut || !canUseQuickPunch}
                         onClick={() => {
                           if (hasIn && !hasOut) {
                             toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
