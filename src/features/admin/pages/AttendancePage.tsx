@@ -780,6 +780,11 @@ const AttendancePage = () => {
             <h1 className="text-2xl font-display font-bold flex items-center gap-2">
               <CalendarDays className="h-6 w-6 text-primary" /> Control de Asistencias
             </h1>
+            {isTerminal && (
+              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+                Terminal Tienda: solo marcado de entrada/salida
+              </Badge>
+            )}
             <div className="flex items-center gap-2 flex-wrap">
               {isAdmin && (
               <Sheet>
@@ -938,6 +943,11 @@ const AttendancePage = () => {
                 <UserPlus className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold text-sm">Marcar Asistencia Rápida — Hoy</h3>
               </div>
+              {isTerminal && (
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Selecciona al trabajador para registrar entrada o salida. La cuadrícula y las horas permanecen en solo lectura.
+                </p>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {quickAttendanceStaff.map((s: any) => {
                   const todayDate = new Date().toISOString().split("T")[0];
