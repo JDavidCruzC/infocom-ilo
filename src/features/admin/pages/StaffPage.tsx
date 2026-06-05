@@ -475,35 +475,85 @@ const StaffPage = () => {
 
       {/* Schedule assignment dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Asignar Horario — {staff.find((s: any) => s.id === scheduleStaffId)?.full_name}</DialogTitle>
+            <DialogTitle>Horario Personalizado — {staff.find((s: any) => s.id === scheduleStaffId)?.full_name}</DialogTitle>
           </DialogHeader>
+
+          {/* Existing schedule blocks for this worker */}
+          {scheduleStaffId && (() => {
+            const current = schedules.filter((s: any) => s.staff_id === scheduleStaffId);
+            if (current.length === 0) {
+              return (
+                <div className="rounded-lg border border-dashed border-primary/20 p-3 text-center text-xs text-muted-foreground">
+                  Sin bloques asignados. Agrega abajo el primer bloque (ej. Lun/Jue/Vie/Sáb/Dom 15:00-20:00) y guarda; luego añade otro (ej. Mar/Mié 18:00-20:00).
+                </div>
+              );
+            }
+            // Group by start-end-shift_name
+            const groups: Record<string, { days: number[]; start: string; end: string; shift: string; ids: string[] }> = {};
+            current.forEach((sc: any) => {
+              const k = `${sc.start_time}-${sc.end_time}-${sc.shift_name}`;
+              if (!groups[k]) groups[k] = { days: [], start: sc.start_time, end: sc.end_time, shift: sc.shift_name, ids: [] };
+              groups[k].days.push(sc.day_of_week);
+              groups[k].ids.push(sc.id);
+            });
+            return (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground">Bloques activos</p>
+                {Object.values(groups).map((g, idx) => (
+                  <div key={idx} className="flex items-center justify-between rounded-lg bg-secondary/30 p-3 gap-2">
+                    <div className="text-xs">
+                      <p className="font-semibold">{g.shift} · {g.start.slice(0,5)} – {g.end.slice(0,5)}</p>
+                      <p className="text-muted-foreground">{g.days.sort().map(d => DAY_SHORT[d]).join(", ")}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-destructive gap-1"
+                      onClick={() => g.ids.forEach(id => deleteScheduleMutation.mutate(id))}>
+                      <Trash2 className="h-3 w-3" /> Borrar bloque
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          <div className="border-t border-border my-2" />
+          <p className="text-xs font-semibold text-muted-foreground">Agregar nuevo bloque</p>
+
           <form onSubmit={e => { e.preventDefault(); saveScheduleMutation.mutate(); }} className="space-y-4">
             <div>
               <Label>Días de la Semana (selecciona varios)</Label>
               <div className="flex flex-wrap gap-2 mt-2">
                 {DAY_NAMES.map((d, i) => {
                   const selected = scheduleForm.days.includes(i);
+                  // Mark days already assigned somewhere
+                  const alreadyAssigned = schedules.some((s: any) => s.staff_id === scheduleStaffId && s.day_of_week === i);
                   return (
                     <Button
                       key={i} type="button" size="sm"
                       variant={selected ? "default" : "outline"}
+                      className={alreadyAssigned && !selected ? "border-warning/40 text-warning" : ""}
+                      title={alreadyAssigned ? "Ya tiene un bloque asignado este día" : ""}
                       onClick={() => setScheduleForm({
                         ...scheduleForm,
                         days: selected ? scheduleForm.days.filter(x => x !== i) : [...scheduleForm.days, i],
                       })}
                     >
-                      {DAY_SHORT[i]}
+                      {DAY_SHORT[i]}{alreadyAssigned ? " •" : ""}
                     </Button>
                   );
                 })}
               </div>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-2 flex-wrap">
                 <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setScheduleForm({ ...scheduleForm, days: [1,2,3,4,5] })}>Lun-Vie</Button>
                 <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setScheduleForm({ ...scheduleForm, days: [1,2,3,4,5,6] })}>Lun-Sáb</Button>
+                <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setScheduleForm({ ...scheduleForm, days: [1,4,5,6,0] })}>Lun/Jue/Vie/Sáb/Dom</Button>
+                <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setScheduleForm({ ...scheduleForm, days: [2,3] })}>Mar/Mié</Button>
                 <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setScheduleForm({ ...scheduleForm, days: [] })}>Limpiar</Button>
               </div>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                💡 Los días <strong>no asignados en ningún bloque</strong> se consideran día de descanso automáticamente.
+              </p>
             </div>
             <div>
               <Label>Nombre del Turno</Label>
@@ -513,40 +563,45 @@ const StaffPage = () => {
                 else if (v === "Turno Mañana") { start = "09:00"; end = "13:00"; }
                 else if (v === "Turno Tarde") { start = "15:00"; end = "20:00"; }
                 else if (v === "Turno Partido") { start = "09:00"; end = "20:00"; }
+                else if (v === "Turno Personalizado") { /* keep current times */ }
                 setScheduleForm({ ...scheduleForm, shift_name: v, start_time: start, end_time: end });
               }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Turno Personalizado">✨ Turno Personalizado (define horas abajo)</SelectItem>
                   <SelectItem value="Turno Completo">🕐 Turno Completo (09:00-20:00)</SelectItem>
                   <SelectItem value="Turno Mañana">🌅 Turno Mañana (09:00-13:00)</SelectItem>
                   <SelectItem value="Turno Tarde">🌇 Turno Tarde (15:00-20:00)</SelectItem>
                   <SelectItem value="Turno Partido">🔄 Turno Partido (09:00-13:00, 15:00-20:00)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                💡 Los días que NO se asignen se consideran como día de descanso automáticamente
-              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Hora Entrada</Label>
-                <Input type="time" className="[color-scheme:dark] dark:[color-scheme:dark]" value={scheduleForm.start_time} onChange={e => setScheduleForm({ ...scheduleForm, start_time: e.target.value })} />
+                <Input type="time" className="[color-scheme:dark] dark:[color-scheme:dark]" value={scheduleForm.start_time} onChange={e => setScheduleForm({ ...scheduleForm, start_time: e.target.value, shift_name: "Turno Personalizado" })} />
               </div>
               <div>
                 <Label>Hora Salida</Label>
-                <Input type="time" className="[color-scheme:dark] dark:[color-scheme:dark]" value={scheduleForm.end_time} onChange={e => setScheduleForm({ ...scheduleForm, end_time: e.target.value })} />
+                <Input type="time" className="[color-scheme:dark] dark:[color-scheme:dark]" value={scheduleForm.end_time} onChange={e => setScheduleForm({ ...scheduleForm, end_time: e.target.value, shift_name: "Turno Personalizado" })} />
               </div>
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-xs space-y-1">
-              <p className="font-semibold">📋 Resumen de asignación:</p>
-              <p>• Días seleccionados: {scheduleForm.days.length > 0 ? scheduleForm.days.map(d => DAY_NAMES[d]).join(", ") : "Ninguno"}</p>
-              <p>• Turno: {scheduleForm.shift_name} ({scheduleForm.start_time} - {scheduleForm.end_time})</p>
-              <p className="text-muted-foreground">• Los días no seleccionados serán de <strong>descanso</strong></p>
+              <p className="font-semibold">📋 Resumen del bloque a agregar:</p>
+              <p>• Días: {scheduleForm.days.length > 0 ? scheduleForm.days.map(d => DAY_NAMES[d]).join(", ") : "Ninguno"}</p>
+              <p>• Horario: {scheduleForm.start_time} - {scheduleForm.end_time} ({scheduleForm.shift_name})</p>
+              <p className="text-muted-foreground">💾 Tras guardar puedes agregar otro bloque sin cerrar este diálogo.</p>
             </div>
-            <Button type="submit" className="w-full" disabled={saveScheduleMutation.isPending}>Asignar Horario</Button>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1" disabled={saveScheduleMutation.isPending || scheduleForm.days.length === 0}>
+                <Plus className="h-4 w-4 mr-1" /> Agregar Bloque
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setScheduleDialogOpen(false)}>Cerrar</Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
+
 
       {/* Account creation dialog */}
       <Dialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen}>
