@@ -791,6 +791,23 @@ const AttendancePage = () => {
               <Button variant="outline" size="sm" className="gap-2" onClick={exportExcel}>
                 <FileSpreadsheet className="h-4 w-4" /> Excel
               </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                  onClick={async () => {
+                    if (!confirm(`¿Marcar como FALTA los días laborales pasados de ${MONTHS[month]} ${year} que no tengan registro?`)) return;
+                    const { data, error } = await supabase.rpc("admin_mark_pending_absences", { _year: year, _month: month + 1 });
+                    if (error) { toast.error("Error: " + error.message); return; }
+                    toast.success(`✅ ${data ?? 0} faltas registradas`);
+                    qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+                  }}
+                >
+                  <AlertTriangle className="h-4 w-4" /> Marcar Faltas
+                </Button>
+              )}
+
               <Button
                 variant="outline"
                 size="sm"
