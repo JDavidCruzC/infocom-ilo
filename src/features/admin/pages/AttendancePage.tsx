@@ -502,14 +502,20 @@ const AttendancePage = () => {
 
     const todaySchedules = getScheduleForDay(currentStaff.id, dayOfWeek);
     let isLate = false;
+    let lateBy = 0;
+    const tolerance = Number(businessHours?.tolerance_minutes ?? 5);
     if (todaySchedules.length > 0) {
       const earliest = todaySchedules.reduce((min: string, s: any) => s.start_time < min ? s.start_time : min, todaySchedules[0].start_time);
-      isLate = nowTime > earliest;
+      const [eh, em] = earliest.split(":").map(Number);
+      const [nh, nm] = nowTime.split(":").map(Number);
+      lateBy = (nh * 60 + nm) - (eh * 60 + em);
+      isLate = lateBy > tolerance;
     }
     const status = isLate ? "T" : "A";
     toggleMutation.mutate({ staffId: currentStaff.id, date: today, status, check_in: nowTime });
-    toast.success(`Entrada registrada: ${nowTime}${isLate ? " (Tardanza)" : ""}`);
+    toast.success(`Entrada registrada: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min, tolerancia ${tolerance} min)` : tolerance > 0 && lateBy > 0 ? ` (Dentro de tolerancia ${tolerance} min)` : ""}`);
   };
+
 
   const myStaff = staff.find((s: any) => s.user_id === user?.id);
   const today = new Date().toISOString().split("T")[0];
