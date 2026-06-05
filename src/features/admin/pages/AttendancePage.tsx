@@ -34,6 +34,7 @@ interface BusinessHours {
   afternoon_start: string;
   afternoon_end: string;
   work_days: number[];
+  tolerance_minutes: number;
 }
 
 const DEFAULT_BUSINESS_HOURS: BusinessHours = {
@@ -42,7 +43,9 @@ const DEFAULT_BUSINESS_HOURS: BusinessHours = {
   afternoon_start: "15:00",
   afternoon_end: "20:00",
   work_days: [1, 2, 3, 4, 5, 6],
+  tolerance_minutes: 5,
 };
+
 
 const AttendancePage = () => {
   const qc = useQueryClient();
