@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +63,7 @@ const AttendancePage = () => {
   const [activeTab, setActiveTab] = useState("grid");
   const [editHours, setEditHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
   const [savingHours, setSavingHours] = useState(false);
+  const autoAdminMarkKeyRef = useRef<string | null>(null);
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -70,7 +71,7 @@ const AttendancePage = () => {
   const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const endDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
 
-  const { data: staff = [] } = useQuery({
+  const { data: staff = [], isLoading: staffLoading } = useQuery({
     queryKey: ["staff_members_active"],
     queryFn: async () => {
       const { data, error } = await supabase.from("staff_members").select("*").eq("is_active", true).order("full_name");
@@ -79,7 +80,15 @@ const AttendancePage = () => {
     },
   });
 
-  const { data: records = [] } = useQuery({
+  const { data: terminalUserIds = [] } = useQuery({
+    queryKey: ["terminal_user_ids"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("user_id").eq("role", "terminal" as any);
+      return (data || []).map((r: any) => r.user_id).filter(Boolean);
+    },
+  });
+
+  const { data: records = [], isLoading: recordsLoading } = useQuery({
     queryKey: ["attendance_records", month, year],
     queryFn: async () => {
       const { data, error } = await supabase.from("attendance_records").select("*")
@@ -310,7 +319,12 @@ const AttendancePage = () => {
 
   const getDayOfWeek = (day: number) => ["D","L","M","M","J","V","S"][new Date(year, month, day).getDay()];
 
-  const filteredStaff = filterStaff === "all" ? staff : staff.filter((s: any) => s.id === filterStaff);
+  const attendanceStaff = useMemo(
+    () => staff.filter((s: any) => !s.user_id || !terminalUserIds.includes(s.user_id)),
+    [staff, terminalUserIds]
+  );
+
+  const filteredStaff = filterStaff === "all" ? attendanceStaff : attendanceStaff.filter((s: any) => s.id === filterStaff);
 
   const exportExcel = () => {
     // Header row
@@ -519,13 +533,46 @@ const AttendancePage = () => {
     toast.success(`Entrada registrada: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min, tolerancia ${tolerance} min)` : tolerance > 0 && lateBy > 0 ? ` (Dentro de tolerancia ${tolerance} min)` : ""}`);
   };
 
+  const markStaffEntry = (staffMember: any, silent = false) => {
+    const todayDate = new Date().toISOString().split("T")[0];
+    const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
+    const rec = recordMap[staffMember.id]?.[todayDate];
+    if (rec?.check_in_time) return;
+
+    const todayDow = new Date().getDay();
+    const rest = isRestDay(staffMember.id, todayDow);
+    const todaySchedules = getScheduleForDay(staffMember.id, todayDow);
+    let isLate = false;
+    let lateBy = 0;
+    const tolerance = Number(businessHours?.tolerance_minutes ?? 5);
+
+    if (todaySchedules.length > 0) {
+      const earliest = todaySchedules.reduce((min: string, sc: any) => sc.start_time < min ? sc.start_time : min, todaySchedules[0].start_time);
+      const [eh, em] = earliest.split(":").map(Number);
+      const [nh, nm] = nowTime.split(":").map(Number);
+      lateBy = (nh * 60 + nm) - (eh * 60 + em);
+      isLate = lateBy > tolerance;
+    }
+
+    toggleMutation.mutate({ staffId: staffMember.id, date: todayDate, status: isLate ? "T" : "A", check_in: nowTime });
+    if (!silent) toast.success(`Entrada de ${staffMember.full_name}: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min)` : ""}${rest ? " (Día de descanso)" : ""}`);
+  };
+
 
   const myStaff = staff.find((s: any) => s.user_id === user?.id);
   const today = new Date().toISOString().split("T")[0];
   const myRecord = myStaff ? recordMap[myStaff.id]?.[today] : null;
   const myCheckedIn = !!myRecord?.check_in_time;
   const myCheckedOut = !!myRecord?.check_out_time;
-  const quickAttendanceStaff = isTerminal && myStaff ? [myStaff] : staff;
+  const quickAttendanceStaff = isTerminal ? attendanceStaff : attendanceStaff;
+
+  useEffect(() => {
+    if (!isAdmin || !myStaff || staffLoading || recordsLoading) return;
+    const key = `${myStaff.id}:${today}`;
+    if (autoAdminMarkKeyRef.current === key || myRecord?.check_in_time) return;
+    autoAdminMarkKeyRef.current = key;
+    markStaffEntry(myStaff, true);
+  }, [isAdmin, myStaff?.id, myRecord?.check_in_time, staffLoading, recordsLoading, today]);
 
   // Format business hours for display
   const formatBusinessHours = () => {
@@ -820,10 +867,10 @@ const AttendancePage = () => {
                 className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
                 onClick={() => {
                   const statsMap: Record<string, any> = {};
-                  staff.forEach((s: any) => { statsMap[s.id] = getStats(s.id); });
+                  attendanceStaff.forEach((s: any) => { statsMap[s.id] = getStats(s.id); });
                   generateMonthlyAttendancePdf({
                     month, year,
-                    staffList: staff.map((s: any) => ({ id: s.id, full_name: s.full_name, position: s.position })),
+                    staffList: attendanceStaff.map((s: any) => ({ id: s.id, full_name: s.full_name, position: s.position })),
                     recordsByStaff: recordMap,
                     statsByStaff: statsMap,
                     isRestDay,
@@ -837,7 +884,7 @@ const AttendancePage = () => {
                 <Select value={pdfStaffId} onValueChange={setPdfStaffId}>
                   <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue placeholder="Trabajador..." /></SelectTrigger>
                   <SelectContent>
-                    {staff.map((s: any) => (
+                    {attendanceStaff.map((s: any) => (
                       <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -848,7 +895,7 @@ const AttendancePage = () => {
                   className="gap-1 border-accent/30 text-accent hover:bg-accent/10"
                   disabled={!pdfStaffId}
                   onClick={() => {
-                    const s = staff.find((x: any) => x.id === pdfStaffId);
+                    const s = attendanceStaff.find((x: any) => x.id === pdfStaffId);
                     if (!s) return;
                     const stats = getStats(s.id);
                     generateMonthlyAttendancePdf({
@@ -889,7 +936,7 @@ const AttendancePage = () => {
                   const rest = isRestDay(s.id, todayDow);
                   const todaySchedules = getScheduleForDay(s.id, todayDow);
 
-                  const canUseQuickPunch = canMarkOthers || (isTerminal && s.user_id === user?.id);
+                  const canUseQuickPunch = canMarkOthers || isTerminal;
 
                   return (
                     <div key={s.id} className={`rounded-lg p-3 text-center border transition-colors ${
@@ -921,13 +968,7 @@ const AttendancePage = () => {
                             toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
                             toast.success(`Salida de ${s.full_name}: ${nowTime}`);
                           } else if (!hasIn) {
-                            let isLate = false;
-                            if (todaySchedules.length > 0) {
-                              const earliest = todaySchedules.reduce((min: string, sc: any) => sc.start_time < min ? sc.start_time : min, todaySchedules[0].start_time);
-                              isLate = nowTime > earliest;
-                            }
-                            toggleMutation.mutate({ staffId: s.id, date: todayDate, status: isLate ? "T" : "A", check_in: nowTime });
-                            toast.success(`Entrada de ${s.full_name}: ${nowTime}${isLate ? " (Tardanza)" : ""}${rest ? " (Día de descanso)" : ""}`);
+                            markStaffEntry(s);
                           }
                         }}
                       >
@@ -961,7 +1002,7 @@ const AttendancePage = () => {
                 <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Filtrar personal" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todo el personal</SelectItem>
-                  {staff.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}
+                  {attendanceStaff.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
