@@ -539,7 +539,7 @@ const AttendancePage = () => {
   const myRecord = myStaff ? recordMap[myStaff.id]?.[today] : null;
   const myCheckedIn = !!myRecord?.check_in_time;
   const myCheckedOut = !!myRecord?.check_out_time;
-  const quickAttendanceStaff = isTerminal && myStaff ? [myStaff] : staff;
+  const quickAttendanceStaff = isTerminal ? attendanceStaff : attendanceStaff;
 
   // Format business hours for display
   const formatBusinessHours = () => {
