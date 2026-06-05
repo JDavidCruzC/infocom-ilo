@@ -35,7 +35,18 @@ interface BusinessHours {
   afternoon_end: string;
   work_days: number[];
   tolerance_minutes: number;
+  timezone?: string;
 }
+
+const TIMEZONE_OPTIONS = [
+  { value: "America/Lima", label: "Perú (Lima) — GMT-5" },
+  { value: "America/Bogota", label: "Colombia (Bogotá) — GMT-5" },
+  { value: "America/Mexico_City", label: "México (CDMX) — GMT-6" },
+  { value: "America/Santiago", label: "Chile (Santiago) — GMT-4" },
+  { value: "America/Argentina/Buenos_Aires", label: "Argentina (Buenos Aires) — GMT-3" },
+  { value: "America/La_Paz", label: "Bolivia (La Paz) — GMT-4" },
+  { value: "America/Guayaquil", label: "Ecuador (Guayaquil) — GMT-5" },
+];
 
 const DEFAULT_BUSINESS_HOURS: BusinessHours = {
   morning_start: "09:00",
@@ -44,7 +55,9 @@ const DEFAULT_BUSINESS_HOURS: BusinessHours = {
   afternoon_end: "20:00",
   work_days: [1, 2, 3, 4, 5, 6],
   tolerance_minutes: 5,
+  timezone: "America/Lima",
 };
+
 
 
 const AttendancePage = () => {
