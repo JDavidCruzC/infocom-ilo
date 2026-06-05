@@ -6,21 +6,32 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Shield, Crown, UserCheck, Lock, Monitor } from "lucide-react";
+import * as LucideIcons from "lucide-react";
+import { Shield, Lock } from "lucide-react";
 import { ALL_MODULES } from "@/features/auth/hooks/usePermissions";
 
-const ROLE_CONFIG = {
-  admin: { label: "Administrador", icon: Crown, color: "text-destructive", desc: "Acceso total al sistema" },
-  moderator: { label: "Moderador / Personal", icon: Shield, color: "text-warning", desc: "Acceso configurable por módulo" },
-  terminal: { label: "Terminal Tienda", icon: Monitor, color: "text-accent", desc: "Cuenta para terminales físicas: ventas y marcado de asistencia. No puede editar manualmente la cuadrícula." },
-  user: { label: "Usuario / Practicante", icon: UserCheck, color: "text-primary", desc: "Acceso limitado, ideal para practicantes" },
-} as const;
-
 const GROUPS = [...new Set(ALL_MODULES.map(m => m.group))];
+
+const getIcon = (name: string) => {
+  const Ico = (LucideIcons as any)[name];
+  return Ico || Shield;
+};
 
 const PermissionsConfigPage = () => {
   const qc = useQueryClient();
   const [activeRole, setActiveRole] = useState<string>("moderator");
+
+  const { data: roleList = [] } = useQuery({
+    queryKey: ["role_metadata"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("role_metadata")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const { data: permissions = [], isLoading } = useQuery({
     queryKey: ["role_permissions_all"],
@@ -55,7 +66,7 @@ const PermissionsConfigPage = () => {
       qc.invalidateQueries({ queryKey: ["role_permissions"] });
       toast.success("Permiso actualizado");
     },
-    onError: () => toast.error("Error al actualizar permiso"),
+    onError: (e: any) => toast.error(e.message || "Error al actualizar permiso"),
   });
 
   const getAccess = (role: string, module: string) => {
@@ -64,9 +75,9 @@ const PermissionsConfigPage = () => {
   };
 
   const enabledCount = (role: string) =>
-    ALL_MODULES.filter(m => getAccess(role, m.key)).length;
-
-  const roleInfo = ROLE_CONFIG[activeRole as keyof typeof ROLE_CONFIG];
+    role === "admin"
+      ? ALL_MODULES.length
+      : ALL_MODULES.filter(m => getAccess(role, m.key)).length;
 
   return (
     <div className="space-y-6">
@@ -74,29 +85,43 @@ const PermissionsConfigPage = () => {
         <Lock className="h-6 w-6 text-primary" />
         <div>
           <h1 className="text-2xl font-display font-bold">Panel de Permisos</h1>
-          <p className="text-sm text-muted-foreground">Configura el acceso a cada módulo por rol</p>
+          <p className="text-sm text-muted-foreground">Configura el acceso a cada módulo por rol. Los roles personalizados creados desde "Roles" aparecen aquí automáticamente.</p>
         </div>
       </div>
 
+      {roleList.length === 0 ? (
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
       <Tabs value={activeRole} onValueChange={setActiveRole}>
-        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4">
-          {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
-            <TabsTrigger key={key} value={key} className="gap-2 text-xs sm:text-sm">
-              <cfg.icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{cfg.label}</span>
-              <Badge variant="secondary" className="text-[10px] px-1.5">{enabledCount(key)}/{ALL_MODULES.length}</Badge>
-            </TabsTrigger>
-          ))}
+        <TabsList className="w-full flex flex-wrap h-auto justify-start gap-1">
+          {roleList.map((r: any) => {
+            const Ico = getIcon(r.icon);
+            return (
+              <TabsTrigger key={r.role_key} value={r.role_key} className="gap-2 text-xs sm:text-sm">
+                <Ico className="h-4 w-4" />
+                <span className="hidden sm:inline">{r.label}</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5">{enabledCount(r.role_key)}/{ALL_MODULES.length}</Badge>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
-        {Object.entries(ROLE_CONFIG).map(([roleKey, cfg]) => (
+        {roleList.map((r: any) => {
+          const Ico = getIcon(r.icon);
+          const roleKey = r.role_key;
+          return (
           <TabsContent key={roleKey} value={roleKey} className="mt-4 space-y-4">
             <Card className="border-primary/10">
               <CardContent className="p-4 flex items-center gap-3">
-                <cfg.icon className={`h-8 w-8 ${cfg.color}`} />
+                <Ico className={`h-8 w-8 ${r.color || "text-primary"}`} />
                 <div>
-                  <p className="font-bold">{cfg.label}</p>
-                  <p className="text-sm text-muted-foreground">{cfg.desc}</p>
+                  <p className="font-bold flex items-center gap-2">
+                    {r.label}
+                    {!r.is_system && <Badge variant="outline" className="text-[10px]">Personalizado</Badge>}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{r.description}</p>
                 </div>
                 {roleKey === "admin" && (
                   <Badge className="ml-auto bg-destructive/20 text-destructive border-destructive/30">Acceso Total</Badge>
@@ -120,7 +145,7 @@ const PermissionsConfigPage = () => {
                       <CardContent className="p-3 space-y-1">
                         {modules.map(mod => {
                           const isOn = roleKey === "admin" ? true : getAccess(roleKey, mod.key);
-                          const isAdmin = roleKey === "admin";
+                          const isAdminRow = roleKey === "admin";
                           return (
                             <div
                               key={mod.key}
@@ -144,7 +169,7 @@ const PermissionsConfigPage = () => {
                                 </Badge>
                                 <Switch
                                   checked={isOn}
-                                  disabled={isAdmin || toggleMutation.isPending}
+                                  disabled={isAdminRow || toggleMutation.isPending}
                                   onCheckedChange={(checked) =>
                                     toggleMutation.mutate({ role: roleKey, module: mod.key, can_access: checked })
                                   }
@@ -160,8 +185,10 @@ const PermissionsConfigPage = () => {
               </div>
             )}
           </TabsContent>
-        ))}
+          );
+        })}
       </Tabs>
+      )}
     </div>
   );
 };
