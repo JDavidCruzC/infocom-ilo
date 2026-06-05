@@ -11,14 +11,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, Plus, Search, UserCheck, UserX, Briefcase, Phone, Mail, IdCard, Clock, Trash2, CalendarClock, KeyRound, Eye, EyeOff } from "lucide-react";
+import { Users, Plus, Search, UserCheck, UserX, Briefcase, Phone, Mail, IdCard, Clock, Trash2, CalendarClock, KeyRound, Eye, EyeOff, FileText, Upload, Download, MapPin, Loader2 } from "lucide-react";
 import { usePersistentDraft } from "@/hooks/use-persistent-draft";
+import { sanitizeText } from "@/lib/sanitize";
 
 const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const DAY_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 const emptyForm = {
-  full_name: "", position: "Practicante", phone: "", email: "", document_number: "", user_id: "", institution: "",
+  full_name: "", position: "Practicante", phone: "", email: "", document_number: "", user_id: "", institution: "", address: "",
 };
 
 const emptyScheduleForm = {
