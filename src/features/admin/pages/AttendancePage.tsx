@@ -319,7 +319,12 @@ const AttendancePage = () => {
 
   const getDayOfWeek = (day: number) => ["D","L","M","M","J","V","S"][new Date(year, month, day).getDay()];
 
-  const filteredStaff = filterStaff === "all" ? staff : staff.filter((s: any) => s.id === filterStaff);
+  const attendanceStaff = useMemo(
+    () => staff.filter((s: any) => !s.user_id || !terminalUserIds.includes(s.user_id)),
+    [staff, terminalUserIds]
+  );
+
+  const filteredStaff = filterStaff === "all" ? attendanceStaff : attendanceStaff.filter((s: any) => s.id === filterStaff);
 
   const exportExcel = () => {
     // Header row
