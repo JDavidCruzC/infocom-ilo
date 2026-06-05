@@ -50,7 +50,7 @@ const LoginPage = () => {
         .select("role")
         .eq("user_id", data.user.id);
 
-      const canEnterAdminPanel = (roleRows || []).some((row: any) => row.role === "admin" || row.role === "moderator");
+      const canEnterAdminPanel = (roleRows || []).some((row: any) => ["admin", "moderator", "user", "terminal"].includes(row.role));
       if (canEnterAdminPanel) nextPath = "/admin";
     }
 
