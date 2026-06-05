@@ -766,10 +766,25 @@ const AttendancePage = () => {
                         ))}
                       </div>
                     </div>
+                    <div className="space-y-2 p-3 rounded-lg bg-secondary/30">
+                      <p className="text-xs font-semibold">⏱️ Tolerancia para marcar entrada</p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={120}
+                          value={editHours.tolerance_minutes ?? 5}
+                          onChange={e => setEditHours(p => ({ ...p, tolerance_minutes: Math.max(0, Number(e.target.value) || 0) }))}
+                          className="w-24"
+                        />
+                        <span className="text-xs text-muted-foreground">minutos. Entradas dentro de este margen no contarán como tardanza.</span>
+                      </div>
+                    </div>
                     <Button onClick={saveBusinessHours} disabled={savingHours} className="w-full">
                       {savingHours ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                       Guardar Horario
                     </Button>
+
                   </div>
                 </SheetContent>
               </Sheet>
