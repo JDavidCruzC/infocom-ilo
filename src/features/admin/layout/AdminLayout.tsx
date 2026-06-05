@@ -1,9 +1,9 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, FolderTree, Tags, ShoppingBag, Image, CreditCard, Settings,
   ArrowLeft, Menu, Building2, ClipboardList, Shield, Users, CalendarDays, DollarSign,
   Wrench, ChevronDown, ShoppingCart, Store, LayoutGrid, UserCheck, CalendarClock, Bell,
-  Truck, PackagePlus, History, Lock, Sparkles
+  Truck, PackagePlus, History, Lock, Sparkles, LogOut
 } from "lucide-react";
 import NotificationBell from "@/features/admin/components/NotificationBell";
 import { Button } from "@/components/ui/button";
@@ -75,9 +75,10 @@ const allNavItems: NavItem[] = [
 
 const AdminLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const { roles } = useAuth();
+  const { roles, signOut } = useAuth();
   const { canAccess } = usePermissions();
 
   const isActive = (path: string, end?: boolean) => {
@@ -175,6 +176,11 @@ const AdminLayout = () => {
 
   const roleLabel = roles.includes("admin" as any) ? "ADMIN" : "PERSONAL";
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
+  };
+
   const sidebar = (
     <div className="h-full flex flex-col bg-card border-r border-primary/10">
       <div className="p-4 border-b border-primary/10">
@@ -189,6 +195,9 @@ const AdminLayout = () => {
         {navItems.map(renderNavItem)}
       </nav>
       <div className="p-3 border-t border-primary/10">
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={handleSignOut}>
+          <LogOut className="h-4 w-4" /> Cerrar sesión
+        </Button>
         <Link to="/">
           <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
             <ArrowLeft className="h-4 w-4" /> Volver a la tienda
@@ -217,10 +226,18 @@ const AdminLayout = () => {
             </Button>
             <span className="font-display font-bold text-primary">INFOCOM {roleLabel}</span>
           </div>
-          <NotificationBell />
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Cerrar sesión">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </header>
-        <div className="hidden lg:flex sticky top-0 z-40 bg-card/95 backdrop-blur-xl border-b border-primary/10 px-6 py-2 justify-end">
+        <div className="hidden lg:flex sticky top-0 z-40 bg-card/95 backdrop-blur-xl border-b border-primary/10 px-6 py-2 justify-end gap-2">
           <NotificationBell />
+          <Button variant="ghost" size="sm" className="gap-2" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4" /> Cerrar sesión
+          </Button>
         </div>
         <main className="p-4 sm:p-6 lg:p-8">
           <Outlet />

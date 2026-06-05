@@ -166,10 +166,11 @@ const AccountPage = () => {
   const roleLabels: Record<string, string> = {
     admin: "Administrador",
     moderator: "Moderador",
+    terminal: "Terminal Tienda",
     user: "Usuario",
   };
 
-  const canAccessAdminPanel = roles.includes("admin") || roles.includes("moderator");
+  const canAccessAdminPanel = roles.some(role => ["admin", "moderator", "user", "terminal"].includes(role));
 
   return (
     <div className="min-h-screen bg-background">

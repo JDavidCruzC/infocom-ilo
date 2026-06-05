@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, ChevronDown, ChevronRight, MessageCircle, Sun, Moon } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, X, ChevronDown, ChevronRight, MessageCircle, Sun, Moon, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,11 +22,12 @@ const Header = () => {
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const { count } = useCart();
   const { theme, toggleTheme } = useTheme();
-  const { user, isAdmin } = useAuth();
+  const { user, roles, signOut } = useAuth();
   const { categories } = useCategories();
   const navigate = useNavigate();
 
   const logo = theme === "dark" ? logoDark : logoLight;
+  const canAccessAdminPanel = roles.some(role => ["admin", "moderator", "user", "terminal"].includes(role));
 
   const cats = categories.length > 0 ? categories : MOCK_CATEGORIES.map(c => ({ ...c, children: c.subcategories })) as any[];
 
@@ -37,6 +38,11 @@ const Header = () => {
     } else {
       navigate("/catalogo");
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -51,8 +57,8 @@ const Header = () => {
                 <MessageCircle className="h-3 w-3" /> Contáctanos
               </a>
               <span className="hidden sm:inline">📞 {COMPANY_PHONE}</span>
-              {user && isAdmin && (
-                <Link to="/admin" className="hover:underline font-bold">★ Admin</Link>
+              {user && canAccessAdminPanel && (
+                <Link to="/admin" className="hover:underline font-bold">★ Panel</Link>
               )}
             </div>
           </div>
@@ -83,6 +89,11 @@ const Header = () => {
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
+              {user && (
+                <Button variant="ghost" size="icon" className="hover:text-primary" onClick={handleSignOut} aria-label="Cerrar sesión">
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="hover:text-primary relative" onClick={() => setCartOpen(true)}>
                 <ShoppingCart className="h-5 w-5" />
                 {count > 0 && (
