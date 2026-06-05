@@ -968,13 +968,7 @@ const AttendancePage = () => {
                             toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
                             toast.success(`Salida de ${s.full_name}: ${nowTime}`);
                           } else if (!hasIn) {
-                            let isLate = false;
-                            if (todaySchedules.length > 0) {
-                              const earliest = todaySchedules.reduce((min: string, sc: any) => sc.start_time < min ? sc.start_time : min, todaySchedules[0].start_time);
-                              isLate = nowTime > earliest;
-                            }
-                            toggleMutation.mutate({ staffId: s.id, date: todayDate, status: isLate ? "T" : "A", check_in: nowTime });
-                            toast.success(`Entrada de ${s.full_name}: ${nowTime}${isLate ? " (Tardanza)" : ""}${rest ? " (Día de descanso)" : ""}`);
+                            markStaffEntry(s);
                           }
                         }}
                       >
