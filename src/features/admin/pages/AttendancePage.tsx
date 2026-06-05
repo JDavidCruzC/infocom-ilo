@@ -1050,8 +1050,10 @@ const AttendancePage = () => {
 
             {/* Grid View */}
             <TabsContent value="grid">
-              {filteredStaff.length === 0 ? (
-                <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground"><CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>Registra personal primero</p></CardContent></Card>
+              {(staffLoading || recordsLoading) ? (
+                <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground"><Loader2 className="h-10 w-10 mx-auto mb-3 animate-spin text-primary" /><p>Cargando asistencias...</p></CardContent></Card>
+              ) : filteredStaff.length === 0 ? (
+                <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground"><CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No hay trabajadores activos para mostrar</p></CardContent></Card>
               ) : (
                 <div className="overflow-x-auto border border-border rounded-lg">
                   <table className="w-full text-xs">
