@@ -53,6 +53,8 @@ const AttendancePage = () => {
   const isTerminal = roles.includes("terminal" as any);
   // Asistente puede marcar por otros (igual que admin); user/practicante/terminal solo lo suyo
   const canMarkOthers = isAdmin || roles.includes("moderator" as any) || roles.includes("asistente" as any);
+  const canUseControlView = canMarkOthers || isTerminal;
+  const canEditAttendanceGrid = isAdmin;
   const [pdfStaffId, setPdfStaffId] = useState<string>("");
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
@@ -210,6 +212,7 @@ const AttendancePage = () => {
   };
 
   const updateTime = (staffId: string, day: number, field: "check_in" | "check_out", value: string) => {
+    if (!canEditAttendanceGrid) return;
     const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const existing = recordMap[staffId]?.[date];
     const status = existing?.status || "A";
