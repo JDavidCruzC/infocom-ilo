@@ -1094,6 +1094,42 @@ export type Database = {
           },
         ]
       }
+      role_metadata: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          icon: string
+          is_system: boolean
+          label: string
+          role_key: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          is_system?: boolean
+          label: string
+          role_key: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          is_system?: boolean
+          label?: string
+          role_key?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           can_access: boolean
@@ -1724,6 +1760,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_role: {
+        Args: {
+          _color?: string
+          _description?: string
+          _icon?: string
+          _key: string
+          _label: string
+        }
+        Returns: undefined
+      }
+      admin_mark_pending_absences: {
+        Args: { _month: number; _year: number }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
