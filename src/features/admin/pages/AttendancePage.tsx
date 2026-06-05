@@ -1005,7 +1005,10 @@ const AttendancePage = () => {
                             <td className={`px-2 py-2 text-center font-bold ${stats.pct >= 80 ? "text-success" : stats.pct >= 50 ? "text-warning" : "text-destructive"}`}>
                               {stats.pct > 0 ? `${stats.pct}%` : ""}
                             </td>
-                            <td className="px-2 py-2 text-center font-bold text-orange-400">
+                            <td className="px-2 py-2 text-center font-bold text-primary" title="Horas reales trabajadas en el mes">
+                              {stats.totalHours > 0 ? `${stats.totalHours}h` : ""}
+                            </td>
+                            <td className="px-2 py-2 text-center font-bold text-orange-400" title="Cálculo en revisión">
                               {stats.overtime > 0 ? `${stats.overtime}h` : ""}
                             </td>
                           </tr>
