@@ -541,7 +541,7 @@ const AttendancePage = () => {
   return (
     <div className="space-y-6">
       {/* Self check-in card for staff */}
-      {!isAdmin && myStaff && (
+      {!canUseControlView && myStaff && (
         <Card className={`border-2 ${myCheckedIn && !myCheckedOut ? "border-primary/50 bg-primary/5" : myCheckedOut ? "border-success/50 bg-success/5" : "border-warning/50 bg-warning/5"}`}>
           <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -572,7 +572,7 @@ const AttendancePage = () => {
         </Card>
       )}
 
-      {!isAdmin && !myStaff && (
+      {!canUseControlView && !myStaff && (
         <Card className="border-warning/50 bg-warning/5">
           <CardContent className="p-4 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
@@ -582,7 +582,7 @@ const AttendancePage = () => {
       )}
 
       {/* Personal view (non-admin) */}
-      {!isAdmin && myStaff && (() => {
+      {!canUseControlView && myStaff && (() => {
         const myStats = getStats(myStaff.id);
         const mySchedules = scheduleMap[myStaff.id] || [];
         return (
@@ -713,7 +713,7 @@ const AttendancePage = () => {
       })()}
 
       {/* ─── Admin / Asistente view: control total o marcado por otros ──── */}
-      {canMarkOthers && (
+      {canUseControlView && (
         <>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <h1 className="text-2xl font-display font-bold flex items-center gap-2">
