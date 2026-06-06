@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   Send, Wrench, Package, Sparkles, Plus, Trash2, Search, Receipt, Cog, Gift
@@ -51,6 +52,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
   const [productSearchOpen, setProductSearchOpen] = useState<number | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [porCobrar, setPorCobrar] = useState(true);
 
   // Load products for inventory picker
   useEffect(() => {
@@ -156,10 +158,13 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
         cliente_nombre: order.customer_name || null,
         cliente_telefono: order.customer_phone || null,
         notas: `Orden de servicio #${order.order_number} | ${order.device_type || ""} ${order.device_brand || ""} ${order.device_model || ""}`.trim(),
-        estado: "borrador" as any,
+        estado: "emitido" as any,
         tipo_general: tipo_general as any,
         created_by: userId || null,
-      }).select("id").single();
+        emitido_en: new Date().toISOString(),
+        emitido_por: technicianName || "Soporte Técnico",
+        por_cobrar: porCobrar,
+      } as any).select("id").single();
       if (txErr) throw txErr;
 
       // Insert items
@@ -208,7 +213,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
         usuario_id: userId || null,
       });
 
-      toast.success(`Orden #${order.order_number} completada y enviada a contabilidad`);
+      toast.success(`Orden #${order.order_number} enviada a contabilidad${porCobrar ? " — PENDIENTE POR COBRAR" : ""}`);
       onOpenChange(false);
       onCompleted?.();
     } catch (e: any) {
@@ -366,6 +371,14 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Servicios</span><span>S/ {totalServicios.toFixed(2)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Productos / Repuestos</span><span>S/ {totalProductos.toFixed(2)}</span></div>
             <div className="flex justify-between text-lg font-bold border-t pt-1 mt-1"><span>Total</span><span className="text-primary">S/ {total.toFixed(2)}</span></div>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3">
+            <Checkbox id="por_cobrar_support" checked={porCobrar} onCheckedChange={(v) => setPorCobrar(!!v)} />
+            <Label htmlFor="por_cobrar_support" className="cursor-pointer font-semibold text-amber-700 dark:text-amber-300">
+              Marcar como pendiente por cobrar
+            </Label>
+            <span className="ml-auto text-xs text-muted-foreground">Aparecerá en la pestaña "Por Cobrar" de Contabilidad</span>
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">

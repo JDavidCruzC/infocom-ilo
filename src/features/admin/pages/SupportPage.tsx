@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; k
   cancelled: { label: "Cancelado", color: "border-destructive/40 bg-destructive/5", icon: AlertTriangle, kanbanOrder: 5 },
 };
 
-const KANBAN_STATUSES = ["pending", "in_progress", "waiting_parts", "completed"];
+const KANBAN_STATUSES = ["pending", "in_progress"];
 
 const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
   low: { label: "Baja", color: "bg-muted text-muted-foreground" },
@@ -212,7 +212,7 @@ const SupportPage = () => {
 
   // ─── Kanban View ──────────────────────────────────────────────
   const KanbanView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {KANBAN_STATUSES.map(statusKey => {
         const config = STATUS_CONFIG[statusKey];
         const columnOrders = filtered.filter((o: any) => o.status === statusKey);
