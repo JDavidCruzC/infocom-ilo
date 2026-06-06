@@ -1436,7 +1436,7 @@ const AccountingPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Cliente</Label>
-                <Popover>
+                <Popover open={clientComboOpen} onOpenChange={setClientComboOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="h-9 text-xs w-full justify-between font-normal">
                       {form.cliente_nombre || "Buscar o escribir cliente..."}
@@ -1452,6 +1452,7 @@ const AccountingPage = () => {
                           {existingCustomers.map((c: any) => (
                             <CommandItem key={c.id} value={`${c.full_name} ${c.phone || ""} ${c.document_number || ""}`} onSelect={() => {
                               setForm(prev => ({ ...prev, cliente_nombre: c.full_name, cliente_telefono: c.phone || prev.cliente_telefono }));
+                              closeAccountingCombos();
                             }}>
                               <Check className={`h-3 w-3 mr-2 ${form.cliente_nombre === c.full_name ? "opacity-100" : "opacity-0"}`} />
                               <div className="flex-1 min-w-0">
@@ -1486,7 +1487,7 @@ const AccountingPage = () => {
                   <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => addItem("servicio")}>
                     <Wrench className="h-3 w-3" /> Servicio
                   </Button>
-                  <Popover>
+                  <Popover open={comboPickerOpen} onOpenChange={setComboPickerOpen}>
                     <PopoverTrigger asChild>
                       <Button type="button" variant="default" size="sm" className="gap-1 bg-gradient-to-r from-pink-500 to-purple-500 hover:opacity-90 text-white">
                         <Gift className="h-3 w-3" /> Combo
@@ -1503,7 +1504,7 @@ const AccountingPage = () => {
                               const sumOriginal = (c.combo_items || []).reduce((a: number, ci: any) => a + Number(ci.unit_price || 0) * Number(ci.quantity || 1), 0);
                               const ahorro = sumOriginal - Number(c.promo_price || 0);
                               return (
-                                <CommandItem key={c.id} value={c.name} onSelect={() => addCombo(c)}>
+                                <CommandItem key={c.id} value={c.name} onSelect={() => { addCombo(c); closeAccountingCombos(); }}>
                                   <Gift className="h-3 w-3 mr-2 text-pink-500" />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
