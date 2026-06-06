@@ -1710,63 +1710,26 @@ const AccountingPage = () => {
               </Button>
               {!editingId && (
                 <Button type="button" variant="secondary" className="flex-1 min-w-[140px] gap-1" disabled={saveMutation.isPending || items.length === 0}
-                  onClick={async () => {
-                    if (items.length === 0) return;
-                    try {
-                      const { data: tx, error } = await supabase.from("transactions").insert({
-                        fecha: form.fecha,
-                        cliente_nombre: form.cliente_nombre || null,
-                        cliente_telefono: form.cliente_telefono || null,
-                        notas: form.notas || null,
-                        emitido_por: form.emitido_por || user?.email || "Admin",
-                        estado: "emitido" as any,
-                        emitido_en: new Date().toISOString(),
-                        por_cobrar: form.por_cobrar,
-                        tipo_cliente: form.tipo_cliente,
-                        created_by: user?.id || null,
-                      } as any).select("id").single();
-                      if (error) throw error;
-                      const payload = items.map(it => ({
-                        transaction_id: tx.id,
-                        item_type: it.item_type,
-                        referencia_id: it.referencia_id || null,
-                        descripcion: it.descripcion,
-                        cantidad: it.cantidad,
-                        precio_unitario: it.precio_unitario,
-                        subtotal: it.cantidad * it.precio_unitario,
-                        responsable: it.responsable || null,
-                        tipo_equipo: it.tipo_equipo || null,
-                        diagnostico: it.diagnostico || null,
-                      }));
-                      await supabase.from("transaction_items").insert(payload);
-                      await reduceStockForTransaction(tx.id);
-                      if (form.cliente_nombre) {
-                        await syncCustomer(form.cliente_nombre, form.cliente_telefono || null, itemTotals.total);
-                      }
-                      await supabase.from("transaction_history").insert({
-                        transaction_id: tx.id, accion: "creado_y_emitido", usuario_id: user?.id || null,
-                      });
-                      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
-                      toast.success(form.por_cobrar ? "Transacción emitida como PENDIENTE POR COBRAR" : "Transaccion emitida — Stock actualizado");
-                      closeForm();
-                    } catch (err: any) {
-                      toast.error(err.message || "Error");
-                    }
-                  }}
-                >
+                  onClick={() => emitNewTransaction()}>
                   <FileText className="h-4 w-4" /> Emitir Comprobante
                 </Button>
               )}
-              {/* SUNAT — En implementación */}
-              <Button type="button" variant="outline" className="gap-1 border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
-                onClick={() => toast.info("📄 Emisión de BOLETA electrónica en implementación con SUNAT", { description: "Próximamente podrás emitir boletas electrónicas oficiales." })}>
-                <FileCheck2 className="h-4 w-4" /> Emitir Boleta
-              </Button>
-              <Button type="button" variant="outline" className="gap-1 border-violet-500/40 text-violet-600 hover:bg-violet-500/10"
-                onClick={() => toast.info("📄 Emisión de FACTURA electrónica en implementación con SUNAT", { description: "Próximamente podrás emitir facturas electrónicas oficiales." })}>
-                <FileBadge className="h-4 w-4" /> Emitir Factura
-              </Button>
+              {!editingId && (
+                <Button type="button" variant="outline" className="gap-1 border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
+                  disabled={saveMutation.isPending || items.length === 0}
+                  onClick={() => emitNewTransaction("boleta")}>
+                  <FileCheck2 className="h-4 w-4" /> Emitir Boleta
+                </Button>
+              )}
+              {!editingId && (
+                <Button type="button" variant="outline" className="gap-1 border-violet-500/40 text-violet-600 hover:bg-violet-500/10"
+                  disabled={saveMutation.isPending || items.length === 0}
+                  onClick={() => emitNewTransaction("factura")}>
+                  <FileBadge className="h-4 w-4" /> Emitir Factura
+                </Button>
+              )}
             </div>
+
           </form>
         </DialogContent>
       </Dialog>
