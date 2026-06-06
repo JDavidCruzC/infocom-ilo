@@ -47,7 +47,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DataImportExport from "@/features/admin/components/DataImportExport";
-import PrintReceipt, { DocumentKind } from "@/features/admin/components/PrintReceipt";
+import PrintReceipt, { DocumentKind, DOCUMENT_KINDS } from "@/features/admin/components/PrintReceipt";
 import { notifyAllStaff } from "@/lib/notifications";
 
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -96,6 +96,8 @@ interface Transaction {
   por_cobrar?: boolean;
   cobrado_en?: string | null;
   tipo_cliente?: string | null;
+  tipo_comprobante?: string | null;
+  numero_comprobante?: string | null;
   created_at: string;
   items?: TransactionItem[];
 }
@@ -129,7 +131,11 @@ const AccountingPage = () => {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
-  const [activeTab, setActiveTab] = useState<"todos" | "ventas" | "servicios" | "por_cobrar">("todos");
+  const [activeTab, setActiveTab] = useState<"todos" | "ventas" | "servicios" | "por_cobrar" | "comprobantes">("todos");
+  const [comprobantesFilter, setComprobantesFilter] = useState<string>("todos");
+  // Search popover open state per item (combobox bug fix)
+  const [openComboIdx, setOpenComboIdx] = useState<number | null>(null);
+
   const [searchClient, setSearchClient] = useState("");
   const [highlightKey, setHighlightKey] = useState<string>(() => {
     if (typeof window === "undefined") return "amber";
@@ -312,12 +318,16 @@ const AccountingPage = () => {
     if (activeTab === "ventas") list = list.filter(t => Number(t.subtotal_productos || 0) > 0);
     if (activeTab === "servicios") list = list.filter(t => Number(t.subtotal_servicios || 0) > 0);
     if (activeTab === "por_cobrar") list = list.filter(t => t.por_cobrar && !t.cobrado_en && t.estado === "emitido");
+    if (activeTab === "comprobantes") {
+      list = list.filter(t => t.estado === "emitido" && (t.tipo_comprobante || t.numero_comprobante));
+      if (comprobantesFilter !== "todos") list = list.filter(t => t.tipo_comprobante === comprobantesFilter);
+    }
     if (searchClient.trim()) {
       const q = searchClient.toLowerCase();
       list = list.filter(t => t.cliente_nombre?.toLowerCase().includes(q));
     }
     return list;
-  }, [transactions, activeTab, searchClient]);
+  }, [transactions, activeTab, searchClient, comprobantesFilter]);
 
   // ─── Metrics ───────────────────────────────────────────────────
   const emitidos = transactions.filter(t => t.estado === "emitido");
@@ -683,11 +693,22 @@ const AccountingPage = () => {
   const emitNewTransaction = async (docKind?: DocumentKind) => {
     if (items.length === 0) return;
     try {
-      const docLabel = docKind === "boleta" ? "BOLETA" : docKind === "factura" ? "FACTURA" : null;
+      // Default kind: if user didn't pick one, infer from content
+      const inferredKind: DocumentKind = docKind || (
+        items.some(i => i.item_type === "servicio") && !items.some(i => i.item_type === "producto")
+          ? "ticket_servicio"
+          : "ticket_venta"
+      );
+      const docMeta = DOCUMENT_KINDS.find(d => d.value === inferredKind);
+      const docLabel = (docMeta?.label || inferredKind).toUpperCase();
+
+      // Allocate correlative number for this kind
+      const { data: numData, error: numErr } = await supabase.rpc("next_comprobante_number" as any, { _kind: inferredKind });
+      if (numErr) throw numErr;
+      const numeroComprobante = String(numData);
+
       const baseNotas = form.notas || "";
-      const notasWithKind = docLabel
-        ? `${baseNotas}${baseNotas ? " | " : ""}Tipo: ${docLabel}`
-        : baseNotas;
+      const notasWithKind = `${baseNotas}${baseNotas ? " | " : ""}${docLabel} N° ${numeroComprobante}`;
 
       const { data: tx, error } = await supabase.from("transactions").insert({
         fecha: form.fecha,
@@ -699,6 +720,8 @@ const AccountingPage = () => {
         emitido_en: new Date().toISOString(),
         por_cobrar: form.por_cobrar,
         tipo_cliente: form.tipo_cliente,
+        tipo_comprobante: inferredKind,
+        numero_comprobante: numeroComprobante,
         created_by: user?.id || null,
       } as any).select("id").single();
       if (error) throw error;
@@ -722,13 +745,13 @@ const AccountingPage = () => {
       }
       await supabase.from("transaction_history").insert({
         transaction_id: tx.id,
-        accion: docKind ? `emitido_${docKind}` : "creado_y_emitido",
+        accion: `emitido_${inferredKind}`,
+        detalles: { numero_comprobante: numeroComprobante } as any,
         usuario_id: user?.id || null,
       });
 
       qc.invalidateQueries({ queryKey: ["transactions", month, year] });
 
-      // Build a full transaction object for the print prompt (same shape as viewingTx)
       const fullTx: Transaction = {
         id: tx.id,
         fecha: form.fecha,
@@ -745,27 +768,23 @@ const AccountingPage = () => {
         subtotal_productos: itemTotals.productos,
         subtotal_servicios: itemTotals.servicios,
         total: itemTotals.total,
+        tipo_comprobante: inferredKind,
+        numero_comprobante: numeroComprobante,
         created_at: new Date().toISOString(),
-        items: items.map(it => ({
-          ...it,
-          subtotal: it.cantidad * it.precio_unitario,
-        })),
+        items: items.map(it => ({ ...it, subtotal: it.cantidad * it.precio_unitario })),
       } as any;
 
-      const successMsg = docLabel
-        ? `${docLabel} emitida correctamente`
-        : form.por_cobrar ? "Transacción emitida como PENDIENTE POR COBRAR" : "Transaccion emitida — Stock actualizado";
-      toast.success(successMsg);
+      toast.success(`${docLabel} N° ${numeroComprobante} emitido${form.por_cobrar ? " — PENDIENTE POR COBRAR" : ""}`);
 
-      // Close form and open print prompt
       closeForm();
       setPostEmitTx(fullTx);
-      setPostEmitDocKind(docKind);
+      setPostEmitDocKind(inferredKind);
       setPrintPromptOpen(true);
     } catch (err: any) {
       toast.error(err.message || "Error al emitir");
     }
   };
+
 
 
   const addItem = (type: "producto" | "servicio") => {
@@ -1066,14 +1085,34 @@ const AccountingPage = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="todos" className="gap-1 text-xs sm:text-sm"><List className="h-4 w-4" /> Todos ({transactions.length})</TabsTrigger>
           <TabsTrigger value="ventas" className="gap-1 text-xs sm:text-sm"><ShoppingCart className="h-4 w-4" /> Ventas</TabsTrigger>
           <TabsTrigger value="servicios" className="gap-1 text-xs sm:text-sm"><Wrench className="h-4 w-4" /> Servicios</TabsTrigger>
+          <TabsTrigger value="comprobantes" className="gap-1 text-xs sm:text-sm"><Receipt className="h-4 w-4" /> Comprobantes</TabsTrigger>
           <TabsTrigger value="por_cobrar" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-700 dark:data-[state=active]:text-amber-300">
             <Clock className="h-4 w-4" /> Por Cobrar ({porCobrar.length})
           </TabsTrigger>
         </TabsList>
+
+        {activeTab === "comprobantes" && (
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <Label className="text-xs text-muted-foreground">Filtrar por tipo:</Label>
+            <Select value={comprobantesFilter} onValueChange={setComprobantesFilter}>
+              <SelectTrigger className="h-8 text-xs w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los tipos</SelectItem>
+                {DOCUMENT_KINDS.map(dk => (
+                  <SelectItem key={dk.value} value={dk.value}>{dk.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground ml-auto">
+              Cada tipo lleva su propio correlativo independiente. Usa el botón <Printer className="inline h-3 w-3" /> de cada fila para reimprimir o descargar.
+            </span>
+          </div>
+        )}
+
 
         {/* Shared content for all tabs */}
         <div className="mt-4 space-y-4">
@@ -1515,11 +1554,11 @@ const AccountingPage = () => {
                           <Label className="text-xs text-muted-foreground">Descripción</Label>
                           {item.item_type === "producto" ? (
                             <>
-                              <Popover>
+                              <Popover open={openComboIdx === idx} onOpenChange={(o) => setOpenComboIdx(o ? idx : null)}>
                                 <PopoverTrigger asChild>
                                   <Button variant="outline" className="h-9 text-xs w-full justify-between font-normal">
-                                    {item.descripcion || "Seleccionar producto..."}
-                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
+                                    <span className="truncate">{item.descripcion || "Seleccionar producto..."}</span>
+                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50 shrink-0" />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[350px] p-0" align="start">
@@ -1529,8 +1568,9 @@ const AccountingPage = () => {
                                       <CommandEmpty>No encontrado</CommandEmpty>
                                       <CommandGroup heading="Inventario">
                                         {products.map((p: any) => (
-                                          <CommandItem key={p.id} value={`${p.name} ${p.sku || ""}`} onSelect={() => {
+                                          <CommandItem key={p.id} value={`${p.name} ${p.sku || ""} ${p.id}`} onSelect={() => {
                                             updateItem(idx, { descripcion: p.name, precio_unitario: Number(p.price) || 0, referencia_id: p.id });
+                                            setOpenComboIdx(null);
                                           }}>
                                             <Check className={`h-3 w-3 mr-2 ${item.referencia_id === p.id ? "opacity-100" : "opacity-0"}`} />
                                             <div className="flex-1 min-w-0">
@@ -1542,7 +1582,7 @@ const AccountingPage = () => {
                                         ))}
                                       </CommandGroup>
                                       <CommandGroup heading="Manual">
-                                        <CommandItem onSelect={() => updateItem(idx, { referencia_id: null, descripcion: "" })}>
+                                        <CommandItem value="__manual_prod__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: "" }); setOpenComboIdx(null); }}>
                                           <Package className="h-3 w-3 mr-2" /> Escribir manualmente
                                         </CommandItem>
                                       </CommandGroup>
@@ -1561,11 +1601,11 @@ const AccountingPage = () => {
                             </>
                           ) : (
                             <>
-                              <Popover>
+                              <Popover open={openComboIdx === idx} onOpenChange={(o) => setOpenComboIdx(o ? idx : null)}>
                                 <PopoverTrigger asChild>
                                   <Button variant="outline" className="h-9 text-xs w-full justify-between font-normal">
-                                    {item.descripcion || "Seleccionar servicio..."}
-                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
+                                    <span className="truncate">{item.descripcion || "Seleccionar servicio..."}</span>
+                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50 shrink-0" />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[350px] p-0" align="start">
@@ -1574,8 +1614,11 @@ const AccountingPage = () => {
                                     <CommandList className="max-h-[220px] overflow-y-auto">
                                       <CommandEmpty>No encontrado</CommandEmpty>
                                       <CommandGroup heading="Servicios">
-                                        {SERVICE_TYPES.map(st => (
-                                          <CommandItem key={st.name} value={st.name} onSelect={() => updateItem(idx, { descripcion: st.name, precio_unitario: st.price, referencia_id: "service" })}>
+                                        {SERVICE_TYPES.map((st, sIdx) => (
+                                          <CommandItem key={`${st.name}-${sIdx}`} value={`${st.name}-${sIdx}`} onSelect={() => {
+                                            updateItem(idx, { descripcion: st.name, precio_unitario: st.price, referencia_id: "service" });
+                                            setOpenComboIdx(null);
+                                          }}>
                                             <Check className={`h-3 w-3 mr-2 ${item.descripcion === st.name ? "opacity-100" : "opacity-0"}`} />
                                             <Wrench className="h-3 w-3 mr-2 text-muted-foreground" />
                                             <span className="text-xs flex-1">{st.name}</span>
@@ -1584,7 +1627,7 @@ const AccountingPage = () => {
                                         ))}
                                       </CommandGroup>
                                       <CommandGroup heading="Manual">
-                                        <CommandItem onSelect={() => updateItem(idx, { referencia_id: null, descripcion: "" })}>
+                                        <CommandItem value="__manual_serv__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: "" }); setOpenComboIdx(null); }}>
                                           <Settings2 className="h-3 w-3 mr-2" /> Escribir manualmente
                                         </CommandItem>
                                       </CommandGroup>
@@ -1603,6 +1646,7 @@ const AccountingPage = () => {
                             </>
                           )}
                         </div>
+
 
                         <div>
                           <Label className="text-xs text-muted-foreground">Cant.</Label>
@@ -1704,31 +1748,36 @@ const AccountingPage = () => {
               )}
             </div>
 
-            <div className="flex gap-2 flex-wrap">
-              <Button type="submit" className="flex-1 min-w-[140px]" disabled={saveMutation.isPending || items.length === 0}>
-                {editingId ? "Guardar Cambios" : "Guardar como Borrador"}
-              </Button>
-              {!editingId && (
-                <Button type="button" variant="secondary" className="flex-1 min-w-[140px] gap-1" disabled={saveMutation.isPending || items.length === 0}
-                  onClick={() => emitNewTransaction()}>
-                  <FileText className="h-4 w-4" /> Emitir Comprobante
+            <div className="space-y-2">
+              <div className="flex gap-2 flex-wrap">
+                <Button type="submit" className="flex-1 min-w-[140px]" disabled={saveMutation.isPending || items.length === 0}>
+                  {editingId ? "Guardar Cambios" : "Guardar como Borrador"}
                 </Button>
-              )}
+              </div>
               {!editingId && (
-                <Button type="button" variant="outline" className="gap-1 border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
-                  disabled={saveMutation.isPending || items.length === 0}
-                  onClick={() => emitNewTransaction("boleta")}>
-                  <FileCheck2 className="h-4 w-4" /> Emitir Boleta
-                </Button>
-              )}
-              {!editingId && (
-                <Button type="button" variant="outline" className="gap-1 border-violet-500/40 text-violet-600 hover:bg-violet-500/10"
-                  disabled={saveMutation.isPending || items.length === 0}
-                  onClick={() => emitNewTransaction("factura")}>
-                  <FileBadge className="h-4 w-4" /> Emitir Factura
-                </Button>
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-2 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground px-1">EMITIR COMPROBANTE — cada tipo lleva su propio correlativo independiente</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {DOCUMENT_KINDS.map(dk => (
+                      <Button
+                        key={dk.value}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-xs h-9 justify-start"
+                        disabled={saveMutation.isPending || items.length === 0}
+                        onClick={() => emitNewTransaction(dk.value)}
+                        title={dk.label}
+                      >
+                        <FileText className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{dk.short}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
+
 
           </form>
         </DialogContent>
@@ -1740,7 +1789,8 @@ const AccountingPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              {postEmitDocKind === "boleta" ? "Boleta emitida" : postEmitDocKind === "factura" ? "Factura emitida" : "Comprobante emitido"}
+              {DOCUMENT_KINDS.find(d => d.value === postEmitDocKind)?.label || "Comprobante"} emitido
+              {postEmitTx?.numero_comprobante && <span className="text-primary">N° {postEmitTx.numero_comprobante}</span>}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -1749,9 +1799,10 @@ const AccountingPage = () => {
             </p>
             {postEmitTx && (
               <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">N°:</span> <span className="font-mono font-bold text-primary">{postEmitTx.numero_comprobante || "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span> <span className="font-bold">{postEmitTx.cliente_nombre || "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total:</span> <span className="font-bold text-primary">S/. {Number(postEmitTx.total).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span> <span className="font-bold capitalize">{postEmitDocKind || postEmitTx.tipo_general}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span> <span className="font-bold">{DOCUMENT_KINDS.find(d => d.value === postEmitDocKind)?.label || postEmitTx.tipo_general}</span></div>
               </div>
             )}
             {postEmitTx && (
@@ -1761,6 +1812,8 @@ const AccountingPage = () => {
                     id: postEmitTx.id,
                     created_at: postEmitTx.created_at,
                     date: postEmitTx.fecha,
+                    numero_comprobante: postEmitTx.numero_comprobante,
+                    ticket_number: postEmitTx.numero_comprobante,
                     customer_name: postEmitTx.cliente_nombre || "",
                     customer_phone: postEmitTx.cliente_telefono || "",
                     seller: postEmitTx.emitido_por || "Admin",
@@ -1786,11 +1839,12 @@ const AccountingPage = () => {
                     quantity: postEmitTx.items!.reduce((a, it) => a + it.cantidad, 0),
                     unit_price: postEmitTx.total,
                   }}
-                  type={postEmitTx.tipo_general === "servicio" ? "service" : "sale"}
+                  type={(postEmitDocKind === "ticket_servicio" || postEmitTx.tipo_general === "servicio") ? "service" : "sale"}
                   defaultDocumentKind={postEmitDocKind}
                 />
               </div>
             )}
+
             <div className="flex justify-end pt-2 border-t border-border">
               <Button variant="ghost" onClick={() => setPrintPromptOpen(false)}>
                 No imprimir

@@ -1628,11 +1628,13 @@ export type Database = {
           motivo_anulacion: string | null
           motivo_devolucion: string | null
           notas: string | null
+          numero_comprobante: string | null
           por_cobrar: boolean
           subtotal_productos: number
           subtotal_servicios: number
           ticket_number: string | null
           tipo_cliente: string | null
+          tipo_comprobante: string | null
           tipo_general: Database["public"]["Enums"]["transaction_type"]
           total: number
           updated_at: string
@@ -1656,11 +1658,13 @@ export type Database = {
           motivo_anulacion?: string | null
           motivo_devolucion?: string | null
           notas?: string | null
+          numero_comprobante?: string | null
           por_cobrar?: boolean
           subtotal_productos?: number
           subtotal_servicios?: number
           ticket_number?: string | null
           tipo_cliente?: string | null
+          tipo_comprobante?: string | null
           tipo_general?: Database["public"]["Enums"]["transaction_type"]
           total?: number
           updated_at?: string
@@ -1684,11 +1688,13 @@ export type Database = {
           motivo_anulacion?: string | null
           motivo_devolucion?: string | null
           notas?: string | null
+          numero_comprobante?: string | null
           por_cobrar?: boolean
           subtotal_productos?: number
           subtotal_servicios?: number
           ticket_number?: string | null
           tipo_cliente?: string | null
+          tipo_comprobante?: string | null
           tipo_general?: Database["public"]["Enums"]["transaction_type"]
           total?: number
           updated_at?: string
@@ -1781,6 +1787,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      next_comprobante_number: { Args: { _kind: string }; Returns: string }
       terminal_mark_attendance: { Args: { _staff_id: string }; Returns: Json }
     }
     Enums: {

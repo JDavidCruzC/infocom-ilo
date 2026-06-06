@@ -50,18 +50,23 @@ export interface ReceiptTemplate {
   cotizacionTitle?: string;
   notaVentaTitle?: string;
   ticketInternoTitle?: string;
+  ticketServicioTitle?: string;
+  ticketVentaTitle?: string;
 }
 
-export type DocumentKind = "boleta" | "factura" | "proforma" | "cotizacion" | "nota_venta" | "ticket_interno";
+export type DocumentKind = "boleta" | "factura" | "proforma" | "cotizacion" | "nota_venta" | "ticket_interno" | "ticket_servicio" | "ticket_venta";
 
 export const DOCUMENT_KINDS: { value: DocumentKind; label: string; short: string; templateKey: keyof ReceiptTemplate }[] = [
-  { value: "boleta",         label: "Boleta de Venta",       short: "Boleta",     templateKey: "boletaTitle" },
-  { value: "factura",        label: "Factura",                short: "Factura",    templateKey: "facturaTitle" },
-  { value: "proforma",       label: "Proforma",               short: "Proforma",   templateKey: "proformaTitle" },
-  { value: "cotizacion",     label: "Cotización",             short: "Cotización", templateKey: "cotizacionTitle" },
-  { value: "nota_venta",     label: "Nota de Venta",          short: "Nota Venta", templateKey: "notaVentaTitle" },
-  { value: "ticket_interno", label: "Ticket Interno (sin valor fiscal)", short: "Interno", templateKey: "ticketInternoTitle" },
+  { value: "ticket_servicio", label: "Ticket de Servicio",        short: "T. Servicio", templateKey: "ticketServicioTitle" },
+  { value: "ticket_venta",    label: "Ticket de Venta",           short: "T. Venta",    templateKey: "ticketVentaTitle" },
+  { value: "boleta",          label: "Boleta de Venta",           short: "Boleta",      templateKey: "boletaTitle" },
+  { value: "factura",         label: "Factura",                    short: "Factura",     templateKey: "facturaTitle" },
+  { value: "proforma",        label: "Proforma",                   short: "Proforma",    templateKey: "proformaTitle" },
+  { value: "cotizacion",      label: "Cotización",                 short: "Cotización",  templateKey: "cotizacionTitle" },
+  { value: "nota_venta",      label: "Nota de Venta",              short: "Nota Venta",  templateKey: "notaVentaTitle" },
+  { value: "ticket_interno",  label: "Ticket Interno (sin valor fiscal)", short: "Interno", templateKey: "ticketInternoTitle" },
 ];
+
 
 export const DEFAULT_TEMPLATE: ReceiptTemplate = {
   paperSize: "58mm",
@@ -90,6 +95,8 @@ export const DEFAULT_TEMPLATE: ReceiptTemplate = {
   cotizacionTitle: "COTIZACIÓN",
   notaVentaTitle: "NOTA DE VENTA",
   ticketInternoTitle: "TICKET INTERNO",
+  ticketServicioTitle: "TICKET DE SERVICIO",
+  ticketVentaTitle: "TICKET DE VENTA",
 };
 
 const STORE_KEY = "receipt_template";
@@ -310,12 +317,17 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
 
     // Resolve title for sale/service depending on selected document kind
     const docKind: DocumentKind | undefined = orderOverrides.documentKind || defaultDocumentKind;
-    const resolvedSaleTitle = (() => {
-      if (type !== "sale") return t.saleTitle;
-      if (!docKind) return t.saleTitle;
-      const def = DOCUMENT_KINDS.find(d => d.value === docKind);
-      return (def && (t[def.templateKey] as string)) || t.saleTitle;
+    const resolvedDocTitle = (() => {
+      if (docKind) {
+        const def = DOCUMENT_KINDS.find(d => d.value === docKind);
+        if (def && t[def.templateKey]) return t[def.templateKey] as string;
+      }
+      if (type === "service") return t.serviceTitle;
+      if (type === "sale") return t.saleTitle;
+      return t.receptionTitle;
     })();
+    const resolvedSaleTitle = resolvedDocTitle;
+
 
     // Helper to build items table rows
     const buildItemsRows = () => {
@@ -400,8 +412,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
 </div>`;
       } else {
         // ─── A4 FORMAL BOLETA FORMAT (sale/service) ───
-        const ticketType = type === "service" ? t.serviceTitle : resolvedSaleTitle;
-        const ticketNum = order.ticket_number || "------";
+        const ticketType = resolvedDocTitle;
+        const ticketNum = order.numero_comprobante || order.ticket_number || "------";
+
         const hora = order.created_at ? new Date(order.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }) : "";
         const a4Header = t.headerMode === "logo" && t.logoUrl
           ? `<img src="${t.logoUrl}" alt="Logo" style="max-height:60px;margin-bottom:4px" />`
@@ -525,13 +538,14 @@ ${order.spare_parts ? `<h3>REPUESTOS</h3><p style="margin:4px 0;word-break:break
 ${t.showConditions ? `<div class="conditions"><p>${t.receptionConditionsText}</p></div>` : ""}
 ${t.showSignatures ? `<div class="line"></div><div class="row" style="margin-top:20px"><div style="flex:1;text-align:center;border-top:1px solid #000;margin:0 4px;padding-top:2px"><span style="font-size:${Math.max(fs - 3, 7)}px">${t.signatureLeft}</span></div><div style="flex:1;text-align:center;border-top:1px solid #000;margin:0 4px;padding-top:2px"><span style="font-size:${Math.max(fs - 3, 7)}px">${t.signatureRight}</span></div></div>` : ""}`;
     } else if (type === "sale") {
-      const ticketNum = order.ticket_number || "------";
+      const ticketNum = order.numero_comprobante || order.ticket_number || "------";
       const hora = order.created_at ? new Date(order.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }) : new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
       bodyContent = `
 ${buildHeaderHtml(t, true, companyInfo)}
 <div class="line"></div>
-<div class="center receipt-title">${resolvedSaleTitle}</div>
+<div class="center receipt-title">${resolvedDocTitle}</div>
 <div class="center" style="font-size:${fs}px;font-weight:900">N° ${ticketNum}</div>
+
 <div class="line"></div>
 <div class="row"><span>Fecha:</span><span>${order.date}</span></div>
 <div class="row"><span>Hora:</span><span>${hora}</span></div>
@@ -552,12 +566,15 @@ ${Number(subtotalProductos) > 0 && Number(subtotalServicios) > 0 ? `<div class="
 ${order.amount_given && Number(order.amount_given) > 0 ? `<div class="row"><span>Recibido:</span><span>S/. ${Number(order.amount_given).toFixed(2)}</span></div>
 <div class="row"><span class="bold">Vuelto:</span><span class="bold">S/. ${(Number(order.amount_given) - totalFinal).toFixed(2)}</span></div>` : ""}`;
     } else {
+      const ticketNum = order.numero_comprobante || order.ticket_number || "------";
       bodyContent = `
-${headerHtml}
+${buildHeaderHtml(t, true, companyInfo)}
 <div class="line"></div>
-<div class="center receipt-title">${t.serviceTitle}</div>
+<div class="center receipt-title">${resolvedDocTitle}</div>
+<div class="center" style="font-size:${fs}px;font-weight:900">N° ${ticketNum}</div>
 <div class="line"></div>
 <div class="row"><span>Fecha:</span><span>${order.date}</span></div>
+
 ${order.customer_name ? `<div class="row"><span>Cliente:</span><span class="bold">${order.customer_name}</span></div>` : ""}
 ${order.customer_phone ? `<div class="row"><span>Tel:</span><span>${order.customer_phone}</span></div>` : ""}
 ${order.customer_dni ? `<div class="row"><span>DNI:</span><span>${order.customer_dni}</span></div>` : ""}
