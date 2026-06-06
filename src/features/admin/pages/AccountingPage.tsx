@@ -1530,11 +1530,11 @@ const AccountingPage = () => {
                           <Label className="text-xs text-muted-foreground">Descripción</Label>
                           {item.item_type === "producto" ? (
                             <>
-                              <Popover>
+                              <Popover open={openComboIdx === idx} onOpenChange={(o) => setOpenComboIdx(o ? idx : null)}>
                                 <PopoverTrigger asChild>
                                   <Button variant="outline" className="h-9 text-xs w-full justify-between font-normal">
-                                    {item.descripcion || "Seleccionar producto..."}
-                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
+                                    <span className="truncate">{item.descripcion || "Seleccionar producto..."}</span>
+                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50 shrink-0" />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[350px] p-0" align="start">
@@ -1544,8 +1544,9 @@ const AccountingPage = () => {
                                       <CommandEmpty>No encontrado</CommandEmpty>
                                       <CommandGroup heading="Inventario">
                                         {products.map((p: any) => (
-                                          <CommandItem key={p.id} value={`${p.name} ${p.sku || ""}`} onSelect={() => {
+                                          <CommandItem key={p.id} value={`${p.name} ${p.sku || ""} ${p.id}`} onSelect={() => {
                                             updateItem(idx, { descripcion: p.name, precio_unitario: Number(p.price) || 0, referencia_id: p.id });
+                                            setOpenComboIdx(null);
                                           }}>
                                             <Check className={`h-3 w-3 mr-2 ${item.referencia_id === p.id ? "opacity-100" : "opacity-0"}`} />
                                             <div className="flex-1 min-w-0">
@@ -1557,7 +1558,7 @@ const AccountingPage = () => {
                                         ))}
                                       </CommandGroup>
                                       <CommandGroup heading="Manual">
-                                        <CommandItem onSelect={() => updateItem(idx, { referencia_id: null, descripcion: "" })}>
+                                        <CommandItem value="__manual_prod__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: "" }); setOpenComboIdx(null); }}>
                                           <Package className="h-3 w-3 mr-2" /> Escribir manualmente
                                         </CommandItem>
                                       </CommandGroup>
@@ -1576,11 +1577,11 @@ const AccountingPage = () => {
                             </>
                           ) : (
                             <>
-                              <Popover>
+                              <Popover open={openComboIdx === idx} onOpenChange={(o) => setOpenComboIdx(o ? idx : null)}>
                                 <PopoverTrigger asChild>
                                   <Button variant="outline" className="h-9 text-xs w-full justify-between font-normal">
-                                    {item.descripcion || "Seleccionar servicio..."}
-                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
+                                    <span className="truncate">{item.descripcion || "Seleccionar servicio..."}</span>
+                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50 shrink-0" />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[350px] p-0" align="start">
@@ -1589,8 +1590,11 @@ const AccountingPage = () => {
                                     <CommandList className="max-h-[220px] overflow-y-auto">
                                       <CommandEmpty>No encontrado</CommandEmpty>
                                       <CommandGroup heading="Servicios">
-                                        {SERVICE_TYPES.map(st => (
-                                          <CommandItem key={st.name} value={st.name} onSelect={() => updateItem(idx, { descripcion: st.name, precio_unitario: st.price, referencia_id: "service" })}>
+                                        {SERVICE_TYPES.map((st, sIdx) => (
+                                          <CommandItem key={`${st.name}-${sIdx}`} value={`${st.name}-${sIdx}`} onSelect={() => {
+                                            updateItem(idx, { descripcion: st.name, precio_unitario: st.price, referencia_id: "service" });
+                                            setOpenComboIdx(null);
+                                          }}>
                                             <Check className={`h-3 w-3 mr-2 ${item.descripcion === st.name ? "opacity-100" : "opacity-0"}`} />
                                             <Wrench className="h-3 w-3 mr-2 text-muted-foreground" />
                                             <span className="text-xs flex-1">{st.name}</span>
@@ -1599,7 +1603,7 @@ const AccountingPage = () => {
                                         ))}
                                       </CommandGroup>
                                       <CommandGroup heading="Manual">
-                                        <CommandItem onSelect={() => updateItem(idx, { referencia_id: null, descripcion: "" })}>
+                                        <CommandItem value="__manual_serv__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: "" }); setOpenComboIdx(null); }}>
                                           <Settings2 className="h-3 w-3 mr-2" /> Escribir manualmente
                                         </CommandItem>
                                       </CommandGroup>
@@ -1618,6 +1622,7 @@ const AccountingPage = () => {
                             </>
                           )}
                         </div>
+
 
                         <div>
                           <Label className="text-xs text-muted-foreground">Cant.</Label>
