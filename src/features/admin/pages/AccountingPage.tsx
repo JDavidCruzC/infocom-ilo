@@ -135,6 +135,19 @@ const AccountingPage = () => {
   const [comprobantesFilter, setComprobantesFilter] = useState<string>("todos");
   // Search popover open state per item (combobox bug fix)
   const [openComboIdx, setOpenComboIdx] = useState<number | null>(null);
+  const [clientComboOpen, setClientComboOpen] = useState(false);
+  const [comboPickerOpen, setComboPickerOpen] = useState(false);
+
+  const closeAccountingCombos = useCallback(() => {
+    setOpenComboIdx(null);
+    setClientComboOpen(false);
+    setComboPickerOpen(false);
+    window.setTimeout(() => {
+      setOpenComboIdx(null);
+      setClientComboOpen(false);
+      setComboPickerOpen(false);
+    }, 0);
+  }, []);
 
   const [searchClient, setSearchClient] = useState("");
   const [highlightKey, setHighlightKey] = useState<string>(() => {
