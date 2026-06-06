@@ -157,10 +157,13 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
         cliente_nombre: order.customer_name || null,
         cliente_telefono: order.customer_phone || null,
         notas: `Orden de servicio #${order.order_number} | ${order.device_type || ""} ${order.device_brand || ""} ${order.device_model || ""}`.trim(),
-        estado: "borrador" as any,
+        estado: "emitido" as any,
         tipo_general: tipo_general as any,
         created_by: userId || null,
-      }).select("id").single();
+        emitido_en: new Date().toISOString(),
+        emitido_por: technicianName || "Soporte Técnico",
+        por_cobrar: porCobrar,
+      } as any).select("id").single();
       if (txErr) throw txErr;
 
       // Insert items
