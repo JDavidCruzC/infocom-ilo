@@ -1846,14 +1846,6 @@ const AccountingPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* dummy close to preserve old structure */}
-      <div style={{ display: "none" }}>
-        {/*
-
-
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* ─── POST-EMIT PRINT PROMPT ─── */}
       <Dialog open={printPromptOpen} onOpenChange={setPrintPromptOpen}>
