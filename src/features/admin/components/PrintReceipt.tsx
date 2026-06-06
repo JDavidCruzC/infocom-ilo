@@ -538,13 +538,14 @@ ${order.spare_parts ? `<h3>REPUESTOS</h3><p style="margin:4px 0;word-break:break
 ${t.showConditions ? `<div class="conditions"><p>${t.receptionConditionsText}</p></div>` : ""}
 ${t.showSignatures ? `<div class="line"></div><div class="row" style="margin-top:20px"><div style="flex:1;text-align:center;border-top:1px solid #000;margin:0 4px;padding-top:2px"><span style="font-size:${Math.max(fs - 3, 7)}px">${t.signatureLeft}</span></div><div style="flex:1;text-align:center;border-top:1px solid #000;margin:0 4px;padding-top:2px"><span style="font-size:${Math.max(fs - 3, 7)}px">${t.signatureRight}</span></div></div>` : ""}`;
     } else if (type === "sale") {
-      const ticketNum = order.ticket_number || "------";
+      const ticketNum = order.numero_comprobante || order.ticket_number || "------";
       const hora = order.created_at ? new Date(order.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }) : new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
       bodyContent = `
 ${buildHeaderHtml(t, true, companyInfo)}
 <div class="line"></div>
-<div class="center receipt-title">${resolvedSaleTitle}</div>
+<div class="center receipt-title">${resolvedDocTitle}</div>
 <div class="center" style="font-size:${fs}px;font-weight:900">N° ${ticketNum}</div>
+
 <div class="line"></div>
 <div class="row"><span>Fecha:</span><span>${order.date}</span></div>
 <div class="row"><span>Hora:</span><span>${hora}</span></div>
