@@ -51,6 +51,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
   const [productSearchOpen, setProductSearchOpen] = useState<number | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [porCobrar, setPorCobrar] = useState(true);
 
   // Load products for inventory picker
   useEffect(() => {
