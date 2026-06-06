@@ -566,12 +566,15 @@ ${Number(subtotalProductos) > 0 && Number(subtotalServicios) > 0 ? `<div class="
 ${order.amount_given && Number(order.amount_given) > 0 ? `<div class="row"><span>Recibido:</span><span>S/. ${Number(order.amount_given).toFixed(2)}</span></div>
 <div class="row"><span class="bold">Vuelto:</span><span class="bold">S/. ${(Number(order.amount_given) - totalFinal).toFixed(2)}</span></div>` : ""}`;
     } else {
+      const ticketNum = order.numero_comprobante || order.ticket_number || "------";
       bodyContent = `
-${headerHtml}
+${buildHeaderHtml(t, true, companyInfo)}
 <div class="line"></div>
-<div class="center receipt-title">${t.serviceTitle}</div>
+<div class="center receipt-title">${resolvedDocTitle}</div>
+<div class="center" style="font-size:${fs}px;font-weight:900">N° ${ticketNum}</div>
 <div class="line"></div>
 <div class="row"><span>Fecha:</span><span>${order.date}</span></div>
+
 ${order.customer_name ? `<div class="row"><span>Cliente:</span><span class="bold">${order.customer_name}</span></div>` : ""}
 ${order.customer_phone ? `<div class="row"><span>Tel:</span><span>${order.customer_phone}</span></div>` : ""}
 ${order.customer_dni ? `<div class="row"><span>DNI:</span><span>${order.customer_dni}</span></div>` : ""}
