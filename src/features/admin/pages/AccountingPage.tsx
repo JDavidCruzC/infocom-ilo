@@ -131,7 +131,11 @@ const AccountingPage = () => {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
-  const [activeTab, setActiveTab] = useState<"todos" | "ventas" | "servicios" | "por_cobrar">("todos");
+  const [activeTab, setActiveTab] = useState<"todos" | "ventas" | "servicios" | "por_cobrar" | "comprobantes">("todos");
+  const [comprobantesFilter, setComprobantesFilter] = useState<string>("todos");
+  // Search popover open state per item (combobox bug fix)
+  const [openComboIdx, setOpenComboIdx] = useState<number | null>(null);
+
   const [searchClient, setSearchClient] = useState("");
   const [highlightKey, setHighlightKey] = useState<string>(() => {
     if (typeof window === "undefined") return "amber";
