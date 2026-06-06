@@ -1760,7 +1760,8 @@ const AccountingPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              {postEmitDocKind === "boleta" ? "Boleta emitida" : postEmitDocKind === "factura" ? "Factura emitida" : "Comprobante emitido"}
+              {DOCUMENT_KINDS.find(d => d.value === postEmitDocKind)?.label || "Comprobante"} emitido
+              {postEmitTx?.numero_comprobante && <span className="text-primary">N° {postEmitTx.numero_comprobante}</span>}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -1769,9 +1770,10 @@ const AccountingPage = () => {
             </p>
             {postEmitTx && (
               <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">N°:</span> <span className="font-mono font-bold text-primary">{postEmitTx.numero_comprobante || "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span> <span className="font-bold">{postEmitTx.cliente_nombre || "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total:</span> <span className="font-bold text-primary">S/. {Number(postEmitTx.total).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span> <span className="font-bold capitalize">{postEmitDocKind || postEmitTx.tipo_general}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span> <span className="font-bold">{DOCUMENT_KINDS.find(d => d.value === postEmitDocKind)?.label || postEmitTx.tipo_general}</span></div>
               </div>
             )}
             {postEmitTx && (
@@ -1781,6 +1783,8 @@ const AccountingPage = () => {
                     id: postEmitTx.id,
                     created_at: postEmitTx.created_at,
                     date: postEmitTx.fecha,
+                    numero_comprobante: postEmitTx.numero_comprobante,
+                    ticket_number: postEmitTx.numero_comprobante,
                     customer_name: postEmitTx.cliente_nombre || "",
                     customer_phone: postEmitTx.cliente_telefono || "",
                     seller: postEmitTx.emitido_por || "Admin",
@@ -1806,11 +1810,12 @@ const AccountingPage = () => {
                     quantity: postEmitTx.items!.reduce((a, it) => a + it.cantidad, 0),
                     unit_price: postEmitTx.total,
                   }}
-                  type={postEmitTx.tipo_general === "servicio" ? "service" : "sale"}
+                  type={(postEmitDocKind === "ticket_servicio" || postEmitTx.tipo_general === "servicio") ? "service" : "sale"}
                   defaultDocumentKind={postEmitDocKind}
                 />
               </div>
             )}
+
             <div className="flex justify-end pt-2 border-t border-border">
               <Button variant="ghost" onClick={() => setPrintPromptOpen(false)}>
                 No imprimir
