@@ -96,6 +96,8 @@ interface Transaction {
   por_cobrar?: boolean;
   cobrado_en?: string | null;
   tipo_cliente?: string | null;
+  tipo_comprobante?: string | null;
+  numero_comprobante?: string | null;
   created_at: string;
   items?: TransactionItem[];
 }
