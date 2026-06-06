@@ -62,6 +62,11 @@ const CommandList = React.forwardRef<
     ref={ref}
     className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden [&>div]:overflow-visible", className)}
     style={{ overscrollBehavior: "contain" }}
+    onWheel={(e) => {
+      // Ensure mouse-wheel scrolls the list even when rendered inside a Dialog
+      // (react-remove-scroll inside Radix Dialog blocks wheel events on portaled content).
+      e.stopPropagation();
+    }}
     {...props}
   />
 ));
