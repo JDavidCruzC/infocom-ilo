@@ -131,11 +131,12 @@ const App = () => (
                 {/* Admin */}
                 <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>}>
                   <Route index element={<AdminIndexRoute />} />
-                  <Route path="recepcion" element={<ReceptionPage />} />
-                  <Route path="productos" element={<ProductsPage />} />
-                  <Route path="pedidos" element={<OrdersPage />} />
-                  <Route path="soporte" element={<SupportPage />} />
-                  <Route path="ventas/pos" element={<SalesPage />} />
+                  <Route path="recepcion" element={<PermissionRoute module="recepcion"><ReceptionPage /></PermissionRoute>} />
+                  <Route path="productos" element={<PermissionRoute module="inventario"><ProductsPage /></PermissionRoute>} />
+                  <Route path="pedidos" element={<PermissionRoute module="pedidos"><OrdersPage /></PermissionRoute>} />
+                  <Route path="soporte" element={<PermissionRoute module="soporte"><SupportPage /></PermissionRoute>} />
+                  <Route path="ventas/pos" element={<PermissionRoute module="pos"><SalesPage /></PermissionRoute>} />
+
 
                   <Route path="categorias" element={<PermissionRoute module="categorias"><CategoriesPage /></PermissionRoute>} />
                   <Route path="vitrinas" element={<PermissionRoute module="vitrinas"><VitrinasPage /></PermissionRoute>} />
