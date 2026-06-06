@@ -373,6 +373,14 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
             <div className="flex justify-between text-lg font-bold border-t pt-1 mt-1"><span>Total</span><span className="text-primary">S/ {total.toFixed(2)}</span></div>
           </div>
 
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3">
+            <Checkbox id="por_cobrar_support" checked={porCobrar} onCheckedChange={(v) => setPorCobrar(!!v)} />
+            <Label htmlFor="por_cobrar_support" className="cursor-pointer font-semibold text-amber-700 dark:text-amber-300">
+              Marcar como pendiente por cobrar
+            </Label>
+            <span className="ml-auto text-xs text-muted-foreground">Aparecerá en la pestaña "Por Cobrar" de Contabilidad</span>
+          </div>
+
           <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button onClick={handleSend} disabled={sending || items.length === 0 || total <= 0} className="gap-2 min-w-[220px]">
