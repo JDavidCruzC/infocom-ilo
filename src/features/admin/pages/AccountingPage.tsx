@@ -679,6 +679,95 @@ const AccountingPage = () => {
     setDetailOpen(true);
   };
 
+  // ─── Emit transaction (used by Comprobante, Boleta, Factura) ──
+  const emitNewTransaction = async (docKind?: DocumentKind) => {
+    if (items.length === 0) return;
+    try {
+      const docLabel = docKind === "boleta" ? "BOLETA" : docKind === "factura" ? "FACTURA" : null;
+      const baseNotas = form.notas || "";
+      const notasWithKind = docLabel
+        ? `${baseNotas}${baseNotas ? " | " : ""}Tipo: ${docLabel}`
+        : baseNotas;
+
+      const { data: tx, error } = await supabase.from("transactions").insert({
+        fecha: form.fecha,
+        cliente_nombre: form.cliente_nombre || null,
+        cliente_telefono: form.cliente_telefono || null,
+        notas: notasWithKind || null,
+        emitido_por: form.emitido_por || user?.email || "Admin",
+        estado: "emitido" as any,
+        emitido_en: new Date().toISOString(),
+        por_cobrar: form.por_cobrar,
+        tipo_cliente: form.tipo_cliente,
+        created_by: user?.id || null,
+      } as any).select("id").single();
+      if (error) throw error;
+
+      const payload = items.map(it => ({
+        transaction_id: tx.id,
+        item_type: it.item_type,
+        referencia_id: it.referencia_id || null,
+        descripcion: it.descripcion,
+        cantidad: it.cantidad,
+        precio_unitario: it.precio_unitario,
+        subtotal: it.cantidad * it.precio_unitario,
+        responsable: it.responsable || null,
+        tipo_equipo: it.tipo_equipo || null,
+        diagnostico: it.diagnostico || null,
+      }));
+      await supabase.from("transaction_items").insert(payload);
+      await reduceStockForTransaction(tx.id);
+      if (form.cliente_nombre) {
+        await syncCustomer(form.cliente_nombre, form.cliente_telefono || null, itemTotals.total);
+      }
+      await supabase.from("transaction_history").insert({
+        transaction_id: tx.id,
+        accion: docKind ? `emitido_${docKind}` : "creado_y_emitido",
+        usuario_id: user?.id || null,
+      });
+
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+
+      // Build a full transaction object for the print prompt (same shape as viewingTx)
+      const fullTx: Transaction = {
+        id: tx.id,
+        fecha: form.fecha,
+        estado: "emitido",
+        tipo_general: items.some(i => i.item_type === "producto") && items.some(i => i.item_type === "servicio")
+          ? "mixto"
+          : items.some(i => i.item_type === "servicio") ? "servicio" : "venta",
+        cliente_nombre: form.cliente_nombre || null,
+        cliente_telefono: form.cliente_telefono || null,
+        notas: notasWithKind || null,
+        emitido_por: form.emitido_por || user?.email || "Admin",
+        emitido_en: new Date().toISOString(),
+        por_cobrar: form.por_cobrar,
+        subtotal_productos: itemTotals.productos,
+        subtotal_servicios: itemTotals.servicios,
+        total: itemTotals.total,
+        created_at: new Date().toISOString(),
+        items: items.map(it => ({
+          ...it,
+          subtotal: it.cantidad * it.precio_unitario,
+        })),
+      } as any;
+
+      const successMsg = docLabel
+        ? `${docLabel} emitida correctamente`
+        : form.por_cobrar ? "Transacción emitida como PENDIENTE POR COBRAR" : "Transaccion emitida — Stock actualizado";
+      toast.success(successMsg);
+
+      // Close form and open print prompt
+      closeForm();
+      setPostEmitTx(fullTx);
+      setPostEmitDocKind(docKind);
+      setPrintPromptOpen(true);
+    } catch (err: any) {
+      toast.error(err.message || "Error al emitir");
+    }
+  };
+
+
   const addItem = (type: "producto" | "servicio") => {
     setItems([...items, { item_type: type, descripcion: "", cantidad: 1, precio_unitario: 0, subtotal: 0, responsable: "", tipo_equipo: "", diagnostico: "" }]);
   };
