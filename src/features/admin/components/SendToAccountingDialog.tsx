@@ -213,7 +213,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
         usuario_id: userId || null,
       });
 
-      toast.success(`Orden #${order.order_number} completada y enviada a contabilidad`);
+      toast.success(`Orden #${order.order_number} enviada a contabilidad${porCobrar ? " — PENDIENTE POR COBRAR" : ""}`);
       onOpenChange(false);
       onCompleted?.();
     } catch (e: any) {
