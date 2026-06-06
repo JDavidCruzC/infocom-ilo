@@ -47,7 +47,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DataImportExport from "@/features/admin/components/DataImportExport";
-import PrintReceipt, { DocumentKind } from "@/features/admin/components/PrintReceipt";
+import PrintReceipt, { DocumentKind, DOCUMENT_KINDS } from "@/features/admin/components/PrintReceipt";
 import { notifyAllStaff } from "@/lib/notifications";
 
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
