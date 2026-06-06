@@ -174,6 +174,11 @@ const AccountingPage = () => {
   const [newServiceName, setNewServiceName] = useState("");
   const [newServicePrice, setNewServicePrice] = useState("");
 
+  // Post-emit print prompt
+  const [printPromptOpen, setPrintPromptOpen] = useState(false);
+  const [postEmitTx, setPostEmitTx] = useState<Transaction | null>(null);
+  const [postEmitDocKind, setPostEmitDocKind] = useState<DocumentKind | undefined>(undefined);
+
   // Form state
   const [form, setForm] = useState({
     fecha: new Date().toISOString().split("T")[0],
