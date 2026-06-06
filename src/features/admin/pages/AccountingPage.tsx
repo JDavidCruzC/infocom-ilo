@@ -1584,7 +1584,7 @@ const AccountingPage = () => {
                                         {products.map((p: any) => (
                                           <CommandItem key={p.id} value={`${p.name} ${p.sku || ""} ${p.id}`} onSelect={() => {
                                             updateItem(idx, { descripcion: p.name, precio_unitario: Number(p.price) || 0, referencia_id: p.id });
-                                            setOpenComboIdx(null);
+                                            closeAccountingCombos();
                                           }}>
                                             <Check className={`h-3 w-3 mr-2 ${item.referencia_id === p.id ? "opacity-100" : "opacity-0"}`} />
                                             <div className="flex-1 min-w-0">
@@ -1596,7 +1596,7 @@ const AccountingPage = () => {
                                         ))}
                                       </CommandGroup>
                                       <CommandGroup heading="Manual">
-                                        <CommandItem value="__manual_prod__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: "" }); setOpenComboIdx(null); }}>
+                                        <CommandItem value="__manual_prod__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: "" }); closeAccountingCombos(); }}>
                                           <Package className="h-3 w-3 mr-2" /> Escribir manualmente
                                         </CommandItem>
                                       </CommandGroup>
@@ -1631,7 +1631,7 @@ const AccountingPage = () => {
                                         {SERVICE_TYPES.map((st, sIdx) => (
                                           <CommandItem key={`${st.name}-${sIdx}`} value={`${st.name}-${sIdx}`} onSelect={() => {
                                             updateItem(idx, { descripcion: st.name, precio_unitario: st.price, referencia_id: "service" });
-                                            setOpenComboIdx(null);
+                                            closeAccountingCombos();
                                           }}>
                                             <Check className={`h-3 w-3 mr-2 ${item.descripcion === st.name ? "opacity-100" : "opacity-0"}`} />
                                             <Wrench className="h-3 w-3 mr-2 text-muted-foreground" />
@@ -1641,7 +1641,7 @@ const AccountingPage = () => {
                                         ))}
                                       </CommandGroup>
                                       <CommandGroup heading="Manual">
-                                        <CommandItem value="__manual_serv__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: "" }); setOpenComboIdx(null); }}>
+                                        <CommandItem value="__manual_serv__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: "" }); closeAccountingCombos(); }}>
                                           <Settings2 className="h-3 w-3 mr-2" /> Escribir manualmente
                                         </CommandItem>
                                       </CommandGroup>
