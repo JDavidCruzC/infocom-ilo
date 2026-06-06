@@ -318,6 +318,10 @@ const AccountingPage = () => {
     if (activeTab === "ventas") list = list.filter(t => Number(t.subtotal_productos || 0) > 0);
     if (activeTab === "servicios") list = list.filter(t => Number(t.subtotal_servicios || 0) > 0);
     if (activeTab === "por_cobrar") list = list.filter(t => t.por_cobrar && !t.cobrado_en && t.estado === "emitido");
+    if (activeTab === "comprobantes") {
+      list = list.filter(t => t.estado === "emitido" && (t.tipo_comprobante || t.numero_comprobante));
+      if (comprobantesFilter !== "todos") list = list.filter(t => t.tipo_comprobante === comprobantesFilter);
+    }
     if (searchClient.trim()) {
       const q = searchClient.toLowerCase();
       list = list.filter(t => t.cliente_nombre?.toLowerCase().includes(q));
