@@ -212,7 +212,7 @@ const SupportPage = () => {
 
   // ─── Kanban View ──────────────────────────────────────────────
   const KanbanView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {KANBAN_STATUSES.map(statusKey => {
         const config = STATUS_CONFIG[statusKey];
         const columnOrders = filtered.filter((o: any) => o.status === statusKey);
