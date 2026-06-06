@@ -95,6 +95,8 @@ export const DEFAULT_TEMPLATE: ReceiptTemplate = {
   cotizacionTitle: "COTIZACIÓN",
   notaVentaTitle: "NOTA DE VENTA",
   ticketInternoTitle: "TICKET INTERNO",
+  ticketServicioTitle: "TICKET DE SERVICIO",
+  ticketVentaTitle: "TICKET DE VENTA",
 };
 
 const STORE_KEY = "receipt_template";
