@@ -50,18 +50,23 @@ export interface ReceiptTemplate {
   cotizacionTitle?: string;
   notaVentaTitle?: string;
   ticketInternoTitle?: string;
+  ticketServicioTitle?: string;
+  ticketVentaTitle?: string;
 }
 
-export type DocumentKind = "boleta" | "factura" | "proforma" | "cotizacion" | "nota_venta" | "ticket_interno";
+export type DocumentKind = "boleta" | "factura" | "proforma" | "cotizacion" | "nota_venta" | "ticket_interno" | "ticket_servicio" | "ticket_venta";
 
 export const DOCUMENT_KINDS: { value: DocumentKind; label: string; short: string; templateKey: keyof ReceiptTemplate }[] = [
-  { value: "boleta",         label: "Boleta de Venta",       short: "Boleta",     templateKey: "boletaTitle" },
-  { value: "factura",        label: "Factura",                short: "Factura",    templateKey: "facturaTitle" },
-  { value: "proforma",       label: "Proforma",               short: "Proforma",   templateKey: "proformaTitle" },
-  { value: "cotizacion",     label: "Cotización",             short: "Cotización", templateKey: "cotizacionTitle" },
-  { value: "nota_venta",     label: "Nota de Venta",          short: "Nota Venta", templateKey: "notaVentaTitle" },
-  { value: "ticket_interno", label: "Ticket Interno (sin valor fiscal)", short: "Interno", templateKey: "ticketInternoTitle" },
+  { value: "ticket_servicio", label: "Ticket de Servicio",        short: "T. Servicio", templateKey: "ticketServicioTitle" },
+  { value: "ticket_venta",    label: "Ticket de Venta",           short: "T. Venta",    templateKey: "ticketVentaTitle" },
+  { value: "boleta",          label: "Boleta de Venta",           short: "Boleta",      templateKey: "boletaTitle" },
+  { value: "factura",         label: "Factura",                    short: "Factura",     templateKey: "facturaTitle" },
+  { value: "proforma",        label: "Proforma",                   short: "Proforma",    templateKey: "proformaTitle" },
+  { value: "cotizacion",      label: "Cotización",                 short: "Cotización",  templateKey: "cotizacionTitle" },
+  { value: "nota_venta",      label: "Nota de Venta",              short: "Nota Venta",  templateKey: "notaVentaTitle" },
+  { value: "ticket_interno",  label: "Ticket Interno (sin valor fiscal)", short: "Interno", templateKey: "ticketInternoTitle" },
 ];
+
 
 export const DEFAULT_TEMPLATE: ReceiptTemplate = {
   paperSize: "58mm",
