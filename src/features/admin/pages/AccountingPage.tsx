@@ -689,11 +689,22 @@ const AccountingPage = () => {
   const emitNewTransaction = async (docKind?: DocumentKind) => {
     if (items.length === 0) return;
     try {
-      const docLabel = docKind === "boleta" ? "BOLETA" : docKind === "factura" ? "FACTURA" : null;
+      // Default kind: if user didn't pick one, infer from content
+      const inferredKind: DocumentKind = docKind || (
+        items.some(i => i.item_type === "servicio") && !items.some(i => i.item_type === "producto")
+          ? "ticket_servicio"
+          : "ticket_venta"
+      );
+      const docMeta = DOCUMENT_KINDS.find(d => d.value === inferredKind);
+      const docLabel = (docMeta?.label || inferredKind).toUpperCase();
+
+      // Allocate correlative number for this kind
+      const { data: numData, error: numErr } = await supabase.rpc("next_comprobante_number" as any, { _kind: inferredKind });
+      if (numErr) throw numErr;
+      const numeroComprobante = String(numData);
+
       const baseNotas = form.notas || "";
-      const notasWithKind = docLabel
-        ? `${baseNotas}${baseNotas ? " | " : ""}Tipo: ${docLabel}`
-        : baseNotas;
+      const notasWithKind = `${baseNotas}${baseNotas ? " | " : ""}${docLabel} N° ${numeroComprobante}`;
 
       const { data: tx, error } = await supabase.from("transactions").insert({
         fecha: form.fecha,
@@ -705,6 +716,8 @@ const AccountingPage = () => {
         emitido_en: new Date().toISOString(),
         por_cobrar: form.por_cobrar,
         tipo_cliente: form.tipo_cliente,
+        tipo_comprobante: inferredKind,
+        numero_comprobante: numeroComprobante,
         created_by: user?.id || null,
       } as any).select("id").single();
       if (error) throw error;
@@ -728,13 +741,13 @@ const AccountingPage = () => {
       }
       await supabase.from("transaction_history").insert({
         transaction_id: tx.id,
-        accion: docKind ? `emitido_${docKind}` : "creado_y_emitido",
+        accion: `emitido_${inferredKind}`,
+        detalles: { numero_comprobante: numeroComprobante } as any,
         usuario_id: user?.id || null,
       });
 
       qc.invalidateQueries({ queryKey: ["transactions", month, year] });
 
-      // Build a full transaction object for the print prompt (same shape as viewingTx)
       const fullTx: Transaction = {
         id: tx.id,
         fecha: form.fecha,
@@ -751,27 +764,23 @@ const AccountingPage = () => {
         subtotal_productos: itemTotals.productos,
         subtotal_servicios: itemTotals.servicios,
         total: itemTotals.total,
+        tipo_comprobante: inferredKind,
+        numero_comprobante: numeroComprobante,
         created_at: new Date().toISOString(),
-        items: items.map(it => ({
-          ...it,
-          subtotal: it.cantidad * it.precio_unitario,
-        })),
+        items: items.map(it => ({ ...it, subtotal: it.cantidad * it.precio_unitario })),
       } as any;
 
-      const successMsg = docLabel
-        ? `${docLabel} emitida correctamente`
-        : form.por_cobrar ? "Transacción emitida como PENDIENTE POR COBRAR" : "Transaccion emitida — Stock actualizado";
-      toast.success(successMsg);
+      toast.success(`${docLabel} N° ${numeroComprobante} emitido${form.por_cobrar ? " — PENDIENTE POR COBRAR" : ""}`);
 
-      // Close form and open print prompt
       closeForm();
       setPostEmitTx(fullTx);
-      setPostEmitDocKind(docKind);
+      setPostEmitDocKind(inferredKind);
       setPrintPromptOpen(true);
     } catch (err: any) {
       toast.error(err.message || "Error al emitir");
     }
   };
+
 
 
   const addItem = (type: "producto" | "servicio") => {
