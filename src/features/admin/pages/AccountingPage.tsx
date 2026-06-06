@@ -47,7 +47,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import DataImportExport from "@/features/admin/components/DataImportExport";
-import PrintReceipt from "@/features/admin/components/PrintReceipt";
+import PrintReceipt, { DocumentKind } from "@/features/admin/components/PrintReceipt";
 import { notifyAllStaff } from "@/lib/notifications";
 
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -173,6 +173,11 @@ const AccountingPage = () => {
   const [motivoDevolucion, setMotivoDevolucion] = useState("");
   const [newServiceName, setNewServiceName] = useState("");
   const [newServicePrice, setNewServicePrice] = useState("");
+
+  // Post-emit print prompt
+  const [printPromptOpen, setPrintPromptOpen] = useState(false);
+  const [postEmitTx, setPostEmitTx] = useState<Transaction | null>(null);
+  const [postEmitDocKind, setPostEmitDocKind] = useState<DocumentKind | undefined>(undefined);
 
   // Form state
   const [form, setForm] = useState({
@@ -673,6 +678,95 @@ const AccountingPage = () => {
     });
     setDetailOpen(true);
   };
+
+  // ─── Emit transaction (used by Comprobante, Boleta, Factura) ──
+  const emitNewTransaction = async (docKind?: DocumentKind) => {
+    if (items.length === 0) return;
+    try {
+      const docLabel = docKind === "boleta" ? "BOLETA" : docKind === "factura" ? "FACTURA" : null;
+      const baseNotas = form.notas || "";
+      const notasWithKind = docLabel
+        ? `${baseNotas}${baseNotas ? " | " : ""}Tipo: ${docLabel}`
+        : baseNotas;
+
+      const { data: tx, error } = await supabase.from("transactions").insert({
+        fecha: form.fecha,
+        cliente_nombre: form.cliente_nombre || null,
+        cliente_telefono: form.cliente_telefono || null,
+        notas: notasWithKind || null,
+        emitido_por: form.emitido_por || user?.email || "Admin",
+        estado: "emitido" as any,
+        emitido_en: new Date().toISOString(),
+        por_cobrar: form.por_cobrar,
+        tipo_cliente: form.tipo_cliente,
+        created_by: user?.id || null,
+      } as any).select("id").single();
+      if (error) throw error;
+
+      const payload = items.map(it => ({
+        transaction_id: tx.id,
+        item_type: it.item_type,
+        referencia_id: it.referencia_id || null,
+        descripcion: it.descripcion,
+        cantidad: it.cantidad,
+        precio_unitario: it.precio_unitario,
+        subtotal: it.cantidad * it.precio_unitario,
+        responsable: it.responsable || null,
+        tipo_equipo: it.tipo_equipo || null,
+        diagnostico: it.diagnostico || null,
+      }));
+      await supabase.from("transaction_items").insert(payload);
+      await reduceStockForTransaction(tx.id);
+      if (form.cliente_nombre) {
+        await syncCustomer(form.cliente_nombre, form.cliente_telefono || null, itemTotals.total);
+      }
+      await supabase.from("transaction_history").insert({
+        transaction_id: tx.id,
+        accion: docKind ? `emitido_${docKind}` : "creado_y_emitido",
+        usuario_id: user?.id || null,
+      });
+
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+
+      // Build a full transaction object for the print prompt (same shape as viewingTx)
+      const fullTx: Transaction = {
+        id: tx.id,
+        fecha: form.fecha,
+        estado: "emitido",
+        tipo_general: items.some(i => i.item_type === "producto") && items.some(i => i.item_type === "servicio")
+          ? "mixto"
+          : items.some(i => i.item_type === "servicio") ? "servicio" : "venta",
+        cliente_nombre: form.cliente_nombre || null,
+        cliente_telefono: form.cliente_telefono || null,
+        notas: notasWithKind || null,
+        emitido_por: form.emitido_por || user?.email || "Admin",
+        emitido_en: new Date().toISOString(),
+        por_cobrar: form.por_cobrar,
+        subtotal_productos: itemTotals.productos,
+        subtotal_servicios: itemTotals.servicios,
+        total: itemTotals.total,
+        created_at: new Date().toISOString(),
+        items: items.map(it => ({
+          ...it,
+          subtotal: it.cantidad * it.precio_unitario,
+        })),
+      } as any;
+
+      const successMsg = docLabel
+        ? `${docLabel} emitida correctamente`
+        : form.por_cobrar ? "Transacción emitida como PENDIENTE POR COBRAR" : "Transaccion emitida — Stock actualizado";
+      toast.success(successMsg);
+
+      // Close form and open print prompt
+      closeForm();
+      setPostEmitTx(fullTx);
+      setPostEmitDocKind(docKind);
+      setPrintPromptOpen(true);
+    } catch (err: any) {
+      toast.error(err.message || "Error al emitir");
+    }
+  };
+
 
   const addItem = (type: "producto" | "servicio") => {
     setItems([...items, { item_type: type, descripcion: "", cantidad: 1, precio_unitario: 0, subtotal: 0, responsable: "", tipo_equipo: "", diagnostico: "" }]);
@@ -1616,64 +1710,93 @@ const AccountingPage = () => {
               </Button>
               {!editingId && (
                 <Button type="button" variant="secondary" className="flex-1 min-w-[140px] gap-1" disabled={saveMutation.isPending || items.length === 0}
-                  onClick={async () => {
-                    if (items.length === 0) return;
-                    try {
-                      const { data: tx, error } = await supabase.from("transactions").insert({
-                        fecha: form.fecha,
-                        cliente_nombre: form.cliente_nombre || null,
-                        cliente_telefono: form.cliente_telefono || null,
-                        notas: form.notas || null,
-                        emitido_por: form.emitido_por || user?.email || "Admin",
-                        estado: "emitido" as any,
-                        emitido_en: new Date().toISOString(),
-                        por_cobrar: form.por_cobrar,
-                        tipo_cliente: form.tipo_cliente,
-                        created_by: user?.id || null,
-                      } as any).select("id").single();
-                      if (error) throw error;
-                      const payload = items.map(it => ({
-                        transaction_id: tx.id,
-                        item_type: it.item_type,
-                        referencia_id: it.referencia_id || null,
-                        descripcion: it.descripcion,
-                        cantidad: it.cantidad,
-                        precio_unitario: it.precio_unitario,
-                        subtotal: it.cantidad * it.precio_unitario,
-                        responsable: it.responsable || null,
-                        tipo_equipo: it.tipo_equipo || null,
-                        diagnostico: it.diagnostico || null,
-                      }));
-                      await supabase.from("transaction_items").insert(payload);
-                      await reduceStockForTransaction(tx.id);
-                      if (form.cliente_nombre) {
-                        await syncCustomer(form.cliente_nombre, form.cliente_telefono || null, itemTotals.total);
-                      }
-                      await supabase.from("transaction_history").insert({
-                        transaction_id: tx.id, accion: "creado_y_emitido", usuario_id: user?.id || null,
-                      });
-                      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
-                      toast.success(form.por_cobrar ? "Transacción emitida como PENDIENTE POR COBRAR" : "Transaccion emitida — Stock actualizado");
-                      closeForm();
-                    } catch (err: any) {
-                      toast.error(err.message || "Error");
-                    }
-                  }}
-                >
+                  onClick={() => emitNewTransaction()}>
                   <FileText className="h-4 w-4" /> Emitir Comprobante
                 </Button>
               )}
-              {/* SUNAT — En implementación */}
-              <Button type="button" variant="outline" className="gap-1 border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
-                onClick={() => toast.info("📄 Emisión de BOLETA electrónica en implementación con SUNAT", { description: "Próximamente podrás emitir boletas electrónicas oficiales." })}>
-                <FileCheck2 className="h-4 w-4" /> Emitir Boleta
-              </Button>
-              <Button type="button" variant="outline" className="gap-1 border-violet-500/40 text-violet-600 hover:bg-violet-500/10"
-                onClick={() => toast.info("📄 Emisión de FACTURA electrónica en implementación con SUNAT", { description: "Próximamente podrás emitir facturas electrónicas oficiales." })}>
-                <FileBadge className="h-4 w-4" /> Emitir Factura
+              {!editingId && (
+                <Button type="button" variant="outline" className="gap-1 border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
+                  disabled={saveMutation.isPending || items.length === 0}
+                  onClick={() => emitNewTransaction("boleta")}>
+                  <FileCheck2 className="h-4 w-4" /> Emitir Boleta
+                </Button>
+              )}
+              {!editingId && (
+                <Button type="button" variant="outline" className="gap-1 border-violet-500/40 text-violet-600 hover:bg-violet-500/10"
+                  disabled={saveMutation.isPending || items.length === 0}
+                  onClick={() => emitNewTransaction("factura")}>
+                  <FileBadge className="h-4 w-4" /> Emitir Factura
+                </Button>
+              )}
+            </div>
+
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── POST-EMIT PRINT PROMPT ─── */}
+      <Dialog open={printPromptOpen} onOpenChange={setPrintPromptOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              {postEmitDocKind === "boleta" ? "Boleta emitida" : postEmitDocKind === "factura" ? "Factura emitida" : "Comprobante emitido"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              ¿Deseas imprimir el comprobante? Elige el formato:
+            </p>
+            {postEmitTx && (
+              <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span> <span className="font-bold">{postEmitTx.cliente_nombre || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total:</span> <span className="font-bold text-primary">S/. {Number(postEmitTx.total).toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span> <span className="font-bold capitalize">{postEmitDocKind || postEmitTx.tipo_general}</span></div>
+              </div>
+            )}
+            {postEmitTx && (
+              <div className="flex justify-center gap-2 pt-2">
+                <PrintReceipt
+                  order={{
+                    id: postEmitTx.id,
+                    created_at: postEmitTx.created_at,
+                    date: postEmitTx.fecha,
+                    customer_name: postEmitTx.cliente_nombre || "",
+                    customer_phone: postEmitTx.cliente_telefono || "",
+                    seller: postEmitTx.emitido_por || "Admin",
+                    items: postEmitTx.items!.map(it => ({
+                      descripcion: it.descripcion,
+                      cantidad: it.cantidad,
+                      precio_unitario: it.precio_unitario,
+                      subtotal: it.subtotal,
+                      item_type: it.item_type,
+                      responsable: it.responsable,
+                      tipo_equipo: it.tipo_equipo,
+                      diagnostico: it.diagnostico,
+                    })),
+                    subtotal_productos: postEmitTx.subtotal_productos,
+                    subtotal_servicios: postEmitTx.subtotal_servicios,
+                    total: postEmitTx.total,
+                    description: postEmitTx.items!.filter(it => it.item_type === "servicio").map(it => it.descripcion).join(", "),
+                    responsible: postEmitTx.items!.find(it => it.responsable)?.responsable || postEmitTx.emitido_por || "",
+                    device_type: postEmitTx.items!.find(it => it.tipo_equipo)?.tipo_equipo || "",
+                    diagnosis: postEmitTx.items!.find(it => it.diagnostico)?.diagnostico || "",
+                    price: postEmitTx.total,
+                    product_description: postEmitTx.items!.map(it => `${it.cantidad}x ${it.descripcion}`).join(", "),
+                    quantity: postEmitTx.items!.reduce((a, it) => a + it.cantidad, 0),
+                    unit_price: postEmitTx.total,
+                  }}
+                  type={postEmitTx.tipo_general === "servicio" ? "service" : "sale"}
+                  defaultDocumentKind={postEmitDocKind}
+                />
+              </div>
+            )}
+            <div className="flex justify-end pt-2 border-t border-border">
+              <Button variant="ghost" onClick={() => setPrintPromptOpen(false)}>
+                No imprimir
               </Button>
             </div>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
 
