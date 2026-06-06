@@ -412,8 +412,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
 </div>`;
       } else {
         // ─── A4 FORMAL BOLETA FORMAT (sale/service) ───
-        const ticketType = type === "service" ? t.serviceTitle : resolvedSaleTitle;
-        const ticketNum = order.ticket_number || "------";
+        const ticketType = resolvedDocTitle;
+        const ticketNum = order.numero_comprobante || order.ticket_number || "------";
+
         const hora = order.created_at ? new Date(order.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }) : "";
         const a4Header = t.headerMode === "logo" && t.logoUrl
           ? `<img src="${t.logoUrl}" alt="Logo" style="max-height:60px;margin-bottom:4px" />`
