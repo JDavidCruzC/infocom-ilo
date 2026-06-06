@@ -1734,6 +1734,72 @@ const AccountingPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* ─── POST-EMIT PRINT PROMPT ─── */}
+      <Dialog open={printPromptOpen} onOpenChange={setPrintPromptOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              {postEmitDocKind === "boleta" ? "Boleta emitida" : postEmitDocKind === "factura" ? "Factura emitida" : "Comprobante emitido"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              ¿Deseas imprimir el comprobante? Elige el formato:
+            </p>
+            {postEmitTx && (
+              <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span> <span className="font-bold">{postEmitTx.cliente_nombre || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total:</span> <span className="font-bold text-primary">S/. {Number(postEmitTx.total).toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span> <span className="font-bold capitalize">{postEmitDocKind || postEmitTx.tipo_general}</span></div>
+              </div>
+            )}
+            {postEmitTx && (
+              <div className="flex justify-center gap-2 pt-2">
+                <PrintReceipt
+                  order={{
+                    id: postEmitTx.id,
+                    created_at: postEmitTx.created_at,
+                    date: postEmitTx.fecha,
+                    customer_name: postEmitTx.cliente_nombre || "",
+                    customer_phone: postEmitTx.cliente_telefono || "",
+                    seller: postEmitTx.emitido_por || "Admin",
+                    items: postEmitTx.items!.map(it => ({
+                      descripcion: it.descripcion,
+                      cantidad: it.cantidad,
+                      precio_unitario: it.precio_unitario,
+                      subtotal: it.subtotal,
+                      item_type: it.item_type,
+                      responsable: it.responsable,
+                      tipo_equipo: it.tipo_equipo,
+                      diagnostico: it.diagnostico,
+                    })),
+                    subtotal_productos: postEmitTx.subtotal_productos,
+                    subtotal_servicios: postEmitTx.subtotal_servicios,
+                    total: postEmitTx.total,
+                    description: postEmitTx.items!.filter(it => it.item_type === "servicio").map(it => it.descripcion).join(", "),
+                    responsible: postEmitTx.items!.find(it => it.responsable)?.responsable || postEmitTx.emitido_por || "",
+                    device_type: postEmitTx.items!.find(it => it.tipo_equipo)?.tipo_equipo || "",
+                    diagnosis: postEmitTx.items!.find(it => it.diagnostico)?.diagnostico || "",
+                    price: postEmitTx.total,
+                    product_description: postEmitTx.items!.map(it => `${it.cantidad}x ${it.descripcion}`).join(", "),
+                    quantity: postEmitTx.items!.reduce((a, it) => a + it.cantidad, 0),
+                    unit_price: postEmitTx.total,
+                  }}
+                  type={postEmitTx.tipo_general === "servicio" ? "service" : "sale"}
+                  defaultDocumentKind={postEmitDocKind}
+                />
+              </div>
+            )}
+            <div className="flex justify-end pt-2 border-t border-border">
+              <Button variant="ghost" onClick={() => setPrintPromptOpen(false)}>
+                No imprimir
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ─── DETAIL DIALOG ─── */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-2xl w-[90vw] max-h-[85vh] overflow-y-auto">
