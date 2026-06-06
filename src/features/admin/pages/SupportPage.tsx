@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; k
   cancelled: { label: "Cancelado", color: "border-destructive/40 bg-destructive/5", icon: AlertTriangle, kanbanOrder: 5 },
 };
 
-const KANBAN_STATUSES = ["pending", "in_progress", "waiting_parts", "completed"];
+const KANBAN_STATUSES = ["pending", "in_progress"];
 
 const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
   low: { label: "Baja", color: "bg-muted text-muted-foreground" },
