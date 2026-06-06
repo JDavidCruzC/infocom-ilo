@@ -197,6 +197,8 @@ const AccountingPage = () => {
   const [printPromptOpen, setPrintPromptOpen] = useState(false);
   const [postEmitTx, setPostEmitTx] = useState<Transaction | null>(null);
   const [postEmitDocKind, setPostEmitDocKind] = useState<DocumentKind | undefined>(undefined);
+  const [emitPickerOpen, setEmitPickerOpen] = useState(false);
+  const [emitPickerKind, setEmitPickerKind] = useState<DocumentKind>("ticket_servicio");
 
   // Form state
   const [form, setForm] = useState({
