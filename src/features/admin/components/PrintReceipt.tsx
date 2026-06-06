@@ -317,12 +317,17 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
 
     // Resolve title for sale/service depending on selected document kind
     const docKind: DocumentKind | undefined = orderOverrides.documentKind || defaultDocumentKind;
-    const resolvedSaleTitle = (() => {
-      if (type !== "sale") return t.saleTitle;
-      if (!docKind) return t.saleTitle;
-      const def = DOCUMENT_KINDS.find(d => d.value === docKind);
-      return (def && (t[def.templateKey] as string)) || t.saleTitle;
+    const resolvedDocTitle = (() => {
+      if (docKind) {
+        const def = DOCUMENT_KINDS.find(d => d.value === docKind);
+        if (def && t[def.templateKey]) return t[def.templateKey] as string;
+      }
+      if (type === "service") return t.serviceTitle;
+      if (type === "sale") return t.saleTitle;
+      return t.receptionTitle;
     })();
+    const resolvedSaleTitle = resolvedDocTitle;
+
 
     // Helper to build items table rows
     const buildItemsRows = () => {
