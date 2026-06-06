@@ -66,10 +66,11 @@ const allNavItems: NavItem[] = [
     children: [
       { to: "/admin/personal", icon: Users, label: "Gestión", end: true, module: "personal" },
       { to: "/admin/asistencias", icon: CalendarDays, label: "Asistencias", module: "asistencias" },
+      { to: "/admin/roles", icon: Shield, label: "Roles", module: "roles" },
+      { to: "/admin/permisos", icon: Lock, label: "Permisos", module: "roles" },
     ],
   },
-  { to: "/admin/roles", icon: Shield, label: "Roles", module: "roles" },
-  { to: "/admin/permisos", icon: Lock, label: "Permisos", module: "roles" },
+
   { to: "/admin/configuracion", icon: Settings, label: "Configuración", module: "configuracion" },
 ];
 
