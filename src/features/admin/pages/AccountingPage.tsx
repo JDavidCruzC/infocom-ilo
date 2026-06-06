@@ -327,7 +327,7 @@ const AccountingPage = () => {
       list = list.filter(t => t.cliente_nombre?.toLowerCase().includes(q));
     }
     return list;
-  }, [transactions, activeTab, searchClient]);
+  }, [transactions, activeTab, searchClient, comprobantesFilter]);
 
   // ─── Metrics ───────────────────────────────────────────────────
   const emitidos = transactions.filter(t => t.estado === "emitido");
