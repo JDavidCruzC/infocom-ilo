@@ -1719,31 +1719,36 @@ const AccountingPage = () => {
               )}
             </div>
 
-            <div className="flex gap-2 flex-wrap">
-              <Button type="submit" className="flex-1 min-w-[140px]" disabled={saveMutation.isPending || items.length === 0}>
-                {editingId ? "Guardar Cambios" : "Guardar como Borrador"}
-              </Button>
-              {!editingId && (
-                <Button type="button" variant="secondary" className="flex-1 min-w-[140px] gap-1" disabled={saveMutation.isPending || items.length === 0}
-                  onClick={() => emitNewTransaction()}>
-                  <FileText className="h-4 w-4" /> Emitir Comprobante
+            <div className="space-y-2">
+              <div className="flex gap-2 flex-wrap">
+                <Button type="submit" className="flex-1 min-w-[140px]" disabled={saveMutation.isPending || items.length === 0}>
+                  {editingId ? "Guardar Cambios" : "Guardar como Borrador"}
                 </Button>
-              )}
+              </div>
               {!editingId && (
-                <Button type="button" variant="outline" className="gap-1 border-blue-500/40 text-blue-600 hover:bg-blue-500/10"
-                  disabled={saveMutation.isPending || items.length === 0}
-                  onClick={() => emitNewTransaction("boleta")}>
-                  <FileCheck2 className="h-4 w-4" /> Emitir Boleta
-                </Button>
-              )}
-              {!editingId && (
-                <Button type="button" variant="outline" className="gap-1 border-violet-500/40 text-violet-600 hover:bg-violet-500/10"
-                  disabled={saveMutation.isPending || items.length === 0}
-                  onClick={() => emitNewTransaction("factura")}>
-                  <FileBadge className="h-4 w-4" /> Emitir Factura
-                </Button>
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-2 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground px-1">EMITIR COMPROBANTE — cada tipo lleva su propio correlativo independiente</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {DOCUMENT_KINDS.map(dk => (
+                      <Button
+                        key={dk.value}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-xs h-9 justify-start"
+                        disabled={saveMutation.isPending || items.length === 0}
+                        onClick={() => emitNewTransaction(dk.value)}
+                        title={dk.label}
+                      >
+                        <FileText className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{dk.short}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
+
 
           </form>
         </DialogContent>
