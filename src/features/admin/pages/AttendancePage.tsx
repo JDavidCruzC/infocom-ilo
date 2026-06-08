@@ -592,13 +592,8 @@ const AttendancePage = () => {
   const myCheckedOut = !!myRecord?.check_out_time;
   const quickAttendanceStaff = isTerminal ? attendanceStaff : attendanceStaff;
 
-  useEffect(() => {
-    if (!isAdmin || !myStaff || staffLoading || recordsLoading) return;
-    const key = `${myStaff.id}:${today}`;
-    if (autoAdminMarkKeyRef.current === key || myRecord?.check_in_time) return;
-    autoAdminMarkKeyRef.current = key;
-    markStaffEntry(myStaff, true);
-  }, [isAdmin, myStaff?.id, myRecord?.check_in_time, staffLoading, recordsLoading, today]);
+  // Auto-marcado deshabilitado: las asistencias se registran solo de forma manual
+  // (entrada/salida con botón explícito) para evitar marcados accidentales.
 
   // Format business hours for display
   const formatBusinessHours = () => {
