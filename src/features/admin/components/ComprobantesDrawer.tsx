@@ -255,6 +255,16 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
                   </Select>
                 </div>
 
+                <div>
+                  <Label className="text-[10px]">Cliente (opcional)</Label>
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="Buscar por nombre de cliente..."
+                    value={clientFilter}
+                    onChange={(e) => setClientFilter(e.target.value)}
+                  />
+                </div>
+
                 <div className="rounded-md border border-primary/20 bg-background/40">
                   <div className="flex items-center justify-between px-2 py-1.5 border-b border-primary/20">
                     <div className="flex items-center gap-2">
