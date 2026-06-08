@@ -1296,19 +1296,15 @@ const AttendancePage = () => {
                                     <span className="text-gray-500 py-2 text-[9px]">🌙</span>
                                   ) : rec?.status === "A" || rec?.status === "T" ? (
                                     <>
-                                      <Input
-                                        type="time"
+                                      <TimeCellInput
                                         value={rec?.check_in_time || ""}
-                                        onChange={e => updateTime(s.id, d, "check_in", e.target.value)}
+                                        onCommit={v => updateTime(s.id, d, "check_in", v)}
                                         disabled={!canEditAttendanceGrid}
-                                        className="h-5 w-full text-[10px] p-0.5 text-center border-primary/20 [color-scheme:dark] dark:[color-scheme:dark]"
                                       />
-                                      <Input
-                                        type="time"
+                                      <TimeCellInput
                                         value={rec?.check_out_time || ""}
-                                        onChange={e => updateTime(s.id, d, "check_out", e.target.value)}
+                                        onCommit={v => updateTime(s.id, d, "check_out", v)}
                                         disabled={!canEditAttendanceGrid}
-                                        className="h-5 w-full text-[10px] p-0.5 text-center border-primary/20 [color-scheme:dark] dark:[color-scheme:dark]"
                                       />
                                     </>
                                   ) : (
