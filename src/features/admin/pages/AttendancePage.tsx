@@ -1271,47 +1271,98 @@ const AttendancePage = () => {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                          {weeks.map(w => (
-                            <div key={w.week} className="bg-secondary/30 rounded-lg p-2 text-center">
-                              <p className="text-[10px] text-muted-foreground">Semana {w.week}</p>
-                              <p className="text-sm font-bold text-primary">{w.worked}h</p>
-                              <p className="text-[10px] text-muted-foreground">{w.scheduled}h prog.</p>
-                              {w.overtime > 0 && <p className="text-[10px] font-bold text-orange-400">+{w.overtime}h extra</p>}
-                              <p className="text-[10px] text-muted-foreground">{w.days} días</p>
+                        {/* Monthly summary */}
+                        {(() => {
+                          const target = Math.max(stats.scheduledHours || 0, 1);
+                          const pct = Math.min(100, Math.round((stats.totalHours / target) * 100));
+                          const diff = stats.totalHours - stats.scheduledHours;
+                          return (
+                            <div className="bg-secondary/30 rounded-lg p-3 space-y-2">
+                              <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                                <span className="font-semibold">Progreso del mes</span>
+                                <span className="font-mono">
+                                  <span className="text-primary font-bold">{stats.totalHours}h</span>
+                                  <span className="text-muted-foreground"> / {stats.scheduledHours}h programadas</span>
+                                  {diff !== 0 && (
+                                    <span className={`ml-2 font-bold ${diff > 0 ? "text-orange-400" : "text-destructive"}`}>
+                                      {diff > 0 ? `+${diff}h` : `${diff}h`}
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                              <div className="h-2 bg-background rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full transition-all ${pct >= 100 ? "bg-success" : pct >= 80 ? "bg-primary" : pct >= 50 ? "bg-warning" : "bg-destructive"}`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <p className="text-[10px] text-muted-foreground text-right">{pct}% del objetivo mensual</p>
                             </div>
-                          ))}
+                          );
+                        })()}
+
+                        {/* Weekly breakdown */}
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                          {weeks.map(w => {
+                            const wTarget = Math.max(w.scheduled || 0, 1);
+                            const wPct = Math.min(100, Math.round((w.worked / wTarget) * 100));
+                            return (
+                              <div key={w.week} className="bg-secondary/30 rounded-lg p-2 text-center space-y-1">
+                                <p className="text-[10px] font-bold text-muted-foreground">Semana {w.week}</p>
+                                <p className="text-sm font-bold text-primary">{w.worked}h <span className="text-[10px] text-muted-foreground font-normal">/ {w.scheduled}h</span></p>
+                                <div className="h-1 bg-background rounded-full overflow-hidden">
+                                  <div className={`h-full ${wPct >= 100 ? "bg-success" : wPct >= 80 ? "bg-primary" : wPct >= 50 ? "bg-warning" : "bg-destructive"}`} style={{ width: `${wPct}%` }} />
+                                </div>
+                                {w.overtime > 0 && <p className="text-[10px] font-bold text-orange-400">+{w.overtime}h extra</p>}
+                                <p className="text-[10px] text-muted-foreground">{w.days} días</p>
+                              </div>
+                            );
+                          })}
                         </div>
 
+                        {/* Daily strip with week separators */}
                         <div className="overflow-x-auto">
-                          <div className="flex gap-1">
-                            {days.map(d => {
+                          <div className="flex items-stretch gap-0.5">
+                            {days.map((d, idx) => {
                               const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
                               const rec = recordMap[s.id]?.[date];
                               const dayOfWeek = new Date(year, month, d).getDay();
                               const rest = isRestDay(s.id, dayOfWeek);
+                              // Sunday = end of week → add divider after this day
+                              const isWeekEnd = dayOfWeek === 0 && idx !== days.length - 1;
                               return (
-                                <div key={d} className={`flex flex-col items-center min-w-[50px] p-1 rounded text-[10px] ${rest ? "bg-orange-500/5 border border-orange-500/10" : ""}`}>
-                                  <span className={`text-muted-foreground ${rest ? "text-orange-400 font-bold" : ""}`}>{getDayOfWeek(d)} {d}</span>
-                                  {rest && !rec ? (
-                                    <span className="text-gray-500 py-2 text-[9px]">🌙</span>
-                                  ) : rec?.status === "A" || rec?.status === "T" ? (
-                                    <>
-                                      <TimeCellInput
-                                        value={rec?.check_in_time || ""}
-                                        onCommit={v => updateTime(s.id, d, "check_in", v)}
-                                        disabled={!canEditAttendanceGrid}
-                                      />
-                                      <TimeCellInput
-                                        value={rec?.check_out_time || ""}
-                                        onCommit={v => updateTime(s.id, d, "check_out", v)}
-                                        disabled={!canEditAttendanceGrid}
-                                      />
-                                    </>
-                                  ) : (
-                                    <span className="text-muted-foreground/30 py-2">—</span>
-                                  )}
-                                </div>
+                                <>
+                                  <div key={d} className={`flex flex-col items-center min-w-[72px] p-1 rounded text-[10px] gap-1 ${rest ? "bg-orange-500/5 border border-orange-500/20" : "bg-secondary/10"}`}>
+                                    <span className={`text-muted-foreground ${rest ? "text-orange-400 font-bold" : ""} ${dayOfWeek === 0 ? "text-orange-400" : ""}`}>
+                                      {getDayOfWeek(d)} {d}
+                                    </span>
+                                    {rest && !rec ? (
+                                      <span className="text-gray-500 py-3 text-[14px]">🌙</span>
+                                    ) : rec?.status === "A" || rec?.status === "T" ? (
+                                      <>
+                                        <TimeCellInput
+                                          value={rec?.check_in_time || ""}
+                                          onCommit={v => updateTime(s.id, d, "check_in", v)}
+                                          disabled={!canEditAttendanceGrid}
+                                          label="Entrada"
+                                        />
+                                        <TimeCellInput
+                                          value={rec?.check_out_time || ""}
+                                          onCommit={v => updateTime(s.id, d, "check_out", v)}
+                                          disabled={!canEditAttendanceGrid}
+                                          label="Salida"
+                                        />
+                                      </>
+                                    ) : rec?.status === "F" ? (
+                                      <span className="text-destructive font-bold py-3">F</span>
+                                    ) : rec?.status === "J" ? (
+                                      <span className="text-info font-bold py-3">J</span>
+                                    ) : (
+                                      <span className="text-muted-foreground/30 py-3">—</span>
+                                    )}
+                                  </div>
+                                  {isWeekEnd && <div key={`sep-${d}`} className="w-px bg-primary/30 mx-1 self-stretch" />}
+                                </>
                               );
                             })}
                           </div>
