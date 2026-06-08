@@ -609,7 +609,7 @@ const AttendancePage = () => {
           _month: now.getMonth() + 1,
         });
         if (!cancelled) {
-          queryClient.invalidateQueries({ queryKey: ["attendance_records"] });
+          qc.invalidateQueries({ queryKey: ["attendance_records"] });
         }
       } catch {
         // silencioso: si el usuario no tiene permisos, no pasa nada
