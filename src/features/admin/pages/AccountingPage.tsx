@@ -49,7 +49,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import DataImportExport from "@/features/admin/components/DataImportExport";
 import PrintReceipt, { DocumentKind, DOCUMENT_KINDS } from "@/features/admin/components/PrintReceipt";
 import { notifyAllStaff } from "@/lib/notifications";
-import ComprobanteCountersPanel from "@/features/admin/components/ComprobanteCountersPanel";
+import ComprobantesDrawer from "@/features/admin/components/ComprobantesDrawer";
 
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
