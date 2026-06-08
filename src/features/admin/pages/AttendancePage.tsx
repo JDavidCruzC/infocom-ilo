@@ -1150,17 +1150,50 @@ const AttendancePage = () => {
                                 );
                               }
 
+                              const cellContent = st ? (
+                                <span className={`inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold ${st.color} ${rest ? "ring-1 ring-orange-400/50" : ""}`}
+                                  title={rest ? `${st.full} (trabajó en día de descanso)` : st.full}>
+                                  {st.label}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground/30">{isFuture ? "" : "·"}</span>
+                              );
+
+                              if (!canEditAttendanceGrid) {
+                                return (
+                                  <td key={d} className={`px-1 py-1 text-center ${rest ? "bg-gray-500/5" : ""}`}>{cellContent}</td>
+                                );
+                              }
+
                               return (
-                                <td key={d} className={`px-1 py-1 text-center transition-colors ${canEditAttendanceGrid ? "cursor-pointer hover:bg-primary/10" : "cursor-default"} ${rest ? "bg-gray-500/5" : ""}`}
-                                  onClick={() => canEditAttendanceGrid && cycleStatus(s.id, d)}>
-                                  {st ? (
-                                    <span className={`inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold ${st.color} ${rest ? "ring-1 ring-orange-400/50" : ""}`} 
-                                      title={rest ? `${st.full} (trabajó en día de descanso)` : st.full}>
-                                      {st.label}
-                                    </span>
-                                  ) : (
-                                    <span className="text-muted-foreground/30">{isFuture ? "" : "·"}</span>
-                                  )}
+                                <td key={d} className={`px-1 py-1 text-center transition-colors hover:bg-primary/10 ${rest ? "bg-gray-500/5" : ""}`}>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <button type="button" className="w-full h-full cursor-pointer">{cellContent}</button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2" align="center">
+                                      <div className="text-[10px] text-muted-foreground mb-2 text-center">{DAY_NAMES[dayOfWeek]} {d}/{month+1}</div>
+                                      <div className="grid grid-cols-2 gap-1">
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setStatusDirect(s.id, d, "A")}>
+                                          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Asistió
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setStatusDirect(s.id, d, "T")}>
+                                          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> Tardanza
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setStatusDirect(s.id, d, "J")}>
+                                          <span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Justificada
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setStatusDirect(s.id, d, "F")}>
+                                          <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> Falta
+                                        </Button>
+                                      </div>
+                                      {rec && (
+                                        <Button size="sm" variant="ghost" className="w-full mt-2 h-7 text-[11px] text-destructive hover:text-destructive" onClick={() => clearRecord(s.id, d)}>
+                                          Limpiar registro
+                                        </Button>
+                                      )}
+                                    </PopoverContent>
+                                  </Popover>
                                 </td>
                               );
                             })}
