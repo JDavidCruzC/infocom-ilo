@@ -72,7 +72,7 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
   });
 
   const { data: list = [], isLoading } = useQuery({
-    queryKey: ["comprobantes_for_zip", fromDate, toDate, kindFilter],
+    queryKey: ["comprobantes_for_zip", fromDate, toDate, kindFilter, clientFilter],
     enabled: open,
     queryFn: async () => {
       let q = supabase.from("transactions")
@@ -83,6 +83,7 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
         .lte("fecha", toDate)
         .order("fecha", { ascending: false });
       if (kindFilter !== "todos") q = q.eq("tipo_comprobante", kindFilter);
+      if (clientFilter.trim()) q = q.ilike("cliente_nombre", `%${clientFilter.trim()}%`);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
