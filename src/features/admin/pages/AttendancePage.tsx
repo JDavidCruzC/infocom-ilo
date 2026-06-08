@@ -1331,8 +1331,8 @@ const AttendancePage = () => {
                               // Sunday = end of week → add divider after this day
                               const isWeekEnd = dayOfWeek === 0 && idx !== days.length - 1;
                               return (
-                                <>
-                                  <div key={d} className={`flex flex-col items-center min-w-[72px] p-1 rounded text-[10px] gap-1 ${rest ? "bg-orange-500/5 border border-orange-500/20" : "bg-secondary/10"}`}>
+                                <Fragment key={d}>
+                                  <div className={`flex flex-col items-center min-w-[72px] p-1 rounded text-[10px] gap-1 ${rest ? "bg-orange-500/5 border border-orange-500/20" : "bg-secondary/10"}`}>
                                     <span className={`text-muted-foreground ${rest ? "text-orange-400 font-bold" : ""} ${dayOfWeek === 0 ? "text-orange-400" : ""}`}>
                                       {getDayOfWeek(d)} {d}
                                     </span>
@@ -1361,9 +1361,8 @@ const AttendancePage = () => {
                                       <span className="text-muted-foreground/30 py-3">—</span>
                                     )}
                                   </div>
-                                  {isWeekEnd && <div key={`sep-${d}`} className="w-px bg-primary/30 mx-1 self-stretch" />}
-                                </>
-                              );
+                                  {isWeekEnd && <div className="w-px bg-primary/30 mx-1 self-stretch" />}
+                                </Fragment>
                             })}
                           </div>
                         </div>
