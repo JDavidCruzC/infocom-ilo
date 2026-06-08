@@ -37,6 +37,7 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
   const [from, setFrom] = useState(new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10));
   const [to, setTo] = useState(today.toISOString().slice(0,10));
   const [kindFilter, setKindFilter] = useState<string>("todos");
+  const [clientFilter, setClientFilter] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
 
@@ -71,7 +72,7 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
   });
 
   const { data: list = [], isLoading } = useQuery({
-    queryKey: ["comprobantes_for_zip", fromDate, toDate, kindFilter],
+    queryKey: ["comprobantes_for_zip", fromDate, toDate, kindFilter, clientFilter],
     enabled: open,
     queryFn: async () => {
       let q = supabase.from("transactions")
@@ -82,6 +83,7 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
         .lte("fecha", toDate)
         .order("fecha", { ascending: false });
       if (kindFilter !== "todos") q = q.eq("tipo_comprobante", kindFilter);
+      if (clientFilter.trim()) q = q.ilike("cliente_nombre", `%${clientFilter.trim()}%`);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
@@ -251,6 +253,16 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
                       {DOCUMENT_KINDS.map(dk => <SelectItem key={dk.value} value={dk.value}>{dk.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <Label className="text-[10px]">Cliente (opcional)</Label>
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="Buscar por nombre de cliente..."
+                    value={clientFilter}
+                    onChange={(e) => setClientFilter(e.target.value)}
+                  />
                 </div>
 
                 <div className="rounded-md border border-primary/20 bg-background/40">
