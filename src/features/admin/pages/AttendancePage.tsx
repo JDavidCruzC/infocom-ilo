@@ -595,6 +595,31 @@ const AttendancePage = () => {
   // Auto-marcado deshabilitado: las asistencias se registran solo de forma manual
   // (entrada/salida con botón explícito) para evitar marcados accidentales.
 
+  // Auto-marca FALTAS: si el horario programado del día ya pasó y el trabajador
+  // no marcó entrada, se inserta automáticamente 'F'. También cubre días previos.
+  useEffect(() => {
+    if (!isAdmin && !canMarkOthers) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        await supabase.rpc("auto_mark_absences_today" as any);
+        const now = new Date();
+        await supabase.rpc("admin_mark_pending_absences" as any, {
+          _year: now.getFullYear(),
+          _month: now.getMonth() + 1,
+        });
+        if (!cancelled) {
+          queryClient.invalidateQueries({ queryKey: ["attendance_records"] });
+        }
+      } catch {
+        // silencioso: si el usuario no tiene permisos, no pasa nada
+      }
+    };
+    run();
+    const interval = window.setInterval(run, 10 * 60 * 1000); // cada 10 min
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [isAdmin, canMarkOthers]);
+
   // Format business hours for display
   const formatBusinessHours = () => {
     if (!businessHours) return "9:00 AM - 1:00 PM y 3:00 PM - 8:00 PM";
