@@ -1780,6 +1780,7 @@ export type Database = {
         Args: { _month: number; _year: number }
         Returns: number
       }
+      auto_mark_absences_today: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
