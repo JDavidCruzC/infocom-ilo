@@ -16,6 +16,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Download, Clock, UserCheck, Fi
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import XLSX from "xlsx-js-style";
 import { generateMonthlyAttendancePdf } from "@/features/admin/utils/attendancePdf";
+import { TimeCellInput } from "@/features/admin/components/TimeCellInput";
 
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const STATUS_LABELS: Record<string,{ label: string; color: string; full: string }> = {
@@ -1296,19 +1297,15 @@ const AttendancePage = () => {
                                     <span className="text-gray-500 py-2 text-[9px]">🌙</span>
                                   ) : rec?.status === "A" || rec?.status === "T" ? (
                                     <>
-                                      <Input
-                                        type="time"
+                                      <TimeCellInput
                                         value={rec?.check_in_time || ""}
-                                        onChange={e => updateTime(s.id, d, "check_in", e.target.value)}
+                                        onCommit={v => updateTime(s.id, d, "check_in", v)}
                                         disabled={!canEditAttendanceGrid}
-                                        className="h-5 w-full text-[10px] p-0.5 text-center border-primary/20 [color-scheme:dark] dark:[color-scheme:dark]"
                                       />
-                                      <Input
-                                        type="time"
+                                      <TimeCellInput
                                         value={rec?.check_out_time || ""}
-                                        onChange={e => updateTime(s.id, d, "check_out", e.target.value)}
+                                        onCommit={v => updateTime(s.id, d, "check_out", v)}
                                         disabled={!canEditAttendanceGrid}
-                                        className="h-5 w-full text-[10px] p-0.5 text-center border-primary/20 [color-scheme:dark] dark:[color-scheme:dark]"
                                       />
                                     </>
                                   ) : (
