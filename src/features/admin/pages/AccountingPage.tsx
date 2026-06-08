@@ -1101,35 +1101,15 @@ const AccountingPage = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="todos" className="gap-1 text-xs sm:text-sm"><List className="h-4 w-4" /> Todos ({transactions.length})</TabsTrigger>
           <TabsTrigger value="ventas" className="gap-1 text-xs sm:text-sm"><ShoppingCart className="h-4 w-4" /> Ventas</TabsTrigger>
           <TabsTrigger value="servicios" className="gap-1 text-xs sm:text-sm"><Wrench className="h-4 w-4" /> Servicios</TabsTrigger>
-          <TabsTrigger value="comprobantes" className="gap-1 text-xs sm:text-sm"><Receipt className="h-4 w-4" /> Comprobantes</TabsTrigger>
           <TabsTrigger value="por_cobrar" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-700 dark:data-[state=active]:text-amber-300">
             <Clock className="h-4 w-4" /> Por Cobrar ({porCobrar.length})
           </TabsTrigger>
         </TabsList>
 
-        {activeTab === "comprobantes" && (
-          <div className="mt-3 space-y-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Label className="text-xs text-muted-foreground">Filtrar por tipo:</Label>
-              <Select value={comprobantesFilter} onValueChange={setComprobantesFilter}>
-                <SelectTrigger className="h-8 text-xs w-[220px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los tipos</SelectItem>
-                  {DOCUMENT_KINDS.map(dk => (
-                    <SelectItem key={dk.value} value={dk.value}>{dk.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="ml-auto text-xs text-muted-foreground hidden md:inline">
-                Cada tipo lleva su propio correlativo independiente.
-              </span>
-            </div>
-          </div>
-        )}
 
 
         {/* Shared content for all tabs */}
