@@ -37,6 +37,7 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
   const [from, setFrom] = useState(new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10));
   const [to, setTo] = useState(today.toISOString().slice(0,10));
   const [kindFilter, setKindFilter] = useState<string>("todos");
+  const [clientFilter, setClientFilter] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
 
