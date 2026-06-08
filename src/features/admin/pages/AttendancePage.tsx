@@ -1363,6 +1363,7 @@ const AttendancePage = () => {
                                   </div>
                                   {isWeekEnd && <div className="w-px bg-primary/30 mx-1 self-stretch" />}
                                 </Fragment>
+                              );
                             })}
                           </div>
                         </div>
