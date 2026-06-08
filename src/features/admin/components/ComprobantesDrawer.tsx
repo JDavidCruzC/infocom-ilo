@@ -125,8 +125,7 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
         (itemsByTx[it.transaction_id] = itemsByTx[it.transaction_id] || []).push(it);
       });
 
-      const { data: companyData } = await supabase.from("company_info").select("*").maybeSingle();
-      const company = companyData || { name: "INFOCOM SOLUCIONES", ruc: "", address: "", phone: "", email: "" };
+      const company = { name: "INFOCOM SOLUCIONES" };
 
       const zip = new JSZip();
       const txMap: Record<string, any> = {};
