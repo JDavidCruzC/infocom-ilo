@@ -16,6 +16,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Download, Clock, UserCheck, Fi
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import XLSX from "xlsx-js-style";
 import { generateMonthlyAttendancePdf } from "@/features/admin/utils/attendancePdf";
+import { TimeCellInput } from "@/features/admin/components/TimeCellInput";
 
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const STATUS_LABELS: Record<string,{ label: string; color: string; full: string }> = {
