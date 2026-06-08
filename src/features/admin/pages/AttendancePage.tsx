@@ -204,34 +204,30 @@ const AttendancePage = () => {
 
   const cycleStatus = (staffId: string, day: number) => {
     if (!isAdmin) return;
-    const dayOfWeek = new Date(year, month, day).getDay();
-    const rest = isRestDay(staffId, dayOfWeek);
     const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const current = recordMap[staffId]?.[date]?.status;
-
-    // If it's a rest day, only allow toggling between nothing and special statuses
-    if (rest) {
-      // Allow admin to override rest day (e.g., staff worked a Sunday)
-      const restOrder = ["A", "T", "J", ""];
-      const idx = restOrder.indexOf(current || "");
-      const next = restOrder[(idx + 1) % restOrder.length];
-      if (next === "") {
-        // Remove the record
-        const existing = recordMap[staffId]?.[date];
-        if (existing) {
-          supabase.from("attendance_records").delete().eq("id", existing.id).then(() => {
-            qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
-          });
-        }
-        return;
-      }
-      toggleMutation.mutate({ staffId, date, status: next });
-      return;
-    }
-
     const order = ["A", "T", "J", "F"];
+    const current = recordMap[staffId]?.[date]?.status;
     const next = order[(order.indexOf(current || "") + 1) % order.length];
     toggleMutation.mutate({ staffId, date, status: next });
+  };
+
+  const setStatusDirect = (staffId: string, day: number, status: string) => {
+    if (!canEditAttendanceGrid) return;
+    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    toggleMutation.mutate({ staffId, date, status });
+    toast.success(`Marcado como ${STATUS_LABELS[status]?.full || status}`);
+  };
+
+  const clearRecord = (staffId: string, day: number) => {
+    if (!canEditAttendanceGrid) return;
+    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const existing = recordMap[staffId]?.[date];
+    if (!existing) return;
+    supabase.from("attendance_records").delete().eq("id", existing.id).then(({ error }) => {
+      if (error) { toast.error("No se pudo limpiar"); return; }
+      toast.success("Registro eliminado");
+      qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+    });
   };
 
   const updateTime = (staffId: string, day: number, field: "check_in" | "check_out", value: string) => {
