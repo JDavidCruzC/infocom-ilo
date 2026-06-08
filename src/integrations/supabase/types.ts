@@ -1780,6 +1780,10 @@ export type Database = {
         Args: { _month: number; _year: number }
         Returns: number
       }
+      admin_set_comprobante_counter: {
+        Args: { _kind: string; _value: number }
+        Returns: undefined
+      }
       auto_mark_absences_today: { Args: never; Returns: number }
       has_role: {
         Args: {
