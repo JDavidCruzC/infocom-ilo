@@ -1111,20 +1111,23 @@ const AccountingPage = () => {
         </TabsList>
 
         {activeTab === "comprobantes" && (
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <Label className="text-xs text-muted-foreground">Filtrar por tipo:</Label>
-            <Select value={comprobantesFilter} onValueChange={setComprobantesFilter}>
-              <SelectTrigger className="h-8 text-xs w-[220px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los tipos</SelectItem>
-                {DOCUMENT_KINDS.map(dk => (
-                  <SelectItem key={dk.value} value={dk.value}>{dk.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-xs text-muted-foreground ml-auto">
-              Cada tipo lleva su propio correlativo independiente. Usa el botón <Printer className="inline h-3 w-3" /> de cada fila para reimprimir o descargar.
-            </span>
+          <div className="mt-3 space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Label className="text-xs text-muted-foreground">Filtrar por tipo:</Label>
+              <Select value={comprobantesFilter} onValueChange={setComprobantesFilter}>
+                <SelectTrigger className="h-8 text-xs w-[220px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los tipos</SelectItem>
+                  {DOCUMENT_KINDS.map(dk => (
+                    <SelectItem key={dk.value} value={dk.value}>{dk.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground ml-auto">
+                Cada tipo lleva su propio correlativo independiente.
+              </span>
+            </div>
+            <ComprobanteCountersPanel isAdmin={isAdmin} onFilter={setComprobantesFilter} />
           </div>
         )}
 
