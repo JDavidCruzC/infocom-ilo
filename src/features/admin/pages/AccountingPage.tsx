@@ -1124,11 +1124,13 @@ const AccountingPage = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <span className="text-xs text-muted-foreground ml-auto">
-                Cada tipo lleva su propio correlativo independiente.
-              </span>
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-xs text-muted-foreground hidden md:inline">
+                  Cada tipo lleva su propio correlativo independiente.
+                </span>
+                <ComprobantesDrawer isAdmin={isAdmin} />
+              </div>
             </div>
-            <ComprobanteCountersPanel isAdmin={isAdmin} onFilter={setComprobantesFilter} />
           </div>
         )}
 
