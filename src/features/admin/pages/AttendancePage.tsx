@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { CalendarDays, ChevronLeft, ChevronRight, Download, Clock, UserCheck, Filter, AlertTriangle, UserPlus, Sun, Moon, Settings2, Save, Loader2, FileSpreadsheet, FileText, User } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
@@ -203,34 +204,30 @@ const AttendancePage = () => {
 
   const cycleStatus = (staffId: string, day: number) => {
     if (!isAdmin) return;
-    const dayOfWeek = new Date(year, month, day).getDay();
-    const rest = isRestDay(staffId, dayOfWeek);
     const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const current = recordMap[staffId]?.[date]?.status;
-
-    // If it's a rest day, only allow toggling between nothing and special statuses
-    if (rest) {
-      // Allow admin to override rest day (e.g., staff worked a Sunday)
-      const restOrder = ["A", "T", "J", ""];
-      const idx = restOrder.indexOf(current || "");
-      const next = restOrder[(idx + 1) % restOrder.length];
-      if (next === "") {
-        // Remove the record
-        const existing = recordMap[staffId]?.[date];
-        if (existing) {
-          supabase.from("attendance_records").delete().eq("id", existing.id).then(() => {
-            qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
-          });
-        }
-        return;
-      }
-      toggleMutation.mutate({ staffId, date, status: next });
-      return;
-    }
-
     const order = ["A", "T", "J", "F"];
+    const current = recordMap[staffId]?.[date]?.status;
     const next = order[(order.indexOf(current || "") + 1) % order.length];
     toggleMutation.mutate({ staffId, date, status: next });
+  };
+
+  const setStatusDirect = (staffId: string, day: number, status: string) => {
+    if (!canEditAttendanceGrid) return;
+    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    toggleMutation.mutate({ staffId, date, status });
+    toast.success(`Marcado como ${STATUS_LABELS[status]?.full || status}`);
+  };
+
+  const clearRecord = (staffId: string, day: number) => {
+    if (!canEditAttendanceGrid) return;
+    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const existing = recordMap[staffId]?.[date];
+    if (!existing) return;
+    supabase.from("attendance_records").delete().eq("id", existing.id).then(({ error }) => {
+      if (error) { toast.error("No se pudo limpiar"); return; }
+      toast.success("Registro eliminado");
+      qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+    });
   };
 
   const updateTime = (staffId: string, day: number, field: "check_in" | "check_out", value: string) => {
@@ -1153,17 +1150,50 @@ const AttendancePage = () => {
                                 );
                               }
 
+                              const cellContent = st ? (
+                                <span className={`inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold ${st.color} ${rest ? "ring-1 ring-orange-400/50" : ""}`}
+                                  title={rest ? `${st.full} (trabajó en día de descanso)` : st.full}>
+                                  {st.label}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground/30">{isFuture ? "" : "·"}</span>
+                              );
+
+                              if (!canEditAttendanceGrid) {
+                                return (
+                                  <td key={d} className={`px-1 py-1 text-center ${rest ? "bg-gray-500/5" : ""}`}>{cellContent}</td>
+                                );
+                              }
+
                               return (
-                                <td key={d} className={`px-1 py-1 text-center transition-colors ${canEditAttendanceGrid ? "cursor-pointer hover:bg-primary/10" : "cursor-default"} ${rest ? "bg-gray-500/5" : ""}`}
-                                  onClick={() => canEditAttendanceGrid && cycleStatus(s.id, d)}>
-                                  {st ? (
-                                    <span className={`inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold ${st.color} ${rest ? "ring-1 ring-orange-400/50" : ""}`} 
-                                      title={rest ? `${st.full} (trabajó en día de descanso)` : st.full}>
-                                      {st.label}
-                                    </span>
-                                  ) : (
-                                    <span className="text-muted-foreground/30">{isFuture ? "" : "·"}</span>
-                                  )}
+                                <td key={d} className={`px-1 py-1 text-center transition-colors hover:bg-primary/10 ${rest ? "bg-gray-500/5" : ""}`}>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <button type="button" className="w-full h-full cursor-pointer">{cellContent}</button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2" align="center">
+                                      <div className="text-[10px] text-muted-foreground mb-2 text-center">{DAY_NAMES[dayOfWeek]} {d}/{month+1}</div>
+                                      <div className="grid grid-cols-2 gap-1">
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setStatusDirect(s.id, d, "A")}>
+                                          <span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Asistió
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setStatusDirect(s.id, d, "T")}>
+                                          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> Tardanza
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setStatusDirect(s.id, d, "J")}>
+                                          <span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> Justificada
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setStatusDirect(s.id, d, "F")}>
+                                          <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> Falta
+                                        </Button>
+                                      </div>
+                                      {rec && (
+                                        <Button size="sm" variant="ghost" className="w-full mt-2 h-7 text-[11px] text-destructive hover:text-destructive" onClick={() => clearRecord(s.id, d)}>
+                                          Limpiar registro
+                                        </Button>
+                                      )}
+                                    </PopoverContent>
+                                  </Popover>
                                 </td>
                               );
                             })}
