@@ -285,9 +285,8 @@ const StaffPage = () => {
               </div>
               <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
               <div>
-                <Label className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-primary" /> Dirección de domicilio *</Label>
+                <Label className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-primary" /> Dirección de domicilio</Label>
                 <Input
-                  required
                   value={form.address}
                   onChange={e => setForm({ ...form, address: e.target.value })}
                   placeholder="Av. / Calle / Mz / Lt — Distrito, Provincia"
