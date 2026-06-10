@@ -50,6 +50,7 @@ import CustomersPage from "@/features/admin/pages/CustomersPage";
 import AppointmentsPage from "@/features/admin/pages/AppointmentsPage";
 import SuppliersPage from "@/features/admin/pages/SuppliersPage";
 import PurchasesPage from "@/features/admin/pages/PurchasesPage";
+import ExpensesPage from "@/features/admin/pages/ExpensesPage";
 import KardexPage from "@/features/admin/pages/KardexPage";
 import PermissionsConfigPage from "@/features/admin/pages/PermissionsConfigPage";
 import CombosPage from "@/features/admin/pages/CombosPage";
