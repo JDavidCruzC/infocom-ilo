@@ -233,6 +233,22 @@ const AccountingPage = () => {
     },
   });
 
+  // Pendientes por cobrar — TODOS los meses (acumulados, no se pierden)
+  const { data: allPorCobrar = [] } = useQuery({
+    queryKey: ["transactions_por_cobrar_all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("por_cobrar", true)
+        .is("cobrado_en", null)
+        .eq("estado", "emitido")
+        .order("fecha", { ascending: false });
+      if (error) throw error;
+      return data as Transaction[];
+    },
+  });
+
   // Products from inventory
   const { data: products = [] } = useQuery({
     queryKey: ["products_for_accounting"],
