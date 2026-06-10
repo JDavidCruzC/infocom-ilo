@@ -504,7 +504,7 @@ const AccountingPage = () => {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success(editingId ? "Transaccion actualizada" : "Transaccion guardada");
       if (!editingId) {
         const hasService = items.some(i => i.item_type === "servicio");
@@ -547,7 +547,7 @@ const AccountingPage = () => {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success("Transacción emitida — Stock actualizado");
     },
   });
@@ -589,7 +589,7 @@ const AccountingPage = () => {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       toast.success("Transacción anulada — Stock restaurado");
       setAnularOpen(false);
@@ -634,7 +634,7 @@ const AccountingPage = () => {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       toast.success("Transacción marcada como devuelta — Stock restaurado");
       setDevolverOpen(false);
@@ -648,7 +648,7 @@ const AccountingPage = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success("Borrador eliminado");
     },
   });
@@ -660,7 +660,7 @@ const AccountingPage = () => {
       await supabase.from("transaction_history").insert({ transaction_id: id, accion: por_cobrar ? "marcado_por_cobrar" : "desmarcado_por_cobrar", usuario_id: user?.id || null });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success("Estado de cobro actualizado");
     },
   });
@@ -672,7 +672,7 @@ const AccountingPage = () => {
       await supabase.from("transaction_history").insert({ transaction_id: id, accion: "cobrado", usuario_id: user?.id || null });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success("Marcado como COBRADO ✓");
     },
   });
@@ -782,7 +782,7 @@ const AccountingPage = () => {
         usuario_id: user?.id || null,
       });
 
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
 
       const fullTx: Transaction = {
         id: tx.id,
@@ -1257,7 +1257,7 @@ const AccountingPage = () => {
                 }));
                 const { error: ie } = await supabase.from("transaction_items").insert(payload);
                 if (ie) throw ie;
-                qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+                qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
               }}
             />
             <ComprobantesDrawer isAdmin={isAdmin} />
