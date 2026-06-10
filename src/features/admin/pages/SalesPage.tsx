@@ -126,7 +126,11 @@ const SalesPage = () => {
       });
       if (error) throw error;
       if (data?.nombre) {
-        setCustomerForm(prev => ({ ...prev, nombre: data.nombre }));
+        setCustomerForm(prev => ({
+          ...prev,
+          nombre: data.nombre,
+          direccion: data.direccion || prev.direccion,
+        }));
         toast.success("Datos encontrados");
       } else {
         setDniNotFound(true);
