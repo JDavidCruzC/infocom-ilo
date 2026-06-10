@@ -469,6 +469,119 @@ const SettingsPage = () => {
           </Card>
         </TabsContent>
 
+        {/* ─── API DNI ─── */}
+        <TabsContent value="api-dni" className="space-y-6 mt-4">
+          <Card className="border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <KeyRound className="h-5 w-5 text-primary" /> Token de API DNI (Factiliza)
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Este token se usa para consultar nombres por DNI en POS, recepción técnica y ventas.
+                El plan gratuito permite un número limitado de consultas por mes.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {/* Usage meter */}
+              <div className="p-4 rounded-lg border bg-muted/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">Consumo del mes ({dniCfg?.period || "—"})</p>
+                    <p className="text-xs text-muted-foreground">
+                      {dniCfg?.last_used_at
+                        ? `Última consulta: ${new Date(dniCfg.last_used_at).toLocaleString("es-PE")}`
+                        : "Sin consultas aún"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-2xl font-bold ${dniNearLimit ? "text-destructive" : "text-primary"}`}>
+                      {dniCfg?.count ?? 0}<span className="text-sm text-muted-foreground"> / {dniCfg?.limit ?? 100}</span>
+                    </p>
+                  </div>
+                </div>
+                <Progress value={dniUsagePct} className={dniNearLimit ? "[&>div]:bg-destructive" : ""} />
+                {dniNearLimit && (
+                  <div className="flex items-start gap-2 p-2 rounded bg-destructive/10 text-destructive text-xs">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>Estás cerca del límite mensual. Crea una cuenta nueva en Factiliza y cambia el token antes de quedarte sin consultas.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Token input */}
+              <div className="space-y-1.5">
+                <Label className="text-sm flex items-center gap-1.5">🔑 Token Bearer (Factiliza)</Label>
+                <Textarea
+                  value={dniToken}
+                  onChange={e => setDniToken(e.target.value)}
+                  rows={4}
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  className="font-mono text-xs"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Pega el token sin el prefijo "Bearer ". Si lo dejas vacío, el sistema usará un token público compartido (no recomendado).
+                </p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">📊 Límite mensual del plan</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={dniLimit}
+                    onChange={e => setDniLimit(Number(e.target.value))}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Factiliza gratuito = 100 consultas/mes.</p>
+                </div>
+                <div className="flex items-end gap-2">
+                  <Button onClick={() => saveDniConfig(false)} disabled={savingDni} className="flex-1">
+                    {savingDni ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                    Guardar
+                  </Button>
+                  <Button variant="outline" onClick={() => saveDniConfig(true)} disabled={savingDni} title="Reiniciar contador a 0">
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Instructions */}
+          <Card className="border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ExternalLink className="h-4 w-4 text-primary" /> ¿Cómo obtener un token nuevo?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
+                <li>
+                  Entrá a{" "}
+                  <a href="https://app.factiliza.com/" target="_blank" rel="noreferrer" className="text-primary font-semibold underline">
+                    app.factiliza.com
+                  </a>{" "}
+                  y creá una cuenta nueva (podés usar otro correo si ya gastaste el cupo del actual).
+                </li>
+                <li>Confirmá el correo de registro y volvé a iniciar sesión.</li>
+                <li>
+                  En el menú lateral abrí <span className="font-semibold text-foreground">API Consulta → Token</span>.
+                </li>
+                <li>
+                  Hacé clic en <span className="font-semibold text-foreground">Copiar</span> para copiar el token Bearer.
+                </li>
+                <li>Pegalo arriba en el campo "Token Bearer" y presioná <span className="font-semibold text-foreground">Guardar</span>.</li>
+                <li>Luego presioná el botón <RefreshCw className="inline h-3 w-3" /> para reiniciar el contador a 0.</li>
+              </ol>
+              <Button asChild variant="outline" size="sm" className="mt-2">
+                <a href="https://app.factiliza.com/" target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir Factiliza
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* ─── SISTEMA ─── */}
         <TabsContent value="sistema" className="space-y-6 mt-4">
           <Card className="border-primary/10">
