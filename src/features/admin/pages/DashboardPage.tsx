@@ -104,6 +104,8 @@ const DashboardPage = () => {
         products: prodCount || 0, orders: orderCount || 0, revenue, lowStock: lowStockCount || 0,
         pendingServices, attendancePct: attPct, monthSales, monthServices, monthTotal,
         totalTransactions: (txMonth || []).length, activeStaff: staffCount || 0, todaySales, prevMonthTotal,
+        monthExpenses: monthExpensesTotal, monthExpensesCount: (expData || []).length,
+        monthPurchases: monthPurchasesTotal, monthPurchasesCount: (purchData || []).length,
       });
       setRecentOrders(orders || []);
       setRecentTransactions(recentTx || []);
