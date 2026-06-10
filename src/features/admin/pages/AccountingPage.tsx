@@ -233,6 +233,22 @@ const AccountingPage = () => {
     },
   });
 
+  // Pendientes por cobrar — TODOS los meses (acumulados, no se pierden)
+  const { data: allPorCobrar = [] } = useQuery({
+    queryKey: ["transactions_por_cobrar_all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("por_cobrar", true)
+        .is("cobrado_en", null)
+        .eq("estado", "emitido")
+        .order("fecha", { ascending: false });
+      if (error) throw error;
+      return data as Transaction[];
+    },
+  });
+
   // Products from inventory
   const { data: products = [] } = useQuery({
     queryKey: ["products_for_accounting"],
@@ -330,10 +346,10 @@ const AccountingPage = () => {
 
   // ─── Filtered views ───────────────────────────────────────────
   const filtered = useMemo(() => {
-    let list = transactions;
+    // Para "Por Cobrar" mostramos TODOS los pendientes (acumulados de todos los meses)
+    let list = activeTab === "por_cobrar" ? (allPorCobrar as Transaction[]) : transactions;
     if (activeTab === "ventas") list = list.filter(t => Number(t.subtotal_productos || 0) > 0);
     if (activeTab === "servicios") list = list.filter(t => Number(t.subtotal_servicios || 0) > 0);
-    if (activeTab === "por_cobrar") list = list.filter(t => t.por_cobrar && !t.cobrado_en && t.estado === "emitido");
     if (activeTab === "comprobantes") {
       list = list.filter(t => t.estado === "emitido" && (t.tipo_comprobante || t.numero_comprobante));
       if (comprobantesFilter !== "todos") list = list.filter(t => t.tipo_comprobante === comprobantesFilter);
@@ -343,12 +359,12 @@ const AccountingPage = () => {
       list = list.filter(t => t.cliente_nombre?.toLowerCase().includes(q));
     }
     return list;
-  }, [transactions, activeTab, searchClient, comprobantesFilter]);
+  }, [transactions, allPorCobrar, activeTab, searchClient, comprobantesFilter]);
 
   // ─── Metrics ───────────────────────────────────────────────────
   const emitidos = transactions.filter(t => t.estado === "emitido");
   const cobrados = emitidos.filter(t => !t.por_cobrar || t.cobrado_en);
-  const porCobrar = emitidos.filter(t => t.por_cobrar && !t.cobrado_en);
+  const porCobrar = allPorCobrar as Transaction[];
   const totalProductos = cobrados.reduce((a, t) => a + Number(t.subtotal_productos || 0), 0);
   const totalServicios = cobrados.reduce((a, t) => a + Number(t.subtotal_servicios || 0), 0);
   const totalGeneral = cobrados.reduce((a, t) => a + Number(t.total || 0), 0);
@@ -488,7 +504,7 @@ const AccountingPage = () => {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success(editingId ? "Transaccion actualizada" : "Transaccion guardada");
       if (!editingId) {
         const hasService = items.some(i => i.item_type === "servicio");
@@ -531,7 +547,7 @@ const AccountingPage = () => {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success("Transacción emitida — Stock actualizado");
     },
   });
@@ -573,7 +589,7 @@ const AccountingPage = () => {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       toast.success("Transacción anulada — Stock restaurado");
       setAnularOpen(false);
@@ -618,7 +634,7 @@ const AccountingPage = () => {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       toast.success("Transacción marcada como devuelta — Stock restaurado");
       setDevolverOpen(false);
@@ -632,7 +648,7 @@ const AccountingPage = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success("Borrador eliminado");
     },
   });
@@ -644,7 +660,7 @@ const AccountingPage = () => {
       await supabase.from("transaction_history").insert({ transaction_id: id, accion: por_cobrar ? "marcado_por_cobrar" : "desmarcado_por_cobrar", usuario_id: user?.id || null });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success("Estado de cobro actualizado");
     },
   });
@@ -656,7 +672,7 @@ const AccountingPage = () => {
       await supabase.from("transaction_history").insert({ transaction_id: id, accion: "cobrado", usuario_id: user?.id || null });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       toast.success("Marcado como COBRADO ✓");
     },
   });
@@ -766,7 +782,7 @@ const AccountingPage = () => {
         usuario_id: user?.id || null,
       });
 
-      qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+      qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
 
       const fullTx: Transaction = {
         id: tx.id,
@@ -1241,7 +1257,7 @@ const AccountingPage = () => {
                 }));
                 const { error: ie } = await supabase.from("transaction_items").insert(payload);
                 if (ie) throw ie;
-                qc.invalidateQueries({ queryKey: ["transactions", month, year] });
+                qc.invalidateQueries({ queryKey: ["transactions", month, year] }); qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
               }}
             />
             <ComprobantesDrawer isAdmin={isAdmin} />
