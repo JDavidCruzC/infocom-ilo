@@ -1146,6 +1146,34 @@ const AccountingPage = () => {
         </Card>
       </div>
 
+      {/* Egresos & Neto */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-4 text-center">
+            <Receipt className="h-5 w-5 mx-auto mb-1 text-destructive" />
+            <p className="text-xl sm:text-2xl font-bold text-destructive">- S/. {totalGastos.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">Gastos del Mes ({monthExpenses.length})</p>
+          </CardContent>
+        </Card>
+        <Card className="border-orange-500/30 bg-orange-500/5">
+          <CardContent className="p-4 text-center">
+            <ShoppingCart className="h-5 w-5 mx-auto mb-1 text-orange-500" />
+            <p className="text-xl sm:text-2xl font-bold text-orange-500">- S/. {totalCompras.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">Compras del Mes ({monthPurchases.length})</p>
+          </CardContent>
+        </Card>
+        <Card className={`border-2 ${netoMes >= 0 ? "border-primary/50 bg-primary/5" : "border-destructive/50 bg-destructive/10"}`}>
+          <CardContent className="p-4 text-center">
+            <TrendingUp className={`h-5 w-5 mx-auto mb-1 ${netoMes >= 0 ? "text-primary" : "text-destructive"}`} />
+            <p className={`text-2xl sm:text-3xl font-bold font-display ${netoMes >= 0 ? "text-primary" : "text-destructive"}`}>
+              S/. {netoMes.toFixed(2)}
+            </p>
+            <p className="text-xs text-muted-foreground">Neto del Mes (Ingresos − Gastos − Compras)</p>
+          </CardContent>
+        </Card>
+      </div>
+
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
         <TabsList className="grid w-full grid-cols-4">
