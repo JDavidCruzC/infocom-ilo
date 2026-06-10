@@ -472,7 +472,7 @@ const AttendancePage = () => {
   };
 
   const selfCheckIn = async () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalDateStr();
     const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
 
     const { data: session } = await supabase.auth.getSession();
