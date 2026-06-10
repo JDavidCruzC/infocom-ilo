@@ -194,6 +194,48 @@ const DashboardPage = () => {
         </div>
       </div>
 
+      {/* Egresos & Neto del Mes */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Receipt className="h-4 w-4 text-destructive" />
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Gastos del Mes</p>
+            </div>
+            <p className="text-2xl font-bold text-destructive">- {CURRENCY}{stats.monthExpenses.toLocaleString("es-PE", { minimumFractionDigits: 2 })}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{stats.monthExpensesCount} gasto(s) registrado(s)</p>
+          </CardContent>
+        </Card>
+        <Card className="border-orange-500/30 bg-orange-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <ShoppingCart className="h-4 w-4 text-orange-500" />
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Compras del Mes</p>
+            </div>
+            <p className="text-2xl font-bold text-orange-500">- {CURRENCY}{stats.monthPurchases.toLocaleString("es-PE", { minimumFractionDigits: 2 })}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{stats.monthPurchasesCount} compra(s) a proveedores</p>
+          </CardContent>
+        </Card>
+        {(() => {
+          const neto = stats.monthTotal - stats.monthExpenses - stats.monthPurchases;
+          const positive = neto >= 0;
+          return (
+            <Card className={`border-2 ${positive ? "border-primary/50 bg-primary/5" : "border-destructive/50 bg-destructive/10"}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className={`h-4 w-4 ${positive ? "text-primary" : "text-destructive"}`} />
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Neto del Mes</p>
+                </div>
+                <p className={`text-3xl font-bold font-display ${positive ? "text-primary" : "text-destructive"}`}>
+                  {CURRENCY}{neto.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">Ingresos − Gastos − Compras</p>
+              </CardContent>
+            </Card>
+          );
+        })()}
+      </div>
+
       {/* Secondary Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SmallStatCard icon={CalendarDays} label="Asistencia Mes" value={`${stats.attendancePct}%`} color="text-cyan-400" />
@@ -201,6 +243,7 @@ const DashboardPage = () => {
         <SmallStatCard icon={Receipt} label="Transacciones Mes" value={stats.totalTransactions} color="text-yellow-400" />
         <SmallStatCard icon={Receipt} label="Ingresos Online" value={`${CURRENCY}${stats.revenue.toLocaleString()}`} color="text-pink-400" />
       </div>
+
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
