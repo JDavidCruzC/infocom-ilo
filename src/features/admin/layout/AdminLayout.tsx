@@ -40,6 +40,7 @@ const allNavItems: NavItem[] = [
     to: "/admin/compras", icon: PackagePlus, label: "Compras",
     children: [
       { to: "/admin/compras", icon: PackagePlus, label: "Compras", end: true, module: "compras" },
+      { to: "/admin/gastos", icon: Receipt, label: "Gastos", module: "gastos" },
       { to: "/admin/proveedores", icon: Truck, label: "Proveedores", module: "proveedores" },
     ],
   },
