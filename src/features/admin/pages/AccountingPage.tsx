@@ -346,10 +346,10 @@ const AccountingPage = () => {
 
   // ─── Filtered views ───────────────────────────────────────────
   const filtered = useMemo(() => {
-    let list = transactions;
+    // Para "Por Cobrar" mostramos TODOS los pendientes (acumulados de todos los meses)
+    let list = activeTab === "por_cobrar" ? (allPorCobrar as Transaction[]) : transactions;
     if (activeTab === "ventas") list = list.filter(t => Number(t.subtotal_productos || 0) > 0);
     if (activeTab === "servicios") list = list.filter(t => Number(t.subtotal_servicios || 0) > 0);
-    if (activeTab === "por_cobrar") list = list.filter(t => t.por_cobrar && !t.cobrado_en && t.estado === "emitido");
     if (activeTab === "comprobantes") {
       list = list.filter(t => t.estado === "emitido" && (t.tipo_comprobante || t.numero_comprobante));
       if (comprobantesFilter !== "todos") list = list.filter(t => t.tipo_comprobante === comprobantesFilter);
@@ -359,12 +359,12 @@ const AccountingPage = () => {
       list = list.filter(t => t.cliente_nombre?.toLowerCase().includes(q));
     }
     return list;
-  }, [transactions, activeTab, searchClient, comprobantesFilter]);
+  }, [transactions, allPorCobrar, activeTab, searchClient, comprobantesFilter]);
 
   // ─── Metrics ───────────────────────────────────────────────────
   const emitidos = transactions.filter(t => t.estado === "emitido");
   const cobrados = emitidos.filter(t => !t.por_cobrar || t.cobrado_en);
-  const porCobrar = emitidos.filter(t => t.por_cobrar && !t.cobrado_en);
+  const porCobrar = allPorCobrar as Transaction[];
   const totalProductos = cobrados.reduce((a, t) => a + Number(t.subtotal_productos || 0), 0);
   const totalServicios = cobrados.reduce((a, t) => a + Number(t.subtotal_servicios || 0), 0);
   const totalGeneral = cobrados.reduce((a, t) => a + Number(t.total || 0), 0);
