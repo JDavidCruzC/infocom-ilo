@@ -13,6 +13,7 @@ export const ALL_MODULES = [
   { key: "marcas", label: "Marcas", icon: "🏷️", group: "Productos" },
   { key: "kardex", label: "Kardex", icon: "📜", group: "Productos" },
   { key: "compras", label: "Compras", icon: "🛒", group: "Compras" },
+  { key: "gastos", label: "Gastos Empresa", icon: "🧾", group: "Compras" },
   { key: "proveedores", label: "Proveedores", icon: "🚚", group: "Compras" },
   { key: "pos", label: "Punto de Venta", icon: "💳", group: "Ventas" },
   { key: "pedidos", label: "Pedidos Online", icon: "🛍️", group: "Ventas" },

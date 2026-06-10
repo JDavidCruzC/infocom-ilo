@@ -50,6 +50,7 @@ import CustomersPage from "@/features/admin/pages/CustomersPage";
 import AppointmentsPage from "@/features/admin/pages/AppointmentsPage";
 import SuppliersPage from "@/features/admin/pages/SuppliersPage";
 import PurchasesPage from "@/features/admin/pages/PurchasesPage";
+import ExpensesPage from "@/features/admin/pages/ExpensesPage";
 import KardexPage from "@/features/admin/pages/KardexPage";
 import PermissionsConfigPage from "@/features/admin/pages/PermissionsConfigPage";
 import CombosPage from "@/features/admin/pages/CombosPage";
@@ -145,6 +146,7 @@ const App = () => (
                   <Route path="combos" element={<PermissionRoute module="combos"><CombosPage /></PermissionRoute>} />
                   <Route path="compras" element={<PermissionRoute module="compras"><PurchasesPage /></PermissionRoute>} />
                   <Route path="proveedores" element={<PermissionRoute module="proveedores"><SuppliersPage /></PermissionRoute>} />
+                  <Route path="gastos" element={<PermissionRoute module="gastos"><ExpensesPage /></PermissionRoute>} />
                   <Route path="banners" element={<PermissionRoute module="banners"><BannersPage /></PermissionRoute>} />
                   <Route path="empresa" element={<PermissionRoute module="empresa"><CompanyPage /></PermissionRoute>} />
                   <Route path="roles" element={<AdminOnlyRoute><RolesPage /></AdminOnlyRoute>} />
