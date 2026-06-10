@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTheme } from "@/features/theme/ThemeProvider";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Settings, PartyPopper, Sun, Receipt, Save, Loader2, Building2, Sparkles, MessageSquareHeart, Database, Lock } from "lucide-react";
+import { Settings, PartyPopper, Sun, Receipt, Save, Loader2, Building2, Sparkles, MessageSquareHeart, Database, Lock, KeyRound, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   DEFAULT_COMPANY_INFO,
@@ -164,6 +165,68 @@ const SettingsPage = () => {
 
   const setCI = (patch: Partial<CompanyReceiptInfo>) => setCompanyInfo(prev => ({ ...prev, ...patch }));
 
+  // ─── API DNI (Factiliza) ───
+  const { data: dniCfg, refetch: refetchDni } = useQuery({
+    queryKey: ["dni_api_config"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("store_settings")
+        .select("value")
+        .eq("key", "dni_api_config")
+        .maybeSingle();
+      const v: any = data?.value || {};
+      const period = `${new Date().getUTCFullYear()}-${String(new Date().getUTCMonth() + 1).padStart(2, "0")}`;
+      return {
+        token: v.token || "",
+        limit: Number(v.limit) || 100,
+        count: v.period === period ? (Number(v.count) || 0) : 0,
+        period,
+        last_used_at: v.last_used_at || null,
+      };
+    },
+  });
+  const [dniToken, setDniToken] = useState("");
+  const [dniLimit, setDniLimit] = useState<number>(100);
+  const [savingDni, setSavingDni] = useState(false);
+  useEffect(() => {
+    if (dniCfg) {
+      setDniToken(dniCfg.token || "");
+      setDniLimit(dniCfg.limit || 100);
+    }
+  }, [dniCfg]);
+
+  const saveDniConfig = async (resetCounter = false) => {
+    setSavingDni(true);
+    try {
+      const period = `${new Date().getUTCFullYear()}-${String(new Date().getUTCMonth() + 1).padStart(2, "0")}`;
+      const newVal: any = {
+        token: dniToken.trim(),
+        limit: Number(dniLimit) || 100,
+        count: resetCounter ? 0 : (dniCfg?.count || 0),
+        period,
+        last_used_at: dniCfg?.last_used_at || null,
+      };
+      const { data: existing } = await supabase
+        .from("store_settings")
+        .select("id")
+        .eq("key", "dni_api_config")
+        .maybeSingle();
+      if (existing) {
+        await supabase.from("store_settings").update({ value: newVal }).eq("key", "dni_api_config");
+      } else {
+        await supabase.from("store_settings").insert({ key: "dni_api_config", value: newVal });
+      }
+      await refetchDni();
+      toast.success(resetCounter ? "Contador reiniciado" : "✅ Configuración guardada");
+    } catch (e: any) {
+      toast.error("Error: " + e.message);
+    }
+    setSavingDni(false);
+  };
+
+  const dniUsagePct = dniCfg ? Math.min(100, Math.round((dniCfg.count / dniCfg.limit) * 100)) : 0;
+  const dniNearLimit = dniUsagePct >= 80;
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-display font-bold flex items-center gap-2">
@@ -171,10 +234,11 @@ const SettingsPage = () => {
       </h1>
 
       <Tabs defaultValue="tickets" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
           <TabsTrigger value="tickets" className="gap-1"><Receipt className="h-4 w-4" /> Tickets</TabsTrigger>
           <TabsTrigger value="apariencia" className="gap-1"><Sparkles className="h-4 w-4" /> Apariencia</TabsTrigger>
           <TabsTrigger value="empresa" className="gap-1"><Building2 className="h-4 w-4" /> Empresa</TabsTrigger>
+          <TabsTrigger value="api-dni" className="gap-1"><KeyRound className="h-4 w-4" /> API DNI</TabsTrigger>
           <TabsTrigger value="sistema" className="gap-1"><Database className="h-4 w-4" /> Sistema</TabsTrigger>
         </TabsList>
 
@@ -400,6 +464,119 @@ const SettingsPage = () => {
             <CardContent>
               <Button asChild variant="outline">
                 <a href="/admin/empresa"><Building2 className="h-4 w-4 mr-2" /> Ir a módulo de Empresa</a>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── API DNI ─── */}
+        <TabsContent value="api-dni" className="space-y-6 mt-4">
+          <Card className="border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <KeyRound className="h-5 w-5 text-primary" /> Token de API DNI (Factiliza)
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Este token se usa para consultar nombres por DNI en POS, recepción técnica y ventas.
+                El plan gratuito permite un número limitado de consultas por mes.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {/* Usage meter */}
+              <div className="p-4 rounded-lg border bg-muted/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">Consumo del mes ({dniCfg?.period || "—"})</p>
+                    <p className="text-xs text-muted-foreground">
+                      {dniCfg?.last_used_at
+                        ? `Última consulta: ${new Date(dniCfg.last_used_at).toLocaleString("es-PE")}`
+                        : "Sin consultas aún"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-2xl font-bold ${dniNearLimit ? "text-destructive" : "text-primary"}`}>
+                      {dniCfg?.count ?? 0}<span className="text-sm text-muted-foreground"> / {dniCfg?.limit ?? 100}</span>
+                    </p>
+                  </div>
+                </div>
+                <Progress value={dniUsagePct} className={dniNearLimit ? "[&>div]:bg-destructive" : ""} />
+                {dniNearLimit && (
+                  <div className="flex items-start gap-2 p-2 rounded bg-destructive/10 text-destructive text-xs">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>Estás cerca del límite mensual. Crea una cuenta nueva en Factiliza y cambia el token antes de quedarte sin consultas.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Token input */}
+              <div className="space-y-1.5">
+                <Label className="text-sm flex items-center gap-1.5">🔑 Token Bearer (Factiliza)</Label>
+                <Textarea
+                  value={dniToken}
+                  onChange={e => setDniToken(e.target.value)}
+                  rows={4}
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  className="font-mono text-xs"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Pega el token sin el prefijo "Bearer ". Si lo dejas vacío, el sistema usará un token público compartido (no recomendado).
+                </p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">📊 Límite mensual del plan</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={dniLimit}
+                    onChange={e => setDniLimit(Number(e.target.value))}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Factiliza gratuito = 100 consultas/mes.</p>
+                </div>
+                <div className="flex items-end gap-2">
+                  <Button onClick={() => saveDniConfig(false)} disabled={savingDni} className="flex-1">
+                    {savingDni ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                    Guardar
+                  </Button>
+                  <Button variant="outline" onClick={() => saveDniConfig(true)} disabled={savingDni} title="Reiniciar contador a 0">
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Instructions */}
+          <Card className="border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ExternalLink className="h-4 w-4 text-primary" /> ¿Cómo obtener un token nuevo?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
+                <li>
+                  Entrá a{" "}
+                  <a href="https://app.factiliza.com/" target="_blank" rel="noreferrer" className="text-primary font-semibold underline">
+                    app.factiliza.com
+                  </a>{" "}
+                  y creá una cuenta nueva (podés usar otro correo si ya gastaste el cupo del actual).
+                </li>
+                <li>Confirmá el correo de registro y volvé a iniciar sesión.</li>
+                <li>
+                  En el menú lateral abrí <span className="font-semibold text-foreground">API Consulta → Token</span>.
+                </li>
+                <li>
+                  Hacé clic en <span className="font-semibold text-foreground">Copiar</span> para copiar el token Bearer.
+                </li>
+                <li>Pegalo arriba en el campo "Token Bearer" y presioná <span className="font-semibold text-foreground">Guardar</span>.</li>
+                <li>Luego presioná el botón <RefreshCw className="inline h-3 w-3" /> para reiniciar el contador a 0.</li>
+              </ol>
+              <Button asChild variant="outline" size="sm" className="mt-2">
+                <a href="https://app.factiliza.com/" target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir Factiliza
+                </a>
               </Button>
             </CardContent>
           </Card>
