@@ -13,6 +13,7 @@ const DashboardPage = () => {
     products: 0, orders: 0, revenue: 0, lowStock: 0, pendingServices: 0,
     attendancePct: 0, monthSales: 0, monthServices: 0, monthTotal: 0,
     totalTransactions: 0, activeStaff: 0, todaySales: 0, prevMonthTotal: 0,
+    monthExpenses: 0, monthExpensesCount: 0, monthPurchases: 0, monthPurchasesCount: 0,
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
