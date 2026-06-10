@@ -165,6 +165,68 @@ const SettingsPage = () => {
 
   const setCI = (patch: Partial<CompanyReceiptInfo>) => setCompanyInfo(prev => ({ ...prev, ...patch }));
 
+  // ─── API DNI (Factiliza) ───
+  const { data: dniCfg, refetch: refetchDni } = useQuery({
+    queryKey: ["dni_api_config"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("store_settings")
+        .select("value")
+        .eq("key", "dni_api_config")
+        .maybeSingle();
+      const v: any = data?.value || {};
+      const period = `${new Date().getUTCFullYear()}-${String(new Date().getUTCMonth() + 1).padStart(2, "0")}`;
+      return {
+        token: v.token || "",
+        limit: Number(v.limit) || 100,
+        count: v.period === period ? (Number(v.count) || 0) : 0,
+        period,
+        last_used_at: v.last_used_at || null,
+      };
+    },
+  });
+  const [dniToken, setDniToken] = useState("");
+  const [dniLimit, setDniLimit] = useState<number>(100);
+  const [savingDni, setSavingDni] = useState(false);
+  useEffect(() => {
+    if (dniCfg) {
+      setDniToken(dniCfg.token || "");
+      setDniLimit(dniCfg.limit || 100);
+    }
+  }, [dniCfg]);
+
+  const saveDniConfig = async (resetCounter = false) => {
+    setSavingDni(true);
+    try {
+      const period = `${new Date().getUTCFullYear()}-${String(new Date().getUTCMonth() + 1).padStart(2, "0")}`;
+      const newVal: any = {
+        token: dniToken.trim(),
+        limit: Number(dniLimit) || 100,
+        count: resetCounter ? 0 : (dniCfg?.count || 0),
+        period,
+        last_used_at: dniCfg?.last_used_at || null,
+      };
+      const { data: existing } = await supabase
+        .from("store_settings")
+        .select("id")
+        .eq("key", "dni_api_config")
+        .maybeSingle();
+      if (existing) {
+        await supabase.from("store_settings").update({ value: newVal }).eq("key", "dni_api_config");
+      } else {
+        await supabase.from("store_settings").insert({ key: "dni_api_config", value: newVal });
+      }
+      await refetchDni();
+      toast.success(resetCounter ? "Contador reiniciado" : "✅ Configuración guardada");
+    } catch (e: any) {
+      toast.error("Error: " + e.message);
+    }
+    setSavingDni(false);
+  };
+
+  const dniUsagePct = dniCfg ? Math.min(100, Math.round((dniCfg.count / dniCfg.limit) * 100)) : 0;
+  const dniNearLimit = dniUsagePct >= 80;
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-display font-bold flex items-center gap-2">
