@@ -249,6 +249,34 @@ const AccountingPage = () => {
     },
   });
 
+  // Gastos y compras del mes (para mostrar y restar al neto)
+  const { data: monthExpenses = [] } = useQuery({
+    queryKey: ["accounting_expenses", year, month],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("expenses" as any)
+        .select("amount, category, expense_date, description")
+        .gte("expense_date", startDate)
+        .lte("expense_date", endDate);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: monthPurchases = [] } = useQuery({
+    queryKey: ["accounting_purchases", year, month],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchases")
+        .select("total, status, order_date")
+        .gte("order_date", startDate)
+        .lte("order_date", endDate)
+        .neq("status", "cancelado");
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
   // Products from inventory
   const { data: products = [] } = useQuery({
     queryKey: ["products_for_accounting"],
