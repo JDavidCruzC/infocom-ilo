@@ -146,6 +146,7 @@ const App = () => (
                   <Route path="combos" element={<PermissionRoute module="combos"><CombosPage /></PermissionRoute>} />
                   <Route path="compras" element={<PermissionRoute module="compras"><PurchasesPage /></PermissionRoute>} />
                   <Route path="proveedores" element={<PermissionRoute module="proveedores"><SuppliersPage /></PermissionRoute>} />
+                  <Route path="gastos" element={<PermissionRoute module="gastos"><ExpensesPage /></PermissionRoute>} />
                   <Route path="banners" element={<PermissionRoute module="banners"><BannersPage /></PermissionRoute>} />
                   <Route path="empresa" element={<PermissionRoute module="empresa"><CompanyPage /></PermissionRoute>} />
                   <Route path="roles" element={<AdminOnlyRoute><RolesPage /></AdminOnlyRoute>} />
