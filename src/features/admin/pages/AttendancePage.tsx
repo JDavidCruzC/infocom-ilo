@@ -545,7 +545,7 @@ const AttendancePage = () => {
   };
 
   const markStaffEntry = (staffMember: any, silent = false) => {
-    const todayDate = new Date().toISOString().split("T")[0];
+    const todayDate = getLocalDateStr();
     const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
     const rec = recordMap[staffMember.id]?.[todayDate];
     if (rec?.check_in_time) return;
@@ -584,7 +584,7 @@ const AttendancePage = () => {
 
 
   const myStaff = staff.find((s: any) => s.user_id === user?.id);
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
   const myRecord = myStaff ? recordMap[myStaff.id]?.[today] : null;
   const myCheckedIn = !!myRecord?.check_in_time;
   const myCheckedOut = !!myRecord?.check_out_time;
@@ -997,7 +997,7 @@ const AttendancePage = () => {
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {quickAttendanceStaff.map((s: any) => {
-                  const todayDate = new Date().toISOString().split("T")[0];
+                  const todayDate = getLocalDateStr();
                   const rec = recordMap[s.id]?.[todayDate];
                   const hasIn = !!rec?.check_in_time;
                   const hasOut = !!rec?.check_out_time;
