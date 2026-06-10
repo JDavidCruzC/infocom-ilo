@@ -60,6 +60,14 @@ const DashboardPage = () => {
         supabase.from("transactions").select("total").eq("estado", "emitido").gte("fecha", pmStart).lte("fecha", pmEnd),
       ]);
 
+      const [{ data: expData }, { data: purchData }] = await Promise.all([
+        supabase.from("expenses" as any).select("amount").gte("expense_date", mStart).lte("expense_date", mEnd),
+        supabase.from("purchases").select("total").gte("order_date", mStart).lte("order_date", mEnd).neq("status", "cancelado"),
+      ]);
+      const monthExpensesTotal = (expData || []).reduce((a: number, r: any) => a + Number(r.amount || 0), 0);
+      const monthPurchasesTotal = (purchData || []).reduce((a: number, r: any) => a + Number(r.total || 0), 0);
+
+
       const revenue = (orders || []).reduce((sum: number, o: any) => sum + Number(o.total), 0);
       const pendingServices = (serviceOrders || []).filter((s: any) => s.status === "pending" || s.status === "in_progress").length;
 
