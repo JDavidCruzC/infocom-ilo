@@ -397,6 +397,9 @@ const AccountingPage = () => {
   const totalServicios = cobrados.reduce((a, t) => a + Number(t.subtotal_servicios || 0), 0);
   const totalGeneral = cobrados.reduce((a, t) => a + Number(t.total || 0), 0);
   const totalPorCobrar = porCobrar.reduce((a, t) => a + Number(t.total || 0), 0);
+  const totalGastos = monthExpenses.reduce((a: number, e: any) => a + Number(e.amount || 0), 0);
+  const totalCompras = monthPurchases.reduce((a: number, p: any) => a + Number(p.total || 0), 0);
+  const netoMes = totalGeneral - totalGastos - totalCompras;
 
   // ─── Mutations ────────────────────────────────────────────────
   const saveMutation = useMutation({
