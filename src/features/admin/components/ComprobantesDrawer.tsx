@@ -285,9 +285,9 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
                     {list.map(tx => {
                       const def = DOCUMENT_KINDS.find(d => d.value === tx.tipo_comprobante);
                       return (
-                        <label key={tx.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-primary/5 cursor-pointer border-b border-primary/10 last:border-0">
+                        <div key={tx.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-primary/5 border-b border-primary/10 last:border-0">
                           <Checkbox checked={selected.has(tx.id)} onCheckedChange={() => toggleOne(tx.id)} />
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleOne(tx.id)}>
                             <div className="text-[11px] font-medium truncate">
                               {def?.short || tx.tipo_comprobante} N° {tx.numero_comprobante || tx.ticket_number || "—"}
                             </div>
@@ -296,7 +296,16 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
                             </div>
                           </div>
                           <div className="text-[11px] font-mono font-bold">S/ {Number(tx.total || 0).toFixed(2)}</div>
-                        </label>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-primary"
+                            title="Personalizar e imprimir"
+                            onClick={(e) => { e.stopPropagation(); setCustomPrint({ id: tx.id, kind: tx.tipo_comprobante || "boleta" }); }}
+                          >
+                            <Sparkles className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       );
                     })}
                   </ScrollArea>
