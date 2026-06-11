@@ -37,6 +37,7 @@ const CustomersPage = () => {
   const [search, setSearch] = useState("");
   const [filterVip, setFilterVip] = useState(false);
   const [activeTab, setActiveTab] = useState("lista");
+  const [detailCustomerId, setDetailCustomerId] = useState<string | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers"],
