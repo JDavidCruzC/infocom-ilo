@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users, Plus, Search, Star, Phone, Mail, IdCard, Gift, TrendingUp, BarChart3, Crown, Award, Download } from "lucide-react";
+import { Users, Plus, Search, Star, Phone, Mail, IdCard, Gift, TrendingUp, BarChart3, Crown, Award, Download, Eye } from "lucide-react";
+import { CustomerDetailDialog } from "@/features/admin/components/CustomerDetailDialog";
 import { CURRENCY } from "@/lib/types";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import XLSX from "xlsx-js-style";
@@ -36,6 +37,7 @@ const CustomersPage = () => {
   const [search, setSearch] = useState("");
   const [filterVip, setFilterVip] = useState(false);
   const [activeTab, setActiveTab] = useState("lista");
+  const [detailCustomerId, setDetailCustomerId] = useState<string | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers"],
@@ -331,6 +333,9 @@ const CustomersPage = () => {
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="secondary">{c.total_purchases || 0} compras</Badge>
                         <Badge variant="outline">{CURRENCY}{Number(c.total_spent || 0).toLocaleString()}</Badge>
+                        <Button variant="default" size="sm" className="gap-1" onClick={() => setDetailCustomerId(c.id)}>
+                          <Eye className="h-3.5 w-3.5" /> Ver detalle
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => openEdit(c)}>Editar</Button>
                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { if (confirm("¿Eliminar este cliente?")) deleteMutation.mutate(c.id); }}>✕</Button>
                       </div>
@@ -503,6 +508,11 @@ const CustomersPage = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      <CustomerDetailDialog
+        customerId={detailCustomerId}
+        onClose={() => setDetailCustomerId(null)}
+      />
     </div>
   );
 };
