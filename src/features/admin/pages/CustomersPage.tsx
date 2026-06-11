@@ -508,6 +508,11 @@ const CustomersPage = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      <CustomerDetailDialog
+        customerId={detailCustomerId}
+        onClose={() => setDetailCustomerId(null)}
+      />
     </div>
   );
 };
