@@ -333,6 +333,9 @@ const CustomersPage = () => {
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="secondary">{c.total_purchases || 0} compras</Badge>
                         <Badge variant="outline">{CURRENCY}{Number(c.total_spent || 0).toLocaleString()}</Badge>
+                        <Button variant="default" size="sm" className="gap-1" onClick={() => setDetailCustomerId(c.id)}>
+                          <Eye className="h-3.5 w-3.5" /> Ver detalle
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => openEdit(c)}>Editar</Button>
                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { if (confirm("¿Eliminar este cliente?")) deleteMutation.mutate(c.id); }}>✕</Button>
                       </div>
