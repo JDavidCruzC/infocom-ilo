@@ -23,6 +23,7 @@ import {
   type ReceiptTemplate,
 } from "@/features/admin/components/PrintReceipt";
 import { FileText } from "lucide-react";
+import ReceiptTemplateManager from "@/features/admin/components/ReceiptTemplateManager";
 
 const THEME_EMOJIS: Record<string, string> = {
   default: "🎮", san_valentin: "❤️", halloween: "🎃", navidad: "🎄",
