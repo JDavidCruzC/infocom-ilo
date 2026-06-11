@@ -30,6 +30,7 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<{ kind: DocumentKind; label: string; value: number } | null>(null);
   const [newValue, setNewValue] = useState("");
+  const [customPrint, setCustomPrint] = useState<{ id: string; kind: string } | null>(null);
 
   const today = new Date();
   const [mode, setMode] = useState<"month" | "range">("month");
