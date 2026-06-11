@@ -86,11 +86,6 @@ export function RichEditor({ value, onChange, variables = [], blocks = [], class
     const url = window.prompt("URL");
     if (url) editor.chain().focus().setLink({ href: url }).run();
   };
-  const setSize = (size: string) => {
-    editor.chain().focus().setMark("textStyle", { fontSize: size } as any).run();
-    const el = (editor.view.dom as HTMLElement);
-    // Fallback: tiptap textStyle doesn't natively support fontSize, use inline style via custom mark
-  };
 
   return (
     <div className={cn("rounded-lg border border-primary/20 bg-card overflow-hidden", className)}>
