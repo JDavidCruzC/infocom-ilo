@@ -64,8 +64,8 @@ export default function CustomPrintDialog({ open, onClose, source, sourceId, kin
         if (source === "transaction") {
           const { data: tx } = await supabase
             .from("transactions")
-            .select("id, fecha, cliente_nombre, cliente_documento, cliente_telefono, tipo_comprobante, numero_comprobante, ticket_number, total, subtotal_productos, subtotal_servicios, metodo_pago, emitido_por, notas")
-            .eq("id", sourceId).maybeSingle();
+            .select("id, fecha, cliente_nombre, cliente_telefono, tipo_comprobante, numero_comprobante, ticket_number, total, subtotal_productos, subtotal_servicios, emitido_por, notas")
+            .eq("id", sourceId).maybeSingle() as any;
           const { data: items } = await supabase
             .from("transaction_items").select("descripcion, cantidad, precio_unitario, subtotal, item_type").eq("transaction_id", sourceId);
 
@@ -74,7 +74,7 @@ export default function CustomPrintDialog({ open, onClose, source, sourceId, kin
           const total = Number(tx?.total || 0);
           const sub = total / 1.18;
           const igv = total - sub;
-          const itemsRows = (items || []).map(it =>
+          const itemsRows = (items || []).map((it: any) =>
             `<tr><td style="text-align:center">${it.cantidad}</td><td>${escapeHtml(it.descripcion || "")}</td><td style="text-align:right">S/ ${Number(it.precio_unitario || 0).toFixed(2)}</td><td style="text-align:right">S/ ${Number(it.subtotal || 0).toFixed(2)}</td></tr>`
           ).join("");
           const itemsTabla = `<table><thead><tr><th>Cant</th><th>Descripción</th><th>P. Unit</th><th>Subtotal</th></tr></thead><tbody>${itemsRows || '<tr><td colspan="4" style="text-align:center">Sin items</td></tr>'}</tbody></table>`;
@@ -89,30 +89,30 @@ export default function CustomPrintDialog({ open, onClose, source, sourceId, kin
             },
             cliente: {
               nombre: tx?.cliente_nombre || "—",
-              documento: tx?.cliente_documento || "",
+              documento: "",
               telefono: tx?.cliente_telefono || "",
               direccion: "",
             },
             items_tabla: itemsTabla,
             totales: { subtotal: sub.toFixed(2), igv: igv.toFixed(2), total: total.toFixed(2), total_letras: "" },
             vendedor: { nombre: tx?.emitido_por || "" },
-            pago: { metodo: tx?.metodo_pago || "Efectivo", recibido: "", vuelto: "" },
+            pago: { metodo: "Efectivo", recibido: "", vuelto: "" },
             notas: tx?.notas || "",
           };
         } else {
           const { data: so } = await supabase
-            .from("service_orders").select("*").eq("id", sourceId).maybeSingle();
-          const fecha = so?.created_at ? new Date(so.created_at) : new Date();
+            .from("service_orders").select("*").eq("id", sourceId).maybeSingle() as any;
+          const fecha = so?.received_at ? new Date(so.received_at) : new Date();
           built = {
             ...built,
             orden: {
-              numero: so?.order_number || so?.id?.slice(0, 8) || "—",
+              numero: so?.order_number ? String(so.order_number).padStart(6, "0") : "—",
               fecha: fecha.toLocaleDateString("es-PE"),
-              fecha_estimada: so?.estimated_delivery ? new Date(so.estimated_delivery).toLocaleDateString("es-PE") : "—",
+              fecha_estimada: so?.completed_at ? new Date(so.completed_at).toLocaleDateString("es-PE") : "—",
             },
             cliente: {
               nombre: so?.customer_name || "—",
-              documento: so?.customer_dni || "",
+              documento: "",
               telefono: so?.customer_phone || "",
               direccion: "",
             },
@@ -120,13 +120,13 @@ export default function CustomPrintDialog({ open, onClose, source, sourceId, kin
               tipo: so?.device_type || "",
               marca: so?.device_brand || "",
               modelo: so?.device_model || "",
-              serie: so?.serial_number || "",
+              serie: "",
               accesorios: so?.accessories || "",
-              estado: so?.device_condition || "",
+              estado: "",
             },
             falla: { reportada: so?.reported_issue || "" },
             diagnostico: so?.diagnosis || "",
-            tecnico: { nombre: so?.assigned_technician || "" },
+            tecnico: { nombre: "" },
             costo: { estimado: Number(so?.estimated_cost || 0).toFixed(2) },
             notas: so?.notes || "",
           };
