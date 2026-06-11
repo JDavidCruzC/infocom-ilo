@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   List, ListOrdered, Image as ImageIcon, Table as TableIcon, Minus, Link as LinkIcon, Undo, Redo,
-  Heading1, Heading2, Heading3, Palette, Highlighter, Quote, Code, ChevronDown, Sparkles,
+  Palette, Highlighter, Quote, Code, ChevronDown, Sparkles,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useEffect } from "react";
