@@ -1175,6 +1175,45 @@ export type Database = {
           },
         ]
       }
+      receipt_templates: {
+        Row: {
+          content_html: string
+          content_json: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_default: boolean
+          kind: string
+          name: string
+          paper_size: string
+          updated_at: string
+        }
+        Insert: {
+          content_html?: string
+          content_json?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          kind: string
+          name: string
+          paper_size?: string
+          updated_at?: string
+        }
+        Update: {
+          content_html?: string
+          content_json?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          kind?: string
+          name?: string
+          paper_size?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_metadata: {
         Row: {
           color: string
