@@ -23,6 +23,7 @@ import {
   type ReceiptTemplate,
 } from "@/features/admin/components/PrintReceipt";
 import { FileText } from "lucide-react";
+import ReceiptTemplateManager from "@/features/admin/components/ReceiptTemplateManager";
 
 const THEME_EMOJIS: Record<string, string> = {
   default: "🎮", san_valentin: "❤️", halloween: "🎃", navidad: "🎄",
@@ -234,13 +235,18 @@ const SettingsPage = () => {
       </h1>
 
       <Tabs defaultValue="tickets" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6">
           <TabsTrigger value="tickets" className="gap-1"><Receipt className="h-4 w-4" /> Tickets</TabsTrigger>
+          <TabsTrigger value="editor" className="gap-1"><FileText className="h-4 w-4" /> Editor Visual</TabsTrigger>
           <TabsTrigger value="apariencia" className="gap-1"><Sparkles className="h-4 w-4" /> Apariencia</TabsTrigger>
           <TabsTrigger value="empresa" className="gap-1"><Building2 className="h-4 w-4" /> Empresa</TabsTrigger>
           <TabsTrigger value="api-dni" className="gap-1"><KeyRound className="h-4 w-4" /> API DNI</TabsTrigger>
           <TabsTrigger value="sistema" className="gap-1"><Database className="h-4 w-4" /> Sistema</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="editor" className="mt-4">
+          <ReceiptTemplateManager />
+        </TabsContent>
 
         {/* ─── TICKETS ─── */}
         <TabsContent value="tickets" className="space-y-6 mt-4">
