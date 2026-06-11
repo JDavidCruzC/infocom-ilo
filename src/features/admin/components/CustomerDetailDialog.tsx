@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   User, Phone, Mail, IdCard, MapPin, Star, Calendar, ShoppingCart,
-  Wrench, TrendingUp, Award, Receipt, ClipboardList, Crown
+  Wrench, TrendingUp, Award, Receipt, Crown, ChevronDown, ChevronRight,
+  Package, Sparkles, TrendingDown
 } from "lucide-react";
 
 interface Props {
@@ -73,6 +75,37 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
 
   // Fetch all transaction items for emitted ones (for spending breakdown)
   const emitted = transactions.filter((t: any) => t.estado === "emitido");
+  const emittedIds = emitted.map((t: any) => t.id);
+
+  const { data: allItems = [] } = useQuery({
+    queryKey: ["customer_tx_items", emittedIds.join(",")],
+    queryFn: async () => {
+      if (emittedIds.length === 0) return [];
+      const { data } = await supabase
+        .from("transaction_items")
+        .select("*")
+        .in("transaction_id", emittedIds);
+      return data || [];
+    },
+    enabled: emittedIds.length > 0 && open,
+  });
+
+  const itemsByTx = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    (allItems as any[]).forEach((it) => {
+      (map[it.transaction_id] ||= []).push(it);
+    });
+    return map;
+  }, [allItems]);
+
+  const [expandedTx, setExpandedTx] = useState<Set<string>>(new Set());
+  const toggleTx = (id: string) => {
+    setExpandedTx((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   const metrics = useMemo(() => {
     const totalSpent = emitted.reduce((a: number, t: any) => a + Number(t.total || 0), 0);
@@ -82,8 +115,36 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
     const ticketPromedio = numCompras > 0 ? totalSpent / numCompras : 0;
     const ultimaCompra = emitted[0]?.fecha || null;
     const techOrders = serviceOrders.length;
-    return { totalSpent, totalProductos, totalServicios, numCompras, ticketPromedio, ultimaCompra, techOrders };
-  }, [emitted, serviceOrders]);
+    const totalUnidades = (allItems as any[]).reduce((a, it) => a + Number(it.cantidad || 0), 0);
+    return { totalSpent, totalProductos, totalServicios, numCompras, ticketPromedio, ultimaCompra, techOrders, totalUnidades };
+  }, [emitted, serviceOrders, allItems]);
+
+  // Aggregate items by description
+  const itemRanking = useMemo(() => {
+    const map = new Map<string, { descripcion: string; item_type: string; cantidad: number; total: number; ultimo: string; veces: number }>();
+    (allItems as any[]).forEach((it) => {
+      const key = `${it.item_type}::${it.descripcion}`;
+      const tx = transactions.find((t: any) => t.id === it.transaction_id);
+      const fecha = tx?.fecha || "";
+      const prev = map.get(key);
+      if (prev) {
+        prev.cantidad += Number(it.cantidad || 0);
+        prev.total += Number(it.subtotal || 0);
+        prev.veces += 1;
+        if (fecha > prev.ultimo) prev.ultimo = fecha;
+      } else {
+        map.set(key, {
+          descripcion: it.descripcion,
+          item_type: it.item_type,
+          cantidad: Number(it.cantidad || 0),
+          total: Number(it.subtotal || 0),
+          veces: 1,
+          ultimo: fecha,
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [allItems, transactions]);
 
   // Loyalty tier
   const tier = metrics.numCompras >= 20
@@ -97,7 +158,7 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <div className={`h-10 w-10 rounded-full flex items-center justify-center ${customer?.is_vip ? "bg-yellow-500/20" : "bg-primary/10"}`}>
@@ -175,9 +236,12 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
           </Card>
         </div>
 
-        {/* Tabs: transactions + service orders */}
-        <Tabs defaultValue="transactions">
-          <TabsList className="grid w-full grid-cols-2">
+        {/* Tabs: detalle items + transactions + service orders */}
+        <Tabs defaultValue="detalle">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="detalle" className="gap-1 text-xs">
+              <Package className="h-3 w-3" /> Detalle ({itemRanking.length})
+            </TabsTrigger>
             <TabsTrigger value="transactions" className="gap-1 text-xs">
               <Receipt className="h-3 w-3" /> Transacciones ({transactions.length})
             </TabsTrigger>
@@ -185,6 +249,70 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
               <Wrench className="h-3 w-3" /> Órdenes Técnicas ({serviceOrders.length})
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="detalle" className="mt-3 space-y-3">
+            {/* Resumen productos vs servicios */}
+            <div className="grid grid-cols-3 gap-2">
+              <Card className="border-primary/20">
+                <CardContent className="p-3 text-center">
+                  <Package className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <p className="text-sm font-bold text-primary">{CURRENCY}{metrics.totalProductos.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">Productos</p>
+                </CardContent>
+              </Card>
+              <Card className="border-info/20">
+                <CardContent className="p-3 text-center">
+                  <Sparkles className="h-4 w-4 mx-auto mb-1 text-info" />
+                  <p className="text-sm font-bold text-info">{CURRENCY}{metrics.totalServicios.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">Servicios</p>
+                </CardContent>
+              </Card>
+              <Card className="border-success/20">
+                <CardContent className="p-3 text-center">
+                  <ShoppingCart className="h-4 w-4 mx-auto mb-1 text-success" />
+                  <p className="text-sm font-bold text-success">{metrics.totalUnidades}</p>
+                  <p className="text-[10px] text-muted-foreground">Unidades totales</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {itemRanking.length === 0 ? (
+              <p className="text-center text-muted-foreground text-xs py-6">Sin items registrados</p>
+            ) : (
+              <div className="border border-border rounded-lg overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Descripción</TableHead>
+                      <TableHead className="text-xs">Tipo</TableHead>
+                      <TableHead className="text-xs text-right">Cant.</TableHead>
+                      <TableHead className="text-xs text-right">Veces</TableHead>
+                      <TableHead className="text-xs whitespace-nowrap">Última</TableHead>
+                      <TableHead className="text-xs text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {itemRanking.map((it, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-xs max-w-[260px] truncate font-medium">{it.descripcion}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-[10px] capitalize ${it.item_type === "servicio" ? "border-info/40 text-info" : "border-primary/40 text-primary"}`}>
+                            {it.item_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-bold">{it.cantidad}</TableCell>
+                        <TableCell className="text-right text-xs">{it.veces}</TableCell>
+                        <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                          {it.ultimo ? new Date(it.ultimo + "T12:00:00").toLocaleDateString("es-PE") : "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-bold text-success">{CURRENCY}{it.total.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
 
           <TabsContent value="transactions" className="mt-3">
             {transactions.length === 0 ? (
@@ -194,29 +322,73 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="text-xs w-8"></TableHead>
                       <TableHead className="text-xs">Fecha</TableHead>
                       <TableHead className="text-xs">Tipo</TableHead>
                       <TableHead className="text-xs">Estado</TableHead>
+                      <TableHead className="text-xs text-right">Items</TableHead>
                       <TableHead className="text-xs text-right">Total</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map((t: any) => (
-                      <TableRow key={t.id} className={t.estado !== "emitido" ? "opacity-60" : ""}>
-                        <TableCell className="text-xs whitespace-nowrap">
-                          {new Date(t.fecha + "T12:00:00").toLocaleDateString("es-PE")}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-[10px] capitalize">{t.tipo_general}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={t.estado === "emitido" ? "default" : t.estado === "anulado" ? "destructive" : "secondary"} className="text-[10px] capitalize">
-                            {t.estado}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-xs">{CURRENCY}{Number(t.total).toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
+                    {transactions.map((t: any) => {
+                      const items = itemsByTx[t.id] || [];
+                      const isOpen = expandedTx.has(t.id);
+                      return (
+                        <React.Fragment key={t.id}>
+                          <TableRow
+                            className={`${t.estado !== "emitido" ? "opacity-60" : ""} cursor-pointer`}
+                            onClick={() => toggleTx(t.id)}
+                          >
+                            <TableCell className="p-1">
+                              <Button variant="ghost" size="icon" className="h-6 w-6">
+                                {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                              </Button>
+                            </TableCell>
+                            <TableCell className="text-xs whitespace-nowrap">
+                              {new Date(t.fecha + "T12:00:00").toLocaleDateString("es-PE")}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-[10px] capitalize">{t.tipo_general}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={t.estado === "emitido" ? "default" : t.estado === "anulado" ? "destructive" : "secondary"} className="text-[10px] capitalize">
+                                {t.estado}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right text-xs">{items.length}</TableCell>
+                            <TableCell className="text-right font-bold text-xs">{CURRENCY}{Number(t.total).toFixed(2)}</TableCell>
+                          </TableRow>
+                          {isOpen && (
+                            <TableRow key={`${t.id}-detail`} className="bg-muted/30 hover:bg-muted/30">
+                              <TableCell colSpan={6} className="p-3">
+                                {items.length === 0 ? (
+                                  <p className="text-[11px] text-muted-foreground italic">Sin items detallados</p>
+                                ) : (
+                                  <div className="space-y-1">
+                                    {items.map((it) => (
+                                      <div key={it.id} className="flex items-center justify-between gap-3 text-xs py-1 border-b border-border/40 last:border-0">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                          {it.item_type === "servicio"
+                                            ? <Sparkles className="h-3 w-3 text-info shrink-0" />
+                                            : <Package className="h-3 w-3 text-primary shrink-0" />}
+                                          <span className="truncate font-medium">{it.descripcion}</span>
+                                          {it.tipo_equipo && <span className="text-[10px] text-muted-foreground">({it.tipo_equipo})</span>}
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0 text-[11px]">
+                                          <span className="text-muted-foreground">{it.cantidad} × {CURRENCY}{Number(it.precio_unitario).toFixed(2)}</span>
+                                          <span className="font-bold text-success w-20 text-right">{CURRENCY}{Number(it.subtotal).toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -262,6 +434,7 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
             )}
           </TabsContent>
         </Tabs>
+
       </DialogContent>
     </Dialog>
   );
