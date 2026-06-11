@@ -335,9 +335,8 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
                       const items = itemsByTx[t.id] || [];
                       const isOpen = expandedTx.has(t.id);
                       return (
-                        <>
+                        <React.Fragment key={t.id}>
                           <TableRow
-                            key={t.id}
                             className={`${t.estado !== "emitido" ? "opacity-60" : ""} cursor-pointer`}
                             onClick={() => toggleTx(t.id)}
                           >
