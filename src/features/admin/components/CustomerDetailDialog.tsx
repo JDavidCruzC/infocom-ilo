@@ -386,7 +386,7 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
                               </TableCell>
                             </TableRow>
                           )}
-                        </>
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>
