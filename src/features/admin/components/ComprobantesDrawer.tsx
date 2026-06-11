@@ -338,6 +338,16 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {customPrint && (
+        <CustomPrintDialog
+          open={!!customPrint}
+          onClose={() => setCustomPrint(null)}
+          source="transaction"
+          sourceId={customPrint.id}
+          kind={customPrint.kind}
+        />
+      )}
     </>
   );
 }
