@@ -24,7 +24,7 @@ import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 const FONTS = ["Arial", "Helvetica", "Times New Roman", "Georgia", "Courier New", "Orbitron", "Space Grotesk", "Verdana", "Tahoma", "Impact"];
-const SIZES = ["10px", "12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px", "40px"];
+
 const COLORS = ["#000000", "#374151", "#6b7280", "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#16a34a"];
 const HIGHLIGHTS = ["#fef3c7", "#fee2e2", "#dcfce7", "#dbeafe", "#fae8ff", "#f1f5f9"];
 
