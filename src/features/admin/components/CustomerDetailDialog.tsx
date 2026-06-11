@@ -158,7 +158,7 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <div className={`h-10 w-10 rounded-full flex items-center justify-center ${customer?.is_vip ? "bg-yellow-500/20" : "bg-primary/10"}`}>
