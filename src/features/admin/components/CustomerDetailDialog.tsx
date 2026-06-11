@@ -75,6 +75,37 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
 
   // Fetch all transaction items for emitted ones (for spending breakdown)
   const emitted = transactions.filter((t: any) => t.estado === "emitido");
+  const emittedIds = emitted.map((t: any) => t.id);
+
+  const { data: allItems = [] } = useQuery({
+    queryKey: ["customer_tx_items", emittedIds.join(",")],
+    queryFn: async () => {
+      if (emittedIds.length === 0) return [];
+      const { data } = await supabase
+        .from("transaction_items")
+        .select("*")
+        .in("transaction_id", emittedIds);
+      return data || [];
+    },
+    enabled: emittedIds.length > 0 && open,
+  });
+
+  const itemsByTx = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    (allItems as any[]).forEach((it) => {
+      (map[it.transaction_id] ||= []).push(it);
+    });
+    return map;
+  }, [allItems]);
+
+  const [expandedTx, setExpandedTx] = useState<Set<string>>(new Set());
+  const toggleTx = (id: string) => {
+    setExpandedTx((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   const metrics = useMemo(() => {
     const totalSpent = emitted.reduce((a: number, t: any) => a + Number(t.total || 0), 0);
@@ -84,8 +115,36 @@ export const CustomerDetailDialog = ({ customerId, customerName, onClose }: Prop
     const ticketPromedio = numCompras > 0 ? totalSpent / numCompras : 0;
     const ultimaCompra = emitted[0]?.fecha || null;
     const techOrders = serviceOrders.length;
-    return { totalSpent, totalProductos, totalServicios, numCompras, ticketPromedio, ultimaCompra, techOrders };
-  }, [emitted, serviceOrders]);
+    const totalUnidades = (allItems as any[]).reduce((a, it) => a + Number(it.cantidad || 0), 0);
+    return { totalSpent, totalProductos, totalServicios, numCompras, ticketPromedio, ultimaCompra, techOrders, totalUnidades };
+  }, [emitted, serviceOrders, allItems]);
+
+  // Aggregate items by description
+  const itemRanking = useMemo(() => {
+    const map = new Map<string, { descripcion: string; item_type: string; cantidad: number; total: number; ultimo: string; veces: number }>();
+    (allItems as any[]).forEach((it) => {
+      const key = `${it.item_type}::${it.descripcion}`;
+      const tx = transactions.find((t: any) => t.id === it.transaction_id);
+      const fecha = tx?.fecha || "";
+      const prev = map.get(key);
+      if (prev) {
+        prev.cantidad += Number(it.cantidad || 0);
+        prev.total += Number(it.subtotal || 0);
+        prev.veces += 1;
+        if (fecha > prev.ultimo) prev.ultimo = fecha;
+      } else {
+        map.set(key, {
+          descripcion: it.descripcion,
+          item_type: it.item_type,
+          cantidad: Number(it.cantidad || 0),
+          total: Number(it.subtotal || 0),
+          veces: 1,
+          ultimo: fecha,
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [allItems, transactions]);
 
   // Loyalty tier
   const tier = metrics.numCompras >= 20
