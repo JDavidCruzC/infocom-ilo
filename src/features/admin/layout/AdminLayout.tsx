@@ -81,7 +81,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const { roles, signOut } = useAuth();
+  const { roles, signOut, isAdmin } = useAuth();
   const { canAccess } = usePermissions();
 
   const isActive = (path: string, end?: boolean) => {
