@@ -52,7 +52,7 @@ const allNavItems: NavItem[] = [
       { to: "/admin/pedidos", icon: ShoppingBag, label: "Pedidos Online", module: "pedidos" },
     ],
   },
-  { to: "/admin/contabilidad", icon: DollarSign, label: "Contabilidad", module: "contabilidad" },
+  { to: "/admin/contabilidad", icon: DollarSign, label: "Contabilidad", module: "contabilidad", adminOnly: true },
   {
     to: "/admin/clientes", icon: UserCheck, label: "Clientes",
     children: [
