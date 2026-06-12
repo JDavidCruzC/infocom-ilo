@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Clock, UserCheck, Filter, AlertTriangle, UserPlus, Sun, Moon, Settings2, Save, Loader2, FileSpreadsheet, FileText, User } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Clock, UserCheck, Filter, AlertTriangle, UserPlus, Sun, Moon, Settings2, Save, Loader2, FileSpreadsheet, FileText, User, Plus, Sparkles } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import XLSX from "xlsx-js-style";
 import { generateMonthlyAttendancePdf } from "@/features/admin/utils/attendancePdf";
@@ -552,6 +552,9 @@ const AttendancePage = () => {
       return;
     }
 
+    // RECOVERY: existing record (e.g. status 'F' falta) without check_in → turn it into a real entry
+    const isRecovery = !!existing && !existing.check_in_time;
+
     // No check-in yet
     if (rest) {
       toggleMutation.mutate({ staffId: currentStaff.id, date: today, status: "A", check_in: nowTime });
@@ -572,7 +575,11 @@ const AttendancePage = () => {
     }
     const status = isLate ? "T" : "A";
     toggleMutation.mutate({ staffId: currentStaff.id, date: today, status, check_in: nowTime });
-    toast.success(`Entrada registrada: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min, tolerancia ${tolerance} min)` : tolerance > 0 && lateBy > 0 ? ` (Dentro de tolerancia ${tolerance} min)` : ""}`);
+    if (isRecovery) {
+      toast.success(`✨ ¡Recuperación registrada! Entrada: ${nowTime}. La falta fue convertida en asistencia${isLate ? " con tardanza" : ""}.`, { duration: 6000 });
+    } else {
+      toast.success(`Entrada registrada: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min, tolerancia ${tolerance} min)` : tolerance > 0 && lateBy > 0 ? ` (Dentro de tolerancia ${tolerance} min)` : ""}`);
+    }
   };
 
   const markStaffEntry = (staffMember: any, silent = false) => {
@@ -709,15 +716,30 @@ const AttendancePage = () => {
                 </p>
               </div>
             </div>
-            <Button
-              size="lg"
-              className="gap-2 min-w-[200px]"
-              variant={hasPendingPriorShift ? "destructive" : myCheckedOut ? "secondary" : "default"}
-              onClick={selfCheckIn}
-            >
-              <UserCheck className="h-5 w-5" />
-              {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <Button
+                size="lg"
+                className="gap-2 min-w-[200px]"
+                variant={hasPendingPriorShift ? "destructive" : myCheckedOut ? "secondary" : "default"}
+                onClick={selfCheckIn}
+              >
+                <UserCheck className="h-5 w-5" />
+                {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
+              </Button>
+              {myCheckedOut && !hasPendingPriorShift && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="gap-2 border-2 border-primary/40 hover:bg-primary/10 hover:border-primary"
+                  onClick={selfCheckIn}
+                  title="Agregar turno extra"
+                >
+                  <Plus className="h-5 w-5 text-primary" />
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="hidden sm:inline">Turno extra</span>
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
