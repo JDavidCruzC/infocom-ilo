@@ -18,6 +18,7 @@ interface NavItem {
   label: string;
   end?: boolean;
   module?: string; // permission module key
+  adminOnly?: boolean;
   children?: NavItem[];
 }
 
@@ -51,7 +52,7 @@ const allNavItems: NavItem[] = [
       { to: "/admin/pedidos", icon: ShoppingBag, label: "Pedidos Online", module: "pedidos" },
     ],
   },
-  { to: "/admin/contabilidad", icon: DollarSign, label: "Contabilidad", module: "contabilidad" },
+  { to: "/admin/contabilidad", icon: DollarSign, label: "Contabilidad", module: "contabilidad", adminOnly: true },
   {
     to: "/admin/clientes", icon: UserCheck, label: "Clientes",
     children: [
@@ -80,7 +81,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const { roles, signOut } = useAuth();
+  const { roles, signOut, isAdmin } = useAuth();
   const { canAccess } = usePermissions();
 
   const isActive = (path: string, end?: boolean) => {
@@ -100,6 +101,7 @@ const AdminLayout = () => {
 
   // Filter by permission
   const filterByPermission = (item: NavItem): NavItem | null => {
+    if (item.adminOnly && !isAdmin) return null;
     if (item.children) {
       const filteredChildren = item.children
         .map(c => filterByPermission(c))

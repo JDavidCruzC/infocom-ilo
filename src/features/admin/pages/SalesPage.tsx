@@ -14,6 +14,7 @@ import { loadTemplate, buildHeaderHtml, buildSaleFooter, buildCopyright, loadCom
 import { CURRENCY, PAYMENT_METHOD_LABELS } from "@/lib/types";
 import type { PaymentMethod } from "@/lib/types";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import QuickTransactionDialog from "@/features/admin/components/QuickTransactionDialog";
 
 interface CartItem {
   product_id: string;
@@ -35,6 +36,8 @@ const SalesPage = () => {
   const [processing, setProcessing] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
   const [dniNotFound, setDniNotFound] = useState(false);
+  const [quickTxOpen, setQuickTxOpen] = useState(false);
+
 
   const [saleType, setSaleType] = useState<SaleType>("simple");
 
@@ -289,9 +292,14 @@ ${lastSale.customer.metodo_pago === "cash" && lastSale.change > 0 ? `<div class=
       {/* Left - Products */}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="mb-4">
-          <h1 className="text-2xl font-display font-bold flex items-center gap-2 mb-3">
-            <ShoppingCart className="h-6 w-6 text-primary" /> Punto de Venta
-          </h1>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h1 className="text-2xl font-display font-bold flex items-center gap-2">
+              <ShoppingCart className="h-6 w-6 text-primary" /> Punto de Venta
+            </h1>
+            <Button size="sm" className="gap-2" onClick={() => setQuickTxOpen(true)}>
+              <Plus className="h-4 w-4" /> Nueva Transacción
+            </Button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -593,6 +601,8 @@ ${lastSale.customer.metodo_pago === "cash" && lastSale.change > 0 ? `<div class=
           </div>
         </DialogContent>
       </Dialog>
+
+      <QuickTransactionDialog open={quickTxOpen} onOpenChange={setQuickTxOpen} />
     </div>
   );
 };
