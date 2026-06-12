@@ -690,16 +690,18 @@ const AttendancePage = () => {
     <div className="space-y-6">
       {/* Self check-in card for staff */}
       {!canUseControlView && myStaff && (
-        <Card className={`border-2 ${myCheckedIn && !myCheckedOut ? "border-primary/50 bg-primary/5" : myCheckedOut ? "border-success/50 bg-success/5" : "border-warning/50 bg-warning/5"}`}>
+        <Card className={`border-2 ${hasPendingPriorShift ? "border-warning/70 bg-warning/10" : myCheckedIn && !myCheckedOut ? "border-primary/50 bg-primary/5" : myCheckedOut ? "border-success/50 bg-success/5" : "border-warning/50 bg-warning/5"}`}>
           <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${myCheckedIn && !myCheckedOut ? "bg-primary/20" : myCheckedOut ? "bg-success/20" : "bg-warning/20"}`}>
-                {myCheckedOut ? <Clock className="h-6 w-6 text-success" /> : myCheckedIn ? <UserCheck className="h-6 w-6 text-primary" /> : <AlertTriangle className="h-6 w-6 text-warning" />}
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${hasPendingPriorShift ? "bg-warning/30 animate-pulse" : myCheckedIn && !myCheckedOut ? "bg-primary/20" : myCheckedOut ? "bg-success/20" : "bg-warning/20"}`}>
+                {hasPendingPriorShift ? <AlertTriangle className="h-6 w-6 text-warning" /> : myCheckedOut ? <Clock className="h-6 w-6 text-success" /> : myCheckedIn ? <UserCheck className="h-6 w-6 text-primary" /> : <AlertTriangle className="h-6 w-6 text-warning" />}
               </div>
               <div>
                 <p className="font-semibold">{myStaff.full_name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {myCheckedOut
+                  {hasPendingPriorShift
+                    ? `⚠️ Tienes una salida pendiente del ${myOpenShift?.date} (entrada ${myOpenShift?.check_in_time?.slice(0,5)}). Presiona para cerrarla a las 23:59.`
+                    : myCheckedOut
                     ? `✅ Jornada completada — Entrada: ${myRecord?.check_in_time} | Salida: ${myRecord?.check_out_time}. ¿Necesitas volver? Presiona Re-entrar.`
                     : myCheckedIn
                     ? `🟢 En turno desde las ${myRecord?.check_in_time} — Presiona para marcar salida`
@@ -710,11 +712,11 @@ const AttendancePage = () => {
             <Button
               size="lg"
               className="gap-2 min-w-[200px]"
-              variant={myCheckedOut ? "secondary" : "default"}
+              variant={hasPendingPriorShift ? "destructive" : myCheckedOut ? "secondary" : "default"}
               onClick={selfCheckIn}
             >
               <UserCheck className="h-5 w-5" />
-              {myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
+              {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
             </Button>
           </CardContent>
         </Card>
