@@ -153,7 +153,7 @@ const App = () => (
                   <Route path="permisos" element={<AdminOnlyRoute><PermissionsConfigPage /></AdminOnlyRoute>} />
                   <Route path="personal" element={<PermissionRoute module="personal"><StaffPage /></PermissionRoute>} />
                   <Route path="asistencias" element={<PermissionRoute module="asistencias"><AttendancePage /></PermissionRoute>} />
-                  <Route path="contabilidad" element={<PermissionRoute module="contabilidad"><AccountingPage /></PermissionRoute>} />
+                  <Route path="contabilidad" element={<AdminOnlyRoute><AccountingPage /></AdminOnlyRoute>} />
                   <Route path="clientes" element={<PermissionRoute module="clientes"><CustomersPage /></PermissionRoute>} />
                   <Route path="agenda" element={<PermissionRoute module="agenda"><AppointmentsPage /></PermissionRoute>} />
                   <Route path="configuracion" element={<AdminOnlyRoute><SettingsPage /></AdminOnlyRoute>} />
