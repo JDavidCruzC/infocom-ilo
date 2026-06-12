@@ -101,6 +101,7 @@ const AdminLayout = () => {
 
   // Filter by permission
   const filterByPermission = (item: NavItem): NavItem | null => {
+    if (item.adminOnly && !isAdmin) return null;
     if (item.children) {
       const filteredChildren = item.children
         .map(c => filterByPermission(c))
