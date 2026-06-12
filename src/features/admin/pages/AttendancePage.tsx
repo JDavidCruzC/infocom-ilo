@@ -489,30 +489,54 @@ const AttendancePage = () => {
     const currentStaff = staff.find((s: any) => s.user_id === session.session!.user.id);
     if (!currentStaff) { toast.error("Tu usuario no está vinculado a un registro de personal"); return; }
 
+    // PRIORITY: detect an OPEN shift (check_in without check_out) from the last 2 days.
+    // Prevents creating a new check-in when the user simply forgot to mark salida the day before.
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, "0")}-${String(twoDaysAgo.getDate()).padStart(2, "0")}`;
+    const { data: openRows } = await supabase
+      .from("attendance_records")
+      .select("*")
+      .eq("staff_id", currentStaff.id)
+      .gte("date", twoDaysStr)
+      .lte("date", today)
+      .not("check_in_time", "is", null)
+      .is("check_out_time", null)
+      .order("date", { ascending: false })
+      .limit(1);
+    const openShift = openRows?.[0];
+
+    if (openShift) {
+      const isPriorDay = openShift.date !== today;
+      const closeTime = isPriorDay ? "23:59" : nowTime;
+      const { error } = await supabase
+        .from("attendance_records")
+        .update({ check_out_time: closeTime })
+        .eq("id", openShift.id);
+      if (error) { toast.error("No se pudo registrar la salida"); return; }
+      qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+      if (isPriorDay) {
+        toast.warning(
+          `⏰ Salida pendiente del ${openShift.date} cerrada a las ${closeTime}. Si necesitas marcar entrada de hoy, presiona nuevamente.`,
+          { duration: 6000 }
+        );
+      } else {
+        const todaySchedules = getScheduleForDay(currentStaff.id, new Date().getDay());
+        let scheduledEnd = "20:00";
+        if (todaySchedules.length > 0) {
+          scheduledEnd = todaySchedules.reduce((max: string, s: any) => s.end_time > max ? s.end_time : max, todaySchedules[0].end_time);
+        }
+        const hasOvertime = nowTime > scheduledEnd;
+        toast.success(hasOvertime ? `Salida registrada: ${nowTime} 🔥 ¡Horas extra detectadas!` : `Salida registrada: ${nowTime}`);
+      }
+      return;
+    }
+
     const existing = recordMap[currentStaff.id]?.[today];
     const dayOfWeek = new Date().getDay();
     const rest = isRestDay(currentStaff.id, dayOfWeek);
 
-    // If already checked in and not checked out → mark checkout
-    if (existing?.check_in_time && !existing?.check_out_time) {
-      // Calculate if there are overtime hours
-      const todaySchedules = getScheduleForDay(currentStaff.id, dayOfWeek);
-      let scheduledEnd = "20:00";
-      if (todaySchedules.length > 0) {
-        scheduledEnd = todaySchedules.reduce((max: string, s: any) => s.end_time > max ? s.end_time : max, todaySchedules[0].end_time);
-      }
-      const hasOvertime = nowTime > scheduledEnd;
-      toggleMutation.mutate({ staffId: currentStaff.id, date: today, status: existing.status || "A", check_out: nowTime });
-      toast.success(
-        hasOvertime
-          ? `Salida registrada: ${nowTime} 🔥 ¡Horas extra detectadas!`
-          : `Salida registrada: ${nowTime}`
-      );
-      return;
-    }
-
     // If already checked in AND checked out → start NEW shift (double turno)
-    // Push completed pair to extra_punches and reset check_in/check_out for the new shift
     if (existing?.check_in_time && existing?.check_out_time) {
       const prevExtras = Array.isArray(existing.extra_punches) ? existing.extra_punches : [];
       const newExtras = [...prevExtras, { in: existing.check_in_time, out: existing.check_out_time, label: "Turno previo" }];
@@ -530,7 +554,6 @@ const AttendancePage = () => {
 
     // No check-in yet
     if (rest) {
-      // Allow check-in on rest day with notice
       toggleMutation.mutate({ staffId: currentStaff.id, date: today, status: "A", check_in: nowTime });
       toast.success(`Entrada en día de descanso registrada: ${nowTime} 💪 ¡Se contará como hora extra!`);
       return;
