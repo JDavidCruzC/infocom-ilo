@@ -18,6 +18,7 @@ interface NavItem {
   label: string;
   end?: boolean;
   module?: string; // permission module key
+  adminOnly?: boolean;
   children?: NavItem[];
 }
 
