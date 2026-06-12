@@ -716,15 +716,30 @@ const AttendancePage = () => {
                 </p>
               </div>
             </div>
-            <Button
-              size="lg"
-              className="gap-2 min-w-[200px]"
-              variant={hasPendingPriorShift ? "destructive" : myCheckedOut ? "secondary" : "default"}
-              onClick={selfCheckIn}
-            >
-              <UserCheck className="h-5 w-5" />
-              {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <Button
+                size="lg"
+                className="gap-2 min-w-[200px]"
+                variant={hasPendingPriorShift ? "destructive" : myCheckedOut ? "secondary" : "default"}
+                onClick={selfCheckIn}
+              >
+                <UserCheck className="h-5 w-5" />
+                {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
+              </Button>
+              {myCheckedOut && !hasPendingPriorShift && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="gap-2 border-2 border-primary/40 hover:bg-primary/10 hover:border-primary"
+                  onClick={selfCheckIn}
+                  title="Agregar turno extra"
+                >
+                  <Plus className="h-5 w-5 text-primary" />
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="hidden sm:inline">Turno extra</span>
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
