@@ -621,6 +621,31 @@ const AttendancePage = () => {
   const myCheckedOut = !!myRecord?.check_out_time;
   const quickAttendanceStaff = isTerminal ? attendanceStaff : attendanceStaff;
 
+  // Detect a pending OPEN shift for myself across the last 2 days (forgot to mark salida).
+  const { data: myOpenShift } = useQuery({
+    queryKey: ["my_open_shift", myStaff?.id, today],
+    enabled: !!myStaff?.id,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      const twoDaysStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, "0")}-${String(twoDaysAgo.getDate()).padStart(2, "0")}`;
+      const { data } = await supabase
+        .from("attendance_records")
+        .select("*")
+        .eq("staff_id", myStaff!.id)
+        .gte("date", twoDaysStr)
+        .lte("date", today)
+        .not("check_in_time", "is", null)
+        .is("check_out_time", null)
+        .order("date", { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+  });
+  const hasPendingPriorShift = !!myOpenShift && myOpenShift.date !== today;
+
+
   // Auto-marcado deshabilitado: las asistencias se registran solo de forma manual
   // (entrada/salida con botón explícito) para evitar marcados accidentales.
 
