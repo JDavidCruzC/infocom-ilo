@@ -552,6 +552,9 @@ const AttendancePage = () => {
       return;
     }
 
+    // RECOVERY: existing record (e.g. status 'F' falta) without check_in → turn it into a real entry
+    const isRecovery = !!existing && !existing.check_in_time;
+
     // No check-in yet
     if (rest) {
       toggleMutation.mutate({ staffId: currentStaff.id, date: today, status: "A", check_in: nowTime });
@@ -572,7 +575,11 @@ const AttendancePage = () => {
     }
     const status = isLate ? "T" : "A";
     toggleMutation.mutate({ staffId: currentStaff.id, date: today, status, check_in: nowTime });
-    toast.success(`Entrada registrada: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min, tolerancia ${tolerance} min)` : tolerance > 0 && lateBy > 0 ? ` (Dentro de tolerancia ${tolerance} min)` : ""}`);
+    if (isRecovery) {
+      toast.success(`✨ ¡Recuperación registrada! Entrada: ${nowTime}. La falta fue convertida en asistencia${isLate ? " con tardanza" : ""}.`, { duration: 6000 });
+    } else {
+      toast.success(`Entrada registrada: ${nowTime}${isLate ? ` (Tardanza +${lateBy} min, tolerancia ${tolerance} min)` : tolerance > 0 && lateBy > 0 ? ` (Dentro de tolerancia ${tolerance} min)` : ""}`);
+    }
   };
 
   const markStaffEntry = (staffMember: any, silent = false) => {
