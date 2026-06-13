@@ -620,6 +620,45 @@ const AttendancePage = () => {
     await selfCheckIn();
   };
 
+  // Marca SALIDA explícita: cierra cualquier turno abierto (hoy o ayer) sin tocar nada más.
+  // No depende de la hora programada de fin de turno: el botón siempre funciona si hay turno abierto.
+  const markMySalida = async () => {
+    const todayStr = getLocalDateStr();
+    const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) { toast.error("Debes iniciar sesión"); return; }
+    const currentStaff = staff.find((s: any) => s.user_id === session.session!.user.id);
+    if (!currentStaff) { toast.error("Tu usuario no está vinculado a un registro de personal"); return; }
+
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, "0")}-${String(twoDaysAgo.getDate()).padStart(2, "0")}`;
+    const { data: openRows } = await supabase
+      .from("attendance_records")
+      .select("*")
+      .eq("staff_id", currentStaff.id)
+      .gte("date", twoDaysStr)
+      .lte("date", todayStr)
+      .not("check_in_time", "is", null)
+      .is("check_out_time", null)
+      .order("date", { ascending: false })
+      .limit(1);
+    const openShift = openRows?.[0];
+    if (!openShift) { toast.info("No tienes ningún turno abierto para cerrar."); return; }
+
+    const isPriorDay = openShift.date !== todayStr;
+    const closeTime = isPriorDay ? "23:59" : nowTime;
+    const { error } = await supabase.from("attendance_records").update({ check_out_time: closeTime }).eq("id", openShift.id);
+    if (error) { toast.error("No se pudo registrar la salida: " + error.message); return; }
+    qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+    qc.invalidateQueries({ queryKey: ["my_open_shift"] });
+    if (isPriorDay) {
+      toast.warning(`⏰ Salida pendiente del ${openShift.date} cerrada a las ${closeTime}.`, { duration: 6000 });
+    } else {
+      toast.success(`Salida registrada: ${nowTime} ✅`);
+    }
+  };
+
   const markStaffEntry = (staffMember: any, silent = false) => {
     const todayDate = getLocalDateStr();
     const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
@@ -734,7 +773,7 @@ const AttendancePage = () => {
   return (
     <div className="space-y-6">
       {/* Self check-in card for staff */}
-      {!canUseControlView && myStaff && (
+      {myStaff && (
         <Card className={`border-2 ${hasPendingPriorShift ? "border-warning/70 bg-warning/10" : myCheckedIn && !myCheckedOut ? "border-primary/50 bg-primary/5" : myCheckedOut ? "border-success/50 bg-success/5" : "border-warning/50 bg-warning/5"}`}>
           <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -745,11 +784,11 @@ const AttendancePage = () => {
                 <p className="font-semibold">{myStaff.full_name}</p>
                 <p className="text-sm text-muted-foreground">
                   {hasPendingPriorShift
-                    ? `⚠️ Tienes una salida pendiente del ${myOpenShift?.date} (entrada ${myOpenShift?.check_in_time?.slice(0,5)}). Presiona para cerrarla a las 23:59.`
+                    ? `⚠️ Tienes una salida pendiente del ${myOpenShift?.date} (entrada ${myOpenShift?.check_in_time?.slice(0,5)}). Presiona "Marcar Salida" para cerrarla.`
+                    : myCheckedIn && !myCheckedOut
+                    ? `🟢 En turno desde las ${myRecord?.check_in_time?.slice(0,5)} — Presiona "Marcar Salida" cuando termines`
                     : myCheckedOut
-                    ? `✅ Jornada completada — Entrada: ${myRecord?.check_in_time} | Salida: ${myRecord?.check_out_time}. ¿Necesitas volver? Presiona Re-entrar.`
-                    : myCheckedIn
-                    ? `🟢 En turno desde las ${myRecord?.check_in_time} — Presiona para marcar salida`
+                    ? `✅ Jornada cerrada — Entrada: ${myRecord?.check_in_time?.slice(0,5)} | Salida: ${myRecord?.check_out_time?.slice(0,5)}. ¿Vuelves? Usa "Turno extra".`
                     : "⚠️ Aún no has marcado tu entrada hoy"}
                 </p>
               </div>
@@ -757,26 +796,38 @@ const AttendancePage = () => {
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button
                 size="lg"
-                className="gap-2 min-w-[200px]"
-                variant={hasPendingPriorShift ? "destructive" : myCheckedOut ? "secondary" : "default"}
+                className="gap-2"
+                variant="default"
                 onClick={selfCheckIn}
+                disabled={hasPendingPriorShift || (myCheckedIn && !myCheckedOut)}
+                title={myCheckedIn && !myCheckedOut ? "Ya marcaste entrada. Usa Marcar Salida o Turno extra." : "Marcar entrada"}
               >
                 <UserCheck className="h-5 w-5" />
-                {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
+                Marcar Entrada
               </Button>
-              {!hasPendingPriorShift && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="gap-2 border-2 border-primary/40 hover:bg-primary/10 hover:border-primary"
-                  onClick={startExtraShift}
-                  title="Iniciar turno extra (fuera de horario o jornada adicional)"
-                >
-                  <Plus className="h-5 w-5 text-primary" />
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="hidden sm:inline">Turno extra</span>
-                </Button>
-              )}
+              <Button
+                size="lg"
+                className="gap-2"
+                variant={hasPendingPriorShift ? "destructive" : "secondary"}
+                onClick={markMySalida}
+                disabled={!hasPendingPriorShift && !(myCheckedIn && !myCheckedOut)}
+                title="Cerrar el turno abierto. Funciona aunque hayas pasado tu hora programada."
+              >
+                <Clock className="h-5 w-5" />
+                {hasPendingPriorShift ? "Cerrar salida pendiente" : "Marcar Salida"}
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="gap-2 border-2 border-primary/40 hover:bg-primary/10 hover:border-primary"
+                onClick={startExtraShift}
+                disabled={hasPendingPriorShift}
+                title="Iniciar turno extra (fuera de horario o jornada adicional)"
+              >
+                <Plus className="h-5 w-5 text-primary" />
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="hidden sm:inline">Turno extra</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
