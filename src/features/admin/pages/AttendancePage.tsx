@@ -876,6 +876,7 @@ const AttendancePage = () => {
                         <th className="px-3 py-2 text-center">Entrada</th>
                         <th className="px-3 py-2 text-center">Salida</th>
                         <th className="px-3 py-2 text-center">Horas</th>
+                        <th className="px-3 py-2 text-center">+</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -886,14 +887,17 @@ const AttendancePage = () => {
                         const dayName = DAY_NAMES[dayOfWeek];
                         const rest = isRestDay(myStaff.id, dayOfWeek);
                         const isFuture = new Date(year, month, d) > new Date();
+                        const isToday = date === today;
                         if (isFuture && !rec) return null;
                         const st = rec ? STATUS_LABELS[rec.status] : (rest ? STATUS_LABELS["D"] : null);
                         const hours = getActualHours(rec);
+                        const extraCount = Array.isArray(rec?.extra_punches) ? rec!.extra_punches.length : 0;
                         return (
-                          <tr key={d} className={`border-t border-border/50 ${rest ? "bg-muted/30 opacity-60" : ""}`}>
+                          <tr key={d} className={`border-t border-border/50 ${rest ? "bg-muted/30 opacity-60" : ""} ${isToday ? "bg-primary/5" : ""}`}>
                             <td className="px-3 py-2 font-medium">
                               <span className="text-muted-foreground mr-1">{dayName.slice(0, 3)}</span> {d}
                               {rest && <Badge variant="outline" className="ml-2 text-[8px] bg-gray-500/10 text-gray-400">Descanso</Badge>}
+                              {extraCount > 0 && <Badge variant="outline" className="ml-2 text-[8px] bg-primary/10 text-primary border-primary/30">+{extraCount} turno{extraCount > 1 ? "s" : ""}</Badge>}
                             </td>
                             <td className="px-3 py-2 text-center">
                               {st ? (
@@ -906,6 +910,21 @@ const AttendancePage = () => {
                             <td className="px-3 py-2 text-center font-mono">{rec?.check_out_time?.slice(0, 5) || "—"}</td>
                             <td className="px-3 py-2 text-center font-mono font-semibold text-primary">
                               {hours > 0 ? `${Math.round(hours * 10) / 10}h` : "—"}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              {isToday ? (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 rounded-full border border-primary/40 hover:bg-primary/10"
+                                  onClick={startExtraShift}
+                                  title="Agregar turno extra ahora"
+                                >
+                                  <Plus className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground/40">—</span>
+                              )}
                             </td>
                           </tr>
                         );
