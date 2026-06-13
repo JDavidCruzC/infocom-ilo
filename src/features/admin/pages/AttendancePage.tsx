@@ -764,13 +764,13 @@ const AttendancePage = () => {
                 <UserCheck className="h-5 w-5" />
                 {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
               </Button>
-              {myCheckedOut && !hasPendingPriorShift && (
+              {!hasPendingPriorShift && (
                 <Button
                   size="lg"
                   variant="outline"
                   className="gap-2 border-2 border-primary/40 hover:bg-primary/10 hover:border-primary"
-                  onClick={selfCheckIn}
-                  title="Agregar turno extra"
+                  onClick={startExtraShift}
+                  title="Iniciar turno extra (fuera de horario o jornada adicional)"
                 >
                   <Plus className="h-5 w-5 text-primary" />
                   <Sparkles className="h-4 w-4 text-primary" />
