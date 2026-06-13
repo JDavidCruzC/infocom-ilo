@@ -582,6 +582,44 @@ const AttendancePage = () => {
     }
   };
 
+  // FORZAR un turno extra en cualquier momento: si hay un turno abierto, lo cierra con la hora actual
+  // y archiva el par en extra_punches; luego abre una nueva entrada. Permite trabajar fuera del horario
+  // programado sin restricción.
+  const startExtraShift = async () => {
+    const todayStr = getLocalDateStr();
+    const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) { toast.error("Debes iniciar sesión"); return; }
+    const currentStaff = staff.find((s: any) => s.user_id === session.session!.user.id);
+    if (!currentStaff) { toast.error("Tu usuario no está vinculado a un registro de personal"); return; }
+
+    // Cierra turno abierto previo (de hoy o ayer)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, "0")}-${String(twoDaysAgo.getDate()).padStart(2, "0")}`;
+    const { data: openRows } = await supabase
+      .from("attendance_records")
+      .select("*")
+      .eq("staff_id", currentStaff.id)
+      .gte("date", twoDaysStr)
+      .lte("date", todayStr)
+      .not("check_in_time", "is", null)
+      .is("check_out_time", null)
+      .order("date", { ascending: false })
+      .limit(1);
+    const openShift = openRows?.[0];
+    if (openShift) {
+      const closeTime = openShift.date !== todayStr ? "23:59" : nowTime;
+      await supabase.from("attendance_records").update({ check_out_time: closeTime }).eq("id", openShift.id);
+    }
+
+    // Reusa selfCheckIn para que aplique la lógica de archivar turno previo + nuevo check-in
+    qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+    qc.invalidateQueries({ queryKey: ["my_open_shift"] });
+    await new Promise(r => setTimeout(r, 150));
+    await selfCheckIn();
+  };
+
   const markStaffEntry = (staffMember: any, silent = false) => {
     const todayDate = getLocalDateStr();
     const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
