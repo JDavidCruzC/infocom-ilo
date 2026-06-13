@@ -582,6 +582,44 @@ const AttendancePage = () => {
     }
   };
 
+  // FORZAR un turno extra en cualquier momento: si hay un turno abierto, lo cierra con la hora actual
+  // y archiva el par en extra_punches; luego abre una nueva entrada. Permite trabajar fuera del horario
+  // programado sin restricción.
+  const startExtraShift = async () => {
+    const todayStr = getLocalDateStr();
+    const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) { toast.error("Debes iniciar sesión"); return; }
+    const currentStaff = staff.find((s: any) => s.user_id === session.session!.user.id);
+    if (!currentStaff) { toast.error("Tu usuario no está vinculado a un registro de personal"); return; }
+
+    // Cierra turno abierto previo (de hoy o ayer)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, "0")}-${String(twoDaysAgo.getDate()).padStart(2, "0")}`;
+    const { data: openRows } = await supabase
+      .from("attendance_records")
+      .select("*")
+      .eq("staff_id", currentStaff.id)
+      .gte("date", twoDaysStr)
+      .lte("date", todayStr)
+      .not("check_in_time", "is", null)
+      .is("check_out_time", null)
+      .order("date", { ascending: false })
+      .limit(1);
+    const openShift = openRows?.[0];
+    if (openShift) {
+      const closeTime = openShift.date !== todayStr ? "23:59" : nowTime;
+      await supabase.from("attendance_records").update({ check_out_time: closeTime }).eq("id", openShift.id);
+    }
+
+    // Reusa selfCheckIn para que aplique la lógica de archivar turno previo + nuevo check-in
+    qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+    qc.invalidateQueries({ queryKey: ["my_open_shift"] });
+    await new Promise(r => setTimeout(r, 150));
+    await selfCheckIn();
+  };
+
   const markStaffEntry = (staffMember: any, silent = false) => {
     const todayDate = getLocalDateStr();
     const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
@@ -726,13 +764,13 @@ const AttendancePage = () => {
                 <UserCheck className="h-5 w-5" />
                 {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
               </Button>
-              {myCheckedOut && !hasPendingPriorShift && (
+              {!hasPendingPriorShift && (
                 <Button
                   size="lg"
                   variant="outline"
                   className="gap-2 border-2 border-primary/40 hover:bg-primary/10 hover:border-primary"
-                  onClick={selfCheckIn}
-                  title="Agregar turno extra"
+                  onClick={startExtraShift}
+                  title="Iniciar turno extra (fuera de horario o jornada adicional)"
                 >
                   <Plus className="h-5 w-5 text-primary" />
                   <Sparkles className="h-4 w-4 text-primary" />
@@ -838,6 +876,7 @@ const AttendancePage = () => {
                         <th className="px-3 py-2 text-center">Entrada</th>
                         <th className="px-3 py-2 text-center">Salida</th>
                         <th className="px-3 py-2 text-center">Horas</th>
+                        <th className="px-3 py-2 text-center">+</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -848,14 +887,17 @@ const AttendancePage = () => {
                         const dayName = DAY_NAMES[dayOfWeek];
                         const rest = isRestDay(myStaff.id, dayOfWeek);
                         const isFuture = new Date(year, month, d) > new Date();
+                        const isToday = date === today;
                         if (isFuture && !rec) return null;
                         const st = rec ? STATUS_LABELS[rec.status] : (rest ? STATUS_LABELS["D"] : null);
                         const hours = getActualHours(rec);
+                        const extraCount = Array.isArray(rec?.extra_punches) ? rec!.extra_punches.length : 0;
                         return (
-                          <tr key={d} className={`border-t border-border/50 ${rest ? "bg-muted/30 opacity-60" : ""}`}>
+                          <tr key={d} className={`border-t border-border/50 ${rest ? "bg-muted/30 opacity-60" : ""} ${isToday ? "bg-primary/5" : ""}`}>
                             <td className="px-3 py-2 font-medium">
                               <span className="text-muted-foreground mr-1">{dayName.slice(0, 3)}</span> {d}
                               {rest && <Badge variant="outline" className="ml-2 text-[8px] bg-gray-500/10 text-gray-400">Descanso</Badge>}
+                              {extraCount > 0 && <Badge variant="outline" className="ml-2 text-[8px] bg-primary/10 text-primary border-primary/30">+{extraCount} turno{extraCount > 1 ? "s" : ""}</Badge>}
                             </td>
                             <td className="px-3 py-2 text-center">
                               {st ? (
@@ -868,6 +910,21 @@ const AttendancePage = () => {
                             <td className="px-3 py-2 text-center font-mono">{rec?.check_out_time?.slice(0, 5) || "—"}</td>
                             <td className="px-3 py-2 text-center font-mono font-semibold text-primary">
                               {hours > 0 ? `${Math.round(hours * 10) / 10}h` : "—"}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              {isToday ? (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 rounded-full border border-primary/40 hover:bg-primary/10"
+                                  onClick={startExtraShift}
+                                  title="Agregar turno extra ahora"
+                                >
+                                  <Plus className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground/40">—</span>
+                              )}
                             </td>
                           </tr>
                         );
