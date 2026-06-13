@@ -773,7 +773,7 @@ const AttendancePage = () => {
   return (
     <div className="space-y-6">
       {/* Self check-in card for staff */}
-      {!canUseControlView && myStaff && (
+      {myStaff && (
         <Card className={`border-2 ${hasPendingPriorShift ? "border-warning/70 bg-warning/10" : myCheckedIn && !myCheckedOut ? "border-primary/50 bg-primary/5" : myCheckedOut ? "border-success/50 bg-success/5" : "border-warning/50 bg-warning/5"}`}>
           <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -784,11 +784,11 @@ const AttendancePage = () => {
                 <p className="font-semibold">{myStaff.full_name}</p>
                 <p className="text-sm text-muted-foreground">
                   {hasPendingPriorShift
-                    ? `⚠️ Tienes una salida pendiente del ${myOpenShift?.date} (entrada ${myOpenShift?.check_in_time?.slice(0,5)}). Presiona para cerrarla a las 23:59.`
+                    ? `⚠️ Tienes una salida pendiente del ${myOpenShift?.date} (entrada ${myOpenShift?.check_in_time?.slice(0,5)}). Presiona "Marcar Salida" para cerrarla.`
+                    : myCheckedIn && !myCheckedOut
+                    ? `🟢 En turno desde las ${myRecord?.check_in_time?.slice(0,5)} — Presiona "Marcar Salida" cuando termines`
                     : myCheckedOut
-                    ? `✅ Jornada completada — Entrada: ${myRecord?.check_in_time} | Salida: ${myRecord?.check_out_time}. ¿Necesitas volver? Presiona Re-entrar.`
-                    : myCheckedIn
-                    ? `🟢 En turno desde las ${myRecord?.check_in_time} — Presiona para marcar salida`
+                    ? `✅ Jornada cerrada — Entrada: ${myRecord?.check_in_time?.slice(0,5)} | Salida: ${myRecord?.check_out_time?.slice(0,5)}. ¿Vuelves? Usa "Turno extra".`
                     : "⚠️ Aún no has marcado tu entrada hoy"}
                 </p>
               </div>
@@ -796,26 +796,38 @@ const AttendancePage = () => {
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button
                 size="lg"
-                className="gap-2 min-w-[200px]"
-                variant={hasPendingPriorShift ? "destructive" : myCheckedOut ? "secondary" : "default"}
+                className="gap-2"
+                variant="default"
                 onClick={selfCheckIn}
+                disabled={hasPendingPriorShift || (myCheckedIn && !myCheckedOut)}
+                title={myCheckedIn && !myCheckedOut ? "Ya marcaste entrada. Usa Marcar Salida o Turno extra." : "Marcar entrada"}
               >
                 <UserCheck className="h-5 w-5" />
-                {hasPendingPriorShift ? "Cerrar salida pendiente" : myCheckedOut ? "🔄 Re-entrar (Turno Extra)" : myCheckedIn ? "Marcar Salida" : "Marcar Entrada"}
+                Marcar Entrada
               </Button>
-              {!hasPendingPriorShift && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="gap-2 border-2 border-primary/40 hover:bg-primary/10 hover:border-primary"
-                  onClick={startExtraShift}
-                  title="Iniciar turno extra (fuera de horario o jornada adicional)"
-                >
-                  <Plus className="h-5 w-5 text-primary" />
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="hidden sm:inline">Turno extra</span>
-                </Button>
-              )}
+              <Button
+                size="lg"
+                className="gap-2"
+                variant={hasPendingPriorShift ? "destructive" : "secondary"}
+                onClick={markMySalida}
+                disabled={!hasPendingPriorShift && !(myCheckedIn && !myCheckedOut)}
+                title="Cerrar el turno abierto. Funciona aunque hayas pasado tu hora programada."
+              >
+                <Clock className="h-5 w-5" />
+                {hasPendingPriorShift ? "Cerrar salida pendiente" : "Marcar Salida"}
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="gap-2 border-2 border-primary/40 hover:bg-primary/10 hover:border-primary"
+                onClick={startExtraShift}
+                disabled={hasPendingPriorShift}
+                title="Iniciar turno extra (fuera de horario o jornada adicional)"
+              >
+                <Plus className="h-5 w-5 text-primary" />
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="hidden sm:inline">Turno extra</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
