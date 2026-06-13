@@ -620,6 +620,45 @@ const AttendancePage = () => {
     await selfCheckIn();
   };
 
+  // Marca SALIDA explícita: cierra cualquier turno abierto (hoy o ayer) sin tocar nada más.
+  // No depende de la hora programada de fin de turno: el botón siempre funciona si hay turno abierto.
+  const markMySalida = async () => {
+    const todayStr = getLocalDateStr();
+    const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) { toast.error("Debes iniciar sesión"); return; }
+    const currentStaff = staff.find((s: any) => s.user_id === session.session!.user.id);
+    if (!currentStaff) { toast.error("Tu usuario no está vinculado a un registro de personal"); return; }
+
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, "0")}-${String(twoDaysAgo.getDate()).padStart(2, "0")}`;
+    const { data: openRows } = await supabase
+      .from("attendance_records")
+      .select("*")
+      .eq("staff_id", currentStaff.id)
+      .gte("date", twoDaysStr)
+      .lte("date", todayStr)
+      .not("check_in_time", "is", null)
+      .is("check_out_time", null)
+      .order("date", { ascending: false })
+      .limit(1);
+    const openShift = openRows?.[0];
+    if (!openShift) { toast.info("No tienes ningún turno abierto para cerrar."); return; }
+
+    const isPriorDay = openShift.date !== todayStr;
+    const closeTime = isPriorDay ? "23:59" : nowTime;
+    const { error } = await supabase.from("attendance_records").update({ check_out_time: closeTime }).eq("id", openShift.id);
+    if (error) { toast.error("No se pudo registrar la salida: " + error.message); return; }
+    qc.invalidateQueries({ queryKey: ["attendance_records", month, year] });
+    qc.invalidateQueries({ queryKey: ["my_open_shift"] });
+    if (isPriorDay) {
+      toast.warning(`⏰ Salida pendiente del ${openShift.date} cerrada a las ${closeTime}.`, { duration: 6000 });
+    } else {
+      toast.success(`Salida registrada: ${nowTime} ✅`);
+    }
+  };
+
   const markStaffEntry = (staffMember: any, silent = false) => {
     const todayDate = getLocalDateStr();
     const nowTime = `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`;
