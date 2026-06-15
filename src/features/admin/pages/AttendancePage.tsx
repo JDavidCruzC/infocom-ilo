@@ -1183,7 +1183,7 @@ const AttendancePage = () => {
                   Selecciona al trabajador para registrar entrada o salida. La cuadrícula y las horas permanecen en solo lectura.
                 </p>
               )}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {quickAttendanceStaff.map((s: any) => {
                   const todayDate = getLocalDateStr();
                   const rec = recordMap[s.id]?.[todayDate];
@@ -1195,48 +1195,66 @@ const AttendancePage = () => {
                   const todaySchedules = getScheduleForDay(s.id, todayDow);
 
                   const canUseQuickPunch = canMarkOthers || isTerminal;
+                  const canOT = canUseQuickPunch && hasOut; // ya terminó → puede iniciar turno extra
+                  const mainLabel = hasOut ? "✅ Completo" : hasIn ? "Marcar Salida" : rest ? "☀️ Descanso" : "Marcar Entrada";
 
                   return (
-                    <div key={s.id} className={`rounded-lg p-3 text-center border transition-colors ${
+                    <div key={s.id} className={`rounded-xl p-4 text-center border-2 transition-all hover:shadow-lg hover:shadow-primary/10 ${
                       rest && !hasIn ? "bg-gray-500/5 border-gray-500/20 opacity-60" :
-                      hasOut ? "bg-success/10 border-success/30" : 
-                      hasIn ? "bg-primary/10 border-primary/30" : 
+                      hasOut ? "bg-success/10 border-success/30" :
+                      hasIn ? "bg-primary/10 border-primary/30" :
                       "bg-secondary/30 border-border"
                     }`}>
-                      <p className="text-xs font-semibold truncate">{s.full_name}</p>
-                      <p className="text-[10px] text-muted-foreground">{s.position}</p>
-                      {rest && !hasIn && (
-                        <Badge variant="outline" className="text-[9px] mt-1 bg-gray-500/10 text-gray-400 gap-1">
-                          <Sun className="h-2.5 w-2.5" /> Descanso
-                        </Badge>
-                      )}
+                      <p className="text-base font-bold truncate">{s.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{s.position}</p>
                       {todaySchedules.length > 0 && !rest && (
-                        <p className="text-[9px] text-muted-foreground mt-0.5 font-mono">
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">
                           {todaySchedules[0].start_time?.slice(0,5)}-{todaySchedules[0].end_time?.slice(0,5)}
                         </p>
                       )}
-                      {hasIn && <p className="text-[10px] font-mono mt-1">🕐 {rec?.check_in_time?.slice(0,5)}{hasOut ? ` → ${rec?.check_out_time?.slice(0,5)}` : ""}</p>}
-                      <Button
-                        size="sm"
-                        variant={hasOut ? "outline" : hasIn ? "secondary" : rest ? "ghost" : "default"}
-                        className="mt-2 h-7 text-[10px] w-full"
-                        disabled={hasOut || !canUseQuickPunch}
-                        onClick={() => {
-                          if (hasIn && !hasOut) {
-                            if (isTerminal) {
-                              terminalMarkStaff(s);
-                            } else {
-                              toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
-                              toast.success(`Salida de ${s.full_name}: ${nowTime}`);
+                      {rest && !hasIn && (
+                        <Badge variant="outline" className="text-[10px] mt-1 bg-gray-500/10 text-gray-400 gap-1">
+                          <Sun className="h-3 w-3" /> Descanso
+                        </Badge>
+                      )}
+                      {hasIn && (
+                        <p className="text-xs font-mono mt-1 flex items-center justify-center gap-1">
+                          <Clock className="h-3 w-3" /> {rec?.check_in_time?.slice(0,5)}{hasOut ? ` → ${rec?.check_out_time?.slice(0,5)}` : ""}
+                        </p>
+                      )}
+                      <div className="mt-3 flex gap-2 items-stretch">
+                        <Button
+                          size="lg"
+                          variant={hasOut ? "outline" : hasIn ? "secondary" : rest ? "ghost" : "default"}
+                          className="flex-1 h-11 text-sm font-semibold"
+                          disabled={hasOut || !canUseQuickPunch}
+                          onClick={() => {
+                            if (hasIn && !hasOut) {
+                              if (isTerminal) {
+                                terminalMarkStaff(s);
+                              } else {
+                                toggleMutation.mutate({ staffId: s.id, date: todayDate, status: "A", check_out: nowTime });
+                                toast.success(`Salida de ${s.full_name}: ${nowTime}`);
+                              }
+                            } else if (!hasIn) {
+                              if (isTerminal) terminalMarkStaff(s);
+                              else markStaffEntry(s);
                             }
-                          } else if (!hasIn) {
-                            if (isTerminal) terminalMarkStaff(s);
-                            else markStaffEntry(s);
-                          }
-                        }}
-                      >
-                        {hasOut ? "✅ Completo" : hasIn ? "Marcar Salida" : rest ? "☀️ Descanso" : "Marcar Entrada"}
-                      </Button>
+                          }}
+                        >
+                          {mainLabel}
+                        </Button>
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="h-11 w-11 shrink-0 border-primary/40 text-primary hover:bg-primary/10"
+                          disabled={!canOT}
+                          title="Turno extra / Hora extra"
+                          onClick={() => terminalMarkStaff(s)}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
