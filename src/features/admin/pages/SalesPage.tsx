@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,6 @@ import { loadTemplate, buildHeaderHtml, buildSaleFooter, buildCopyright, loadCom
 import { CURRENCY, PAYMENT_METHOD_LABELS } from "@/lib/types";
 import type { PaymentMethod } from "@/lib/types";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import QuickTransactionDialog from "@/features/admin/components/QuickTransactionDialog";
 
 interface CartItem {
   product_id: string;
@@ -36,7 +36,7 @@ const SalesPage = () => {
   const [processing, setProcessing] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
   const [dniNotFound, setDniNotFound] = useState(false);
-  const [quickTxOpen, setQuickTxOpen] = useState(false);
+  const navigate = useNavigate();
 
 
   const [saleType, setSaleType] = useState<SaleType>("simple");
@@ -296,7 +296,7 @@ ${lastSale.customer.metodo_pago === "cash" && lastSale.change > 0 ? `<div class=
             <h1 className="text-2xl font-display font-bold flex items-center gap-2">
               <ShoppingCart className="h-6 w-6 text-primary" /> Punto de Venta
             </h1>
-            <Button size="sm" className="gap-2" onClick={() => setQuickTxOpen(true)}>
+            <Button size="sm" className="gap-2" onClick={() => navigate("/admin/contabilidad?nueva=1")}>
               <Plus className="h-4 w-4" /> Nueva Transacción
             </Button>
           </div>
@@ -602,7 +602,7 @@ ${lastSale.customer.metodo_pago === "cash" && lastSale.change > 0 ? `<div class=
         </DialogContent>
       </Dialog>
 
-      <QuickTransactionDialog open={quickTxOpen} onOpenChange={setQuickTxOpen} />
+      
     </div>
   );
 };

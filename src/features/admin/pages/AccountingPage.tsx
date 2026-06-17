@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -183,6 +184,16 @@ const AccountingPage = () => {
 
   // Dialog states
   const [formOpen, setFormOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("nueva") === "1") {
+      setFormOpen(true);
+      const np = new URLSearchParams(searchParams);
+      np.delete("nueva");
+      setSearchParams(np, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [detailOpen, setDetailOpen] = useState(false);
   const [anularOpen, setAnularOpen] = useState(false);
   const [devolverOpen, setDevolverOpen] = useState(false);
