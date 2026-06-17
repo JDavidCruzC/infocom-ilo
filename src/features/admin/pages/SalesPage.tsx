@@ -296,7 +296,7 @@ ${lastSale.customer.metodo_pago === "cash" && lastSale.change > 0 ? `<div class=
             <h1 className="text-2xl font-display font-bold flex items-center gap-2">
               <ShoppingCart className="h-6 w-6 text-primary" /> Punto de Venta
             </h1>
-            <Button size="sm" className="gap-2" onClick={() => setQuickTxOpen(true)}>
+            <Button size="sm" className="gap-2" onClick={() => navigate("/admin/contabilidad?nueva=1")}>
               <Plus className="h-4 w-4" /> Nueva Transacción
             </Button>
           </div>
