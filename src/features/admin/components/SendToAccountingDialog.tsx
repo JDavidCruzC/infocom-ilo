@@ -288,42 +288,57 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
                     <div className="col-span-12 md:col-span-6 space-y-1">
                       <Label className="text-xs">Descripción</Label>
                       {isProductLink ? (
-                        <Popover open={productSearchOpen === idx} onOpenChange={(o) => setProductSearchOpen(o ? idx : null)}>
-                          <PopoverTrigger asChild>
-                            <Button type="button" variant="outline" className="w-full justify-start gap-2 font-normal">
-                              <Search className="h-4 w-4" />
-                              <span className="truncate">{it.descripcion || "Buscar en inventario o escribir libre…"}</span>
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[420px] p-0" align="start">
-                            <Command shouldFilter={false}>
-                              <CommandInput placeholder="Buscar producto o SKU…" value={search} onValueChange={setSearch} />
-                              <CommandList className="max-h-64">
-                                <CommandEmpty>
-                                  <div className="p-2 space-y-2">
-                                    <p className="text-xs text-muted-foreground">Sin coincidencias.</p>
-                                    <Button size="sm" variant="outline" className="w-full" onClick={() => { updateItem(idx, { descripcion: search, referencia_id: null, stockAvailable: undefined }); setProductSearchOpen(null); }}>
-                                      Usar "{search}" como ítem libre
-                                    </Button>
-                                  </div>
-                                </CommandEmpty>
-                                <CommandGroup>
-                                  {filteredProducts.map(p => (
-                                    <CommandItem key={p.id} value={p.id} onSelect={() => pickProduct(idx, p)}>
-                                      <div className="flex flex-col w-full">
-                                        <span className="font-medium">{p.name}</span>
-                                        <span className="text-xs text-muted-foreground flex justify-between">
-                                          <span>SKU: {p.sku || "—"}</span>
-                                          <span>Stock: {p.stock} · S/ {Number(p.price).toFixed(2)}</span>
-                                        </span>
-                                      </div>
+                        <>
+                          <Popover open={productSearchOpen === idx} onOpenChange={(o) => setProductSearchOpen(o ? idx : null)}>
+                            <PopoverTrigger asChild>
+                              <Button type="button" variant="outline" className="w-full justify-start gap-2 font-normal">
+                                <Search className="h-4 w-4" />
+                                <span className="truncate">{it.referencia_id ? it.descripcion : (it.descripcion || "Buscar en inventario o escribir libre…")}</span>
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[420px] p-0" align="start">
+                              <Command shouldFilter={false}>
+                                <CommandInput placeholder="Buscar producto o SKU…" value={search} onValueChange={setSearch} />
+                                <CommandList className="max-h-64">
+                                  <CommandEmpty>
+                                    <div className="p-2 space-y-2">
+                                      <p className="text-xs text-muted-foreground">Sin coincidencias en inventario.</p>
+                                      <Button size="sm" variant="outline" className="w-full" onClick={() => { updateItem(idx, { descripcion: search || it.descripcion, referencia_id: null, stockAvailable: undefined }); setProductSearchOpen(null); }}>
+                                        Usar "{search || it.descripcion}" como ítem libre
+                                      </Button>
+                                    </div>
+                                  </CommandEmpty>
+                                  <CommandGroup heading="Inventario">
+                                    {filteredProducts.map(p => (
+                                      <CommandItem key={p.id} value={p.id} onSelect={() => pickProduct(idx, p)}>
+                                        <div className="flex flex-col w-full">
+                                          <span className="font-medium">{p.name}</span>
+                                          <span className="text-xs text-muted-foreground flex justify-between">
+                                            <span>SKU: {p.sku || "—"}</span>
+                                            <span>Stock: {p.stock} · S/ {Number(p.price).toFixed(2)}</span>
+                                          </span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                  <CommandGroup heading="Manual">
+                                    <CommandItem value="__manual__" onSelect={() => { updateItem(idx, { referencia_id: null, stockAvailable: undefined }); setProductSearchOpen(null); }}>
+                                      <Plus className="h-3 w-3 mr-2" /> Escribir manualmente (producto no registrado)
                                     </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          {!it.referencia_id && (
+                            <Input
+                              value={it.descripcion}
+                              onChange={e => updateItem(idx, { descripcion: e.target.value })}
+                              placeholder="Escribir nombre del producto/repuesto…"
+                              className="h-8 text-xs mt-1"
+                            />
+                          )}
+                        </>
                       ) : (
                         <Input value={it.descripcion} onChange={e => updateItem(idx, { descripcion: e.target.value })} placeholder="Describe el ítem" />
                       )}
