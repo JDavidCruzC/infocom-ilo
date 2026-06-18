@@ -1905,6 +1905,10 @@ export type Database = {
         Returns: undefined
       }
       auto_mark_absences_today: { Args: never; Returns: number }
+      has_module_access: {
+        Args: { _module: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
