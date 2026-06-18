@@ -15,6 +15,7 @@ import { loadTemplate, buildHeaderHtml, buildSaleFooter, buildCopyright, loadCom
 import { CURRENCY, PAYMENT_METHOD_LABELS } from "@/lib/types";
 import type { PaymentMethod } from "@/lib/types";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import QuickTransactionDialog from "@/features/admin/components/QuickTransactionDialog";
 
 interface CartItem {
   product_id: string;
