@@ -45,7 +45,17 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
   });
   const [items, setItems] = useState<QItem[]>([]);
   const [productPickerIdx, setProductPickerIdx] = useState<number | null>(null);
+  const [productSearch, setProductSearch] = useState("");
   const [clientOpen, setClientOpen] = useState(false);
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    const list = products as any[];
+    if (!q) return list.slice(0, 50);
+    return list.filter((p: any) =>
+      (p.name || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q)
+    ).slice(0, 50);
+  }, [productSearch, products]);
 
   const reset = () => {
     setForm({
