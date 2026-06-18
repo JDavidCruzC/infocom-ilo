@@ -346,31 +346,50 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
                 </div>
 
                 {it.item_type === "producto" ? (
-                  <Popover open={productPickerIdx === idx} onOpenChange={(o) => setProductPickerIdx(o ? idx : null)}>
-                    <PopoverTrigger asChild>
-                      <Button type="button" variant="outline" className="w-full h-9 justify-start font-normal">
-                        <Search className="h-3.5 w-3.5 mr-2" />
-                        {it.descripcion || "Buscar producto..."}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[420px] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Buscar por nombre o SKU..." />
-                        <CommandList>
-                          <CommandEmpty>Sin resultados</CommandEmpty>
-                          <CommandGroup>
-                            {products.slice(0, 100).map((p: any) => (
-                              <CommandItem key={p.id} value={`${p.name} ${p.sku || ""}`} onSelect={() => pickProduct(idx, p)}>
-                                <span className="flex-1 truncate">{p.name}</span>
-                                <span className="text-xs font-mono mr-2">S/{Number(p.price).toFixed(2)}</span>
-                                <span className="text-[10px] text-muted-foreground">Stock {p.stock}</span>
+                  <div className="space-y-2">
+                    <Popover open={productPickerIdx === idx} onOpenChange={(o) => { setProductPickerIdx(o ? idx : null); if (o) setProductSearch(""); }}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" className="w-full h-9 justify-start font-normal">
+                          <Search className="h-3.5 w-3.5 mr-2" />
+                          <span className="truncate">{it.descripcion || "Buscar en inventario o escribir libre..."}</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[420px] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput placeholder="Buscar por nombre o SKU..." value={productSearch} onValueChange={setProductSearch} />
+                          <CommandList className="max-h-64">
+                            <CommandEmpty>
+                              <div className="p-2 space-y-2">
+                                <p className="text-xs text-muted-foreground">Sin coincidencias en inventario.</p>
+                                <Button size="sm" variant="outline" className="w-full" onClick={() => { updateItem(idx, { descripcion: productSearch || it.descripcion, referencia_id: null }); setProductPickerIdx(null); }}>
+                                  Usar "{productSearch || it.descripcion || "ítem"}" como producto libre
+                                </Button>
+                              </div>
+                            </CommandEmpty>
+                            <CommandGroup heading="Inventario">
+                              {filteredProducts.map((p: any) => (
+                                <CommandItem key={p.id} value={p.id} onSelect={() => pickProduct(idx, p)}>
+                                  <span className="flex-1 truncate">{p.name}</span>
+                                  <span className="text-xs font-mono mr-2">S/{Number(p.price).toFixed(2)}</span>
+                                  <span className="text-[10px] text-muted-foreground">Stock {p.stock}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                            <CommandGroup heading="Manual">
+                              <CommandItem value="__manual__" onSelect={() => { updateItem(idx, { referencia_id: null, descripcion: productSearch || it.descripcion }); setProductPickerIdx(null); }}>
+                                <Plus className="h-3 w-3 mr-2" /> Escribir manualmente (producto no registrado)
                               </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      placeholder="Descripción del producto (editable)"
+                      value={it.descripcion}
+                      onChange={e => updateItem(idx, { descripcion: e.target.value })}
+                    />
+                  </div>
                 ) : (
                   <div>
                     {SERVICE_TYPES.length > 0 && (
