@@ -604,7 +604,7 @@ ${lastSale.customer.metodo_pago === "cash" && lastSale.change > 0 ? `<div class=
         </DialogContent>
       </Dialog>
 
-      
+      <QuickTransactionDialog open={quickTxOpen} onOpenChange={setQuickTxOpen} />
     </div>
   );
 };
