@@ -37,6 +37,7 @@ const SalesPage = () => {
   const [processing, setProcessing] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
   const [dniNotFound, setDniNotFound] = useState(false);
+  const [quickTxOpen, setQuickTxOpen] = useState(false);
   const navigate = useNavigate();
 
 
