@@ -85,7 +85,7 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
     return list.filter((p: any) =>
       (p.name || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q)
     ).slice(0, 50);
-  });
+  }, [productSearch, products]);
 
   const { data: customers = [] } = useQuery({
     queryKey: ["quick_tx_customers"],
