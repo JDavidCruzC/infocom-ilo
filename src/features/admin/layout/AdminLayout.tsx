@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, FolderTree, Tags, ShoppingBag, Image, CreditCard, Settings,
   ArrowLeft, Menu, Building2, ClipboardList, Shield, Users, CalendarDays, DollarSign,
   Wrench, ChevronDown, ShoppingCart, Store, LayoutGrid, UserCheck, CalendarClock, Bell,
-  Truck, PackagePlus, History, Lock, Sparkles, LogOut, Receipt
+  Truck, PackagePlus, History, Lock, Sparkles, LogOut, Receipt, FileText
 } from "lucide-react";
 import NotificationBell from "@/features/admin/components/NotificationBell";
 import { Button } from "@/components/ui/button";
