@@ -1175,6 +1175,131 @@ export type Database = {
           },
         ]
       }
+      quote_items: {
+        Row: {
+          cantidad: number
+          created_at: string
+          descripcion: string
+          id: string
+          imagen_url: string | null
+          orden: number
+          precio_unitario: number
+          product_id: string | null
+          quote_id: string
+          subtotal: number
+        }
+        Insert: {
+          cantidad?: number
+          created_at?: string
+          descripcion: string
+          id?: string
+          imagen_url?: string | null
+          orden?: number
+          precio_unitario?: number
+          product_id?: string | null
+          quote_id: string
+          subtotal?: number
+        }
+        Update: {
+          cantidad?: number
+          created_at?: string
+          descripcion?: string
+          id?: string
+          imagen_url?: string | null
+          orden?: number
+          precio_unitario?: number
+          product_id?: string | null
+          quote_id?: string
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          cliente_direccion: string | null
+          cliente_documento: string | null
+          cliente_email: string | null
+          cliente_nombre: string | null
+          cliente_telefono: string | null
+          condiciones: string | null
+          creado_por: string | null
+          created_at: string
+          created_by: string | null
+          descuento_monto: number
+          descuento_pct: number
+          estado: string
+          fecha: string
+          id: string
+          igv_monto: number
+          igv_pct: number
+          incluye_igv: boolean
+          notas: string | null
+          quote_number: string | null
+          subtotal: number
+          total: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          cliente_direccion?: string | null
+          cliente_documento?: string | null
+          cliente_email?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
+          condiciones?: string | null
+          creado_por?: string | null
+          created_at?: string
+          created_by?: string | null
+          descuento_monto?: number
+          descuento_pct?: number
+          estado?: string
+          fecha?: string
+          id?: string
+          igv_monto?: number
+          igv_pct?: number
+          incluye_igv?: boolean
+          notas?: string | null
+          quote_number?: string | null
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          cliente_direccion?: string | null
+          cliente_documento?: string | null
+          cliente_email?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
+          condiciones?: string | null
+          creado_por?: string | null
+          created_at?: string
+          created_by?: string | null
+          descuento_monto?: number
+          descuento_pct?: number
+          estado?: string
+          fecha?: string
+          id?: string
+          igv_monto?: number
+          igv_pct?: number
+          incluye_igv?: boolean
+          notas?: string | null
+          quote_number?: string | null
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       receipt_templates: {
         Row: {
           content_html: string
