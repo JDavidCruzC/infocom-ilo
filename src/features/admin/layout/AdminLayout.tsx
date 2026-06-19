@@ -49,6 +49,7 @@ const allNavItems: NavItem[] = [
     to: "/admin/ventas", icon: Store, label: "Ventas",
     children: [
       { to: "/admin/ventas/pos", icon: ShoppingCart, label: "Punto de Venta", module: "pos" },
+      { to: "/admin/ventas/cotizaciones", icon: FileText, label: "Cotizar", module: "cotizaciones" },
       { to: "/admin/pedidos", icon: ShoppingBag, label: "Pedidos Online", module: "pedidos" },
     ],
   },
