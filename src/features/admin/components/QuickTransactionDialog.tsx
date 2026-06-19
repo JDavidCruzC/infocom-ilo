@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Trash2, Plus, Search, Receipt, ShoppingCart, Wrench } from "lucide-react";
+import { Trash2, Plus, Search, Receipt, ShoppingCart, Wrench, FileText, Clock, FileBadge, FileCheck2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { notifyAllStaff } from "@/lib/notifications";
@@ -21,6 +21,9 @@ interface QItem {
   descripcion: string;
   cantidad: number;
   precio_unitario: number;
+  responsable?: string;
+  tipo_equipo?: string;
+  diagnostico?: string;
 }
 
 interface Props {
@@ -29,6 +32,8 @@ interface Props {
 }
 
 interface ServiceType { name: string; price: number }
+
+type DocKind = "ticket_venta" | "ticket_servicio" | "boleta" | "factura";
 
 export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
   const { user } = useAuth();
@@ -47,7 +52,6 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
   const [productPickerIdx, setProductPickerIdx] = useState<number | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [clientOpen, setClientOpen] = useState(false);
-
 
   const reset = () => {
     setForm({
@@ -134,7 +138,7 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
     setItems([...items, { item_type: "producto", descripcion: "", cantidad: 1, precio_unitario: 0, referencia_id: null }]);
   };
   const addServicio = () => {
-    setItems([...items, { item_type: "servicio", descripcion: "", cantidad: 1, precio_unitario: 0, referencia_id: "service" }]);
+    setItems([...items, { item_type: "servicio", descripcion: "", cantidad: 1, precio_unitario: 0, referencia_id: "service", responsable: "", tipo_equipo: "", diagnostico: "" }]);
   };
   const updateItem = (idx: number, patch: Partial<QItem>) => {
     setItems(items.map((it, i) => i === idx ? { ...it, ...patch } : it));
@@ -147,19 +151,40 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
   };
 
   const save = useMutation({
-    mutationFn: async (emit: boolean) => {
+    mutationFn: async (opts: { emit: boolean; docKind?: DocKind }) => {
+      const { emit, docKind } = opts;
       if (items.length === 0) throw new Error("Agrega al menos un item");
       if (items.some(i => !i.descripcion.trim())) throw new Error("Completa la descripción de todos los items");
+
+      let numeroComprobante: string | null = null;
+      let inferredKind: DocKind | null = null;
+      if (emit && docKind) {
+        inferredKind = docKind;
+        const { data: numData, error: numErr } = await supabase.rpc("next_comprobante_number" as any, { _kind: docKind });
+        if (numErr) throw numErr;
+        numeroComprobante = String(numData);
+      }
+
+      const baseNotas = form.notas || "";
+      const notasFinal = numeroComprobante
+        ? `${baseNotas}${baseNotas ? " | " : ""}${(inferredKind || "").toUpperCase()} N° ${numeroComprobante}`
+        : baseNotas;
 
       const { data: tx, error } = await supabase.from("transactions").insert({
         fecha: form.fecha,
         cliente_nombre: form.cliente_nombre || null,
         cliente_telefono: form.cliente_telefono || null,
-        notas: form.notas || null,
-        emitido_por: form.emitido_por || null,
+        notas: notasFinal || null,
+        emitido_por: emit ? (form.emitido_por || user?.email || "Admin") : (form.emitido_por || null),
         por_cobrar: form.por_cobrar,
         tipo_cliente: form.tipo_cliente,
         created_by: user?.id || null,
+        ...(emit ? {
+          estado: "emitido" as any,
+          emitido_en: new Date().toISOString(),
+          tipo_comprobante: inferredKind,
+          numero_comprobante: numeroComprobante,
+        } : {}),
       } as any).select("id").single();
       if (error) throw error;
 
@@ -171,27 +196,23 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
         cantidad: it.cantidad,
         precio_unitario: it.precio_unitario,
         subtotal: it.cantidad * it.precio_unitario,
+        responsable: it.responsable || null,
+        tipo_equipo: it.tipo_equipo || null,
+        diagnostico: it.diagnostico || null,
       }));
       const { error: ie } = await supabase.from("transaction_items").insert(payload as any);
       if (ie) throw ie;
 
       await supabase.from("transaction_history").insert({
-        transaction_id: tx.id, accion: "creado",
-        detalles: { items: items.length, origen: "pos_quick" },
+        transaction_id: tx.id,
+        accion: emit ? `emitido_${inferredKind || "transaccion"}` : "creado",
+        detalles: { items: items.length, origen: "pos_quick", numero_comprobante: numeroComprobante } as any,
         usuario_id: user?.id || null,
       });
 
       if (emit) {
-        const { error: ee } = await supabase.from("transactions").update({
-          estado: "emitido" as any,
-          emitido_en: new Date().toISOString(),
-          emitido_por: form.emitido_por || user?.email || "Admin",
-        }).eq("id", tx.id);
-        if (ee) throw ee;
-
-        // Reduce stock for product items
         for (const it of items) {
-          if (it.item_type === "producto" && it.referencia_id) {
+          if (it.item_type === "producto" && it.referencia_id && it.referencia_id !== "service") {
             const { data: prod } = await supabase.from("products").select("stock").eq("id", it.referencia_id).single();
             if (prod) {
               const stockBefore = prod.stock;
@@ -207,15 +228,11 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
             }
           }
         }
-
-        await supabase.from("transaction_history").insert({
-          transaction_id: tx.id, accion: "emitido", usuario_id: user?.id || null,
-        });
       }
 
-      return tx.id;
+      return { id: tx.id, numeroComprobante, inferredKind };
     },
-    onSuccess: (_id, emit) => {
+    onSuccess: (res, opts) => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["transactions_por_cobrar_all"] });
       qc.invalidateQueries({ queryKey: ["pos_products"] });
@@ -228,15 +245,22 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
         link: "/admin/ventas/pos",
         excludeUserId: user?.id,
       });
-      toast.success(emit ? "Transacción emitida" : "Borrador guardado");
+      if (opts.emit) {
+        const label = (res.inferredKind || "").toUpperCase().replace("_", " ");
+        toast.success(`${label} ${res.numeroComprobante ? "N° " + res.numeroComprobante : ""} emitido${form.por_cobrar ? " — PENDIENTE POR COBRAR" : ""}`);
+      } else {
+        toast.success("Borrador guardado");
+      }
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message || "Error al guardar"),
   });
 
+  const canSave = items.length > 0 && !save.isPending;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl w-[98vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="max-w-4xl w-[98vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5 text-primary" /> Nueva Transacción
@@ -262,19 +286,19 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="space-y-2">
               <Label>Cliente</Label>
               <Popover open={clientOpen} onOpenChange={setClientOpen}>
                 <PopoverTrigger asChild>
                   <Button type="button" variant="outline" className="w-full h-9 justify-start font-normal">
-                    {form.cliente_nombre || "Buscar cliente o escribir..."}
+                    {form.cliente_nombre || "Buscar o escribir cliente..."}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[320px] p-0" align="start">
                   <Command>
                     <CommandInput placeholder="Buscar..." value={form.cliente_nombre} onValueChange={(v) => setForm({ ...form, cliente_nombre: v })} />
                     <CommandList>
-                      <CommandEmpty>Usar “{form.cliente_nombre}” como cliente nuevo.</CommandEmpty>
+                      <CommandEmpty>Usa “{form.cliente_nombre}” como cliente nuevo.</CommandEmpty>
                       <CommandGroup heading="Clientes">
                         {customers.slice(0, 50).map((c: any) => (
                           <CommandItem key={c.id} value={c.full_name} onSelect={() => {
@@ -290,27 +314,15 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
                   </Command>
                 </PopoverContent>
               </Popover>
+              <Input
+                placeholder="O escribe el nombre manualmente..."
+                value={form.cliente_nombre}
+                onChange={(e) => setForm({ ...form, cliente_nombre: e.target.value })}
+              />
             </div>
             <div>
               <Label>Teléfono</Label>
-              <Input value={form.cliente_telefono} onChange={e => setForm({ ...form, cliente_telefono: e.target.value })} />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Checkbox id="qtx-cobrar" checked={form.por_cobrar} onCheckedChange={(c) => setForm({ ...form, por_cobrar: !!c })} />
-              <Label htmlFor="qtx-cobrar" className="cursor-pointer text-sm">Por cobrar</Label>
-            </div>
-            <div className="flex-1">
-              <Select value={form.tipo_cliente} onValueChange={(v: any) => setForm({ ...form, tipo_cliente: v })}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="publico">Público</SelectItem>
-                  <SelectItem value="privado">Privado</SelectItem>
-                  <SelectItem value="corporativo">Corporativo</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input placeholder="999 999 999" value={form.cliente_telefono} onChange={e => setForm({ ...form, cliente_telefono: e.target.value })} />
             </div>
           </div>
 
@@ -337,8 +349,7 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
             {items.map((it, idx) => (
               <Card key={idx} className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
-                    {it.item_type === "producto" ? <ShoppingCart className="h-3 w-3" /> : <Wrench className="h-3 w-3" />}
+                  <span className={`text-xs font-semibold uppercase px-2 py-0.5 rounded ${it.item_type === "producto" ? "bg-emerald-500/15 text-emerald-500" : "bg-blue-500/15 text-blue-500"}`}>
                     {it.item_type}
                   </span>
                   <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeItem(idx)}>
@@ -348,11 +359,12 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
 
                 {it.item_type === "producto" ? (
                   <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Descripción</Label>
                     <Popover open={productPickerIdx === idx} onOpenChange={(o) => { setProductPickerIdx(o ? idx : null); if (o) setProductSearch(""); }}>
                       <PopoverTrigger asChild>
                         <Button type="button" variant="outline" className="w-full h-9 justify-start font-normal">
                           <Search className="h-3.5 w-3.5 mr-2" />
-                          <span className="truncate">{it.descripcion || "Buscar en inventario o escribir libre..."}</span>
+                          <span className="truncate">{it.descripcion || "Seleccionar producto..."}</span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-[420px] p-0" align="start">
@@ -361,7 +373,7 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
                           <CommandList className="max-h-64">
                             <CommandEmpty>
                               <div className="p-2 space-y-2">
-                                <p className="text-xs text-muted-foreground">Sin coincidencias en inventario.</p>
+                                <p className="text-xs text-muted-foreground">Sin coincidencias.</p>
                                 <Button size="sm" variant="outline" className="w-full" onClick={() => { updateItem(idx, { descripcion: productSearch || it.descripcion, referencia_id: null }); setProductPickerIdx(null); }}>
                                   Usar "{productSearch || it.descripcion || "ítem"}" como producto libre
                                 </Button>
@@ -386,26 +398,27 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
                       </PopoverContent>
                     </Popover>
                     <Input
-                      placeholder="Descripción del producto (editable)"
+                      placeholder="Escribir nombre del producto..."
                       value={it.descripcion}
                       onChange={e => updateItem(idx, { descripcion: e.target.value })}
                     />
                   </div>
                 ) : (
-                  <div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Descripción</Label>
                     {SERVICE_TYPES.length > 0 && (
                       <Select onValueChange={(v) => {
                         const st = SERVICE_TYPES.find(s => s.name === v);
                         if (st) updateItem(idx, { descripcion: st.name, precio_unitario: st.price || it.precio_unitario });
                       }}>
-                        <SelectTrigger className="h-8 mb-1 text-xs"><SelectValue placeholder="Servicio rápido..." /></SelectTrigger>
+                        <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar servicio..." /></SelectTrigger>
                         <SelectContent>
                           {SERVICE_TYPES.map(s => <SelectItem key={s.name} value={s.name}>{s.name} {s.price ? `— S/${s.price}` : ""}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     )}
                     <Input
-                      placeholder="Descripción del servicio"
+                      placeholder="Escribir servicio manualmente..."
                       value={it.descripcion}
                       onChange={e => updateItem(idx, { descripcion: e.target.value })}
                     />
@@ -428,6 +441,28 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
                     <Input readOnly value={`S/ ${(it.cantidad * it.precio_unitario).toFixed(2)}`} className="font-mono" />
                   </div>
                 </div>
+
+                {it.item_type === "servicio" && (
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <div>
+                      <Label className="text-[10px]">Responsable</Label>
+                      <Select value={it.responsable || ""} onValueChange={(v) => updateItem(idx, { responsable: v })}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                        <SelectContent>
+                          {staff.map((s: any) => <SelectItem key={s.id} value={s.full_name}>{s.full_name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Tipo de Equipo</Label>
+                      <Input className="h-8 text-xs" placeholder="LAPTOP, IMPRESORA..." value={it.tipo_equipo || ""} onChange={e => updateItem(idx, { tipo_equipo: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Diagnóstico</Label>
+                      <Input className="h-8 text-xs" placeholder="FALLA FÍSICA..." value={it.diagnostico || ""} onChange={e => updateItem(idx, { diagnostico: e.target.value })} />
+                    </div>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
@@ -437,13 +472,38 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
             <Input value={form.notas} onChange={e => setForm({ ...form, notas: e.target.value })} placeholder="Opcional" />
           </div>
 
+          {/* Pendiente por cobrar */}
+          <Card className="p-3 border-amber-500/40 bg-amber-500/10">
+            <div className="flex items-start gap-3">
+              <Checkbox id="qtx-cobrar" checked={form.por_cobrar} onCheckedChange={(c) => setForm({ ...form, por_cobrar: !!c })} className="mt-0.5" />
+              <div className="flex-1">
+                <Label htmlFor="qtx-cobrar" className="cursor-pointer text-sm font-semibold flex items-center gap-2 text-amber-500">
+                  <Clock className="h-4 w-4" /> Marcar como PENDIENTE POR COBRAR
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Use esta opción solo para entidades privadas o públicas a crédito. No aplica al público en general.
+                </p>
+                {form.por_cobrar && (
+                  <Select value={form.tipo_cliente} onValueChange={(v: any) => setForm({ ...form, tipo_cliente: v })}>
+                    <SelectTrigger className="h-8 text-xs mt-2 w-48"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="publico">Público</SelectItem>
+                      <SelectItem value="privado">Privado</SelectItem>
+                      <SelectItem value="corporativo">Corporativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+          </Card>
+
           <Card className="p-3 bg-secondary/30">
             <div className="flex items-center justify-between text-sm">
-              <span>Productos:</span>
+              <span>Subtotal Productos:</span>
               <span className="font-mono">S/ {totals.productos.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span>Servicios:</span>
+              <span>Subtotal Servicios:</span>
               <span className="font-mono">S/ {totals.servicios.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-lg font-bold border-t border-border mt-1 pt-1">
@@ -453,13 +513,18 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
           </Card>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={save.isPending}>Cancelar</Button>
-          <Button variant="secondary" onClick={() => save.mutate(false)} disabled={save.isPending || items.length === 0}>
-            Guardar borrador
+        <DialogFooter className="gap-2 sm:gap-2 flex-wrap">
+          <Button variant="secondary" onClick={() => save.mutate({ emit: false })} disabled={!canSave}>
+            Guardar como Borrador
           </Button>
-          <Button onClick={() => save.mutate(true)} disabled={save.isPending || items.length === 0} className="gap-2">
-            <Plus className="h-4 w-4" /> Emitir
+          <Button variant="outline" onClick={() => save.mutate({ emit: true, docKind: items.some(i => i.item_type === "servicio") && !items.some(i => i.item_type === "producto") ? "ticket_servicio" : "ticket_venta" })} disabled={!canSave} className="gap-2">
+            <FileText className="h-4 w-4" /> Emitir Comprobante
+          </Button>
+          <Button onClick={() => save.mutate({ emit: true, docKind: "boleta" })} disabled={!canSave} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            <FileBadge className="h-4 w-4" /> Emitir Boleta
+          </Button>
+          <Button onClick={() => save.mutate({ emit: true, docKind: "factura" })} disabled={!canSave} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
+            <FileCheck2 className="h-4 w-4" /> Emitir Factura
           </Button>
         </DialogFooter>
       </DialogContent>

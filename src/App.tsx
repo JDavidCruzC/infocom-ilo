@@ -45,6 +45,7 @@ import AttendancePage from "@/features/admin/pages/AttendancePage";
 import AccountingPage from "@/features/admin/pages/AccountingPage";
 import SupportPage from "@/features/admin/pages/SupportPage";
 import SalesPage from "@/features/admin/pages/SalesPage";
+import QuotesPage from "@/features/admin/pages/QuotesPage";
 import VitrinasPage from "@/features/admin/pages/VitrinasPage";
 import CustomersPage from "@/features/admin/pages/CustomersPage";
 import AppointmentsPage from "@/features/admin/pages/AppointmentsPage";
@@ -137,6 +138,7 @@ const App = () => (
                   <Route path="pedidos" element={<PermissionRoute module="pedidos"><OrdersPage /></PermissionRoute>} />
                   <Route path="soporte" element={<PermissionRoute module="soporte"><SupportPage /></PermissionRoute>} />
                   <Route path="ventas/pos" element={<PermissionRoute module="pos"><SalesPage /></PermissionRoute>} />
+                  <Route path="ventas/cotizaciones" element={<PermissionRoute module="cotizaciones"><QuotesPage /></PermissionRoute>} />
 
 
                   <Route path="categorias" element={<PermissionRoute module="categorias"><CategoriesPage /></PermissionRoute>} />
