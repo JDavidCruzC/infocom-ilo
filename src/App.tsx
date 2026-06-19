@@ -138,6 +138,7 @@ const App = () => (
                   <Route path="pedidos" element={<PermissionRoute module="pedidos"><OrdersPage /></PermissionRoute>} />
                   <Route path="soporte" element={<PermissionRoute module="soporte"><SupportPage /></PermissionRoute>} />
                   <Route path="ventas/pos" element={<PermissionRoute module="pos"><SalesPage /></PermissionRoute>} />
+                  <Route path="ventas/cotizaciones" element={<PermissionRoute module="cotizaciones"><QuotesPage /></PermissionRoute>} />
 
 
                   <Route path="categorias" element={<PermissionRoute module="categorias"><CategoriesPage /></PermissionRoute>} />
