@@ -456,43 +456,65 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
         const ticketType = resolvedDocTitle;
         const ticketNum = order.numero_comprobante || order.ticket_number || "------";
 
-        const hora = order.created_at ? new Date(order.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }) : "";
+        const hora = order.created_at
+          ? new Date(order.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true })
+          : new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+        const officialLogo = `${window.location.origin}${logoReceipt}`;
         const a4Header = t.headerMode === "logo" && t.logoUrl
-          ? `<img src="${t.logoUrl}" alt="Logo" style="max-height:60px;margin-bottom:4px" />`
-          : `<div style="font-size:20px;font-weight:900;letter-spacing:2px">${t.companyName}</div>`;
+          ? `<img src="${t.logoUrl}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`
+          : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`;
 
         const isSale = type === "sale";
+        const montoLetras = numeroALetrasSoles(Number(totalFinal));
+
+        // Inline SVG social icons (use currentColor)
+        const icoWa = `<svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.91-7.02zM12.05 20.15h-.01a8.23 8.23 0 0 1-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.24 8.24 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.16.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29z"/></svg>`;
+        const icoFb = `<svg viewBox="0 0 24 24" width="14" height="14" fill="#1877F2"><path d="M13.5 21v-7.5h2.5l.4-3.1h-2.9V8.4c0-.9.25-1.5 1.55-1.5H17V4.13C16.7 4.1 15.78 4 14.7 4c-2.25 0-3.8 1.38-3.8 3.9v2.5H8.4v3.1h2.5V21h2.6z"/></svg>`;
+        const icoTk = `<svg viewBox="0 0 24 24" width="14" height="14" fill="#000"><path d="M16.5 2h-2.85v13.05a2.55 2.55 0 1 1-2.55-2.55c.18 0 .35.02.52.05V9.6a5.4 5.4 0 0 0-.52-.03 5.4 5.4 0 1 0 5.4 5.4V8.55a6.45 6.45 0 0 0 3.78 1.21V6.9a3.78 3.78 0 0 1-3.78-3.8V2z"/></svg>`;
+        const socials: string[] = [];
+        if (companyInfo.telefono) socials.push(`<span class="soc">${icoWa}&nbsp;${companyInfo.telefono}</span>`);
+        socials.push(`<span class="soc">${icoFb}&nbsp;Infocom Ilo</span>`);
+        if (companyInfo.saleFooterSocial) socials.push(`<span class="soc">${icoTk}&nbsp;${companyInfo.saleFooterSocial}</span>`);
 
         bodyContent = `
 <div class="a4-container">
   <div class="a4-header">
     <div class="a4-company">
       ${a4Header}
-      <div style="font-size:9px;margin-top:4px;line-height:1.5">${buildCompanyInfoBlock(companyInfo)}</div>
+      <div class="a4-meta">
+        <div><b>R.U.C.:</b> ${companyInfo.ruc}</div>
+        <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
+        <div><b>Tel.:</b> ${companyInfo.telefono}</div>
+        <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
+        <div>${companyInfo.ciudad}</div>
+        <div><b>${companyInfo.web}</b></div>
+      </div>
     </div>
     <div class="a4-doc-type">
       <div class="doc-title">${ticketType}</div>
-      <div style="font-size:14px;font-weight:700;margin-top:4px">N° ${ticketNum}</div>
+      <div class="doc-sep"></div>
+      <div class="doc-num">N° ${String(ticketNum).padStart(6, "0")}</div>
     </div>
   </div>
   <div class="a4-separator"></div>
   <div class="a4-info-grid">
     <div class="a4-info-left">
-      <div class="a4-field"><span class="a4-label">Fecha de Emision:</span><span>${order.date || new Date().toISOString().split("T")[0]}</span></div>
-      ${hora ? `<div class="a4-field"><span class="a4-label">Hora:</span><span>${hora}</span></div>` : ""}
+      <div class="a4-field"><span class="a4-label">Fecha de Emisión:</span><span>${order.date || new Date().toISOString().split("T")[0]}</span></div>
+      <div class="a4-field"><span class="a4-label">Hora:</span><span>${hora}</span></div>
       ${order.customer_name ? `<div class="a4-field"><span class="a4-label">Cliente:</span><span>${order.customer_name}</span></div>` : ""}
       ${order.customer_dni ? `<div class="a4-field"><span class="a4-label">D.N.I.:</span><span>${order.customer_dni}</span></div>` : ""}
-      ${order.customer_phone ? `<div class="a4-field"><span class="a4-label">Telefono:</span><span>${order.customer_phone}</span></div>` : ""}
+      ${order.customer_phone ? `<div class="a4-field"><span class="a4-label">Teléfono:</span><span>${order.customer_phone}</span></div>` : ""}
     </div>
     <div class="a4-info-right">
       ${isSale && (order.seller || order.emitido_por) ? `<div class="a4-field"><span class="a4-label">Vendedor:</span><span>${String(order.seller || order.emitido_por).toUpperCase()}</span></div>` : ""}
       ${!isSale && order.responsible ? `<div class="a4-field"><span class="a4-label">Responsable:</span><span>${String(order.responsible).toUpperCase()}</span></div>` : ""}
-      ${order.payment_method ? `<div class="a4-field"><span class="a4-label">Condicion de Pago:</span><span>${String(order.payment_method).toUpperCase()}</span></div>` : ""}
+      ${order.payment_method ? `<div class="a4-field"><span class="a4-label">Condición de Pago:</span><span>${String(order.payment_method).toUpperCase()}</span></div>` : ""}
       ${order.equipo || order.device_type ? `<div class="a4-field"><span class="a4-label">Equipo:</span><span>${String(order.equipo || order.device_type).toUpperCase()}</span></div>` : ""}
     </div>
   </div>
   <table class="a4-items">
-    <thead><tr><th>N°</th><th>Cant.</th><th>Unidad</th><th>DESCRIPCION</th><th>P. Unitario</th><th>Total</th></tr></thead>
+    <thead><tr><th>N°</th><th>Cant.</th><th>Unidad</th><th>DESCRIPCIÓN</th><th>P. Unitario</th><th>Total</th></tr></thead>
     <tbody>${buildItemsRows()}</tbody>
   </table>
   <div class="a4-totals">
@@ -507,9 +529,31 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     <div class="a4-total-row"><span>Monto Recibido:</span><span>S/. ${Number(order.amount_given).toFixed(2)}</span></div>
     <div class="a4-total-row"><span>Vuelto:</span><span>S/. ${(Number(order.amount_given) - totalFinal).toFixed(2)}</span></div>
   </div>` : ""}
+
+  <div class="a4-letras">
+    <span class="a4-letras-label">SON:</span>
+    <span class="a4-letras-text">${montoLetras.charAt(0) + montoLetras.slice(1).toLowerCase()}.</span>
+  </div>
+
+  <div class="a4-promo">
+    Si deseas conocer más sobre nuestros productos y nuestro catálogo,<br>
+    puedes ingresar a <b>${companyInfo.web}</b>
+  </div>
+
+  <div class="a4-thanks">
+    <div class="a4-thanks-title">¡Gracias por su compra!</div>
+    <div class="a4-thanks-msg">
+      Su confianza es nuestro mayor orgullo.<br>
+      Si tiene alguna pregunta sobre este comprobante,<br>
+      no dude en comunicarse con nosotros.
+    </div>
+  </div>
+
+  <div class="a4-socials">${socials.join('<span class="soc-sep">|</span>')}</div>
+  <div class="a4-tagline"><i>Síganos en nuestras redes y entérate de nuestras promociones</i></div>
+
   <div class="a4-footer">
-    <p>${isSale ? buildSaleFooter(companyInfo) : t.footerText.replace(/\n/g, "<br>")}</p>
-    <p style="margin-top:6px;font-size:9px">${buildCopyright(companyInfo)}</p>
+    <p>${buildCopyright(companyInfo)}</p>
   </div>
 </div>`;
       }
@@ -518,28 +562,46 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
 <html><head><meta charset="utf-8"><title>${type === "reception" ? t.receptionTitle : (type === "service" ? t.serviceTitle : resolvedSaleTitle)}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#000;padding:20px}
-  .a4-container{max-width:700px;margin:0 auto;border:1px solid #ccc;padding:24px}
-  .a4-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff}
+  .a4-container{max-width:780px;margin:0 auto;border:1px solid #d4e8d4;border-radius:8px;padding:28px 32px}
+  .a4-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:6px}
   .a4-company{flex:1}
-  .a4-doc-type{border:2px solid #000;padding:10px 20px;text-align:center;min-width:200px}
-  .doc-title{font-size:16px;font-weight:900;letter-spacing:1px}
-  .a4-separator{border-top:2px solid #000;margin:8px 0 12px}
-  .a4-info-grid{display:flex;gap:20px;margin-bottom:16px}
+  .a4-meta{font-size:12px;line-height:1.7;margin-top:6px;color:#0d0d0d}
+  .a4-meta b{font-weight:700}
+  .a4-doc-type{border:2px solid #2E8B57;border-radius:10px;padding:14px 22px;text-align:center;min-width:240px;background:#fff}
+  .doc-title{font-size:20px;font-weight:900;letter-spacing:1px;color:#2E8B57;text-transform:uppercase}
+  .doc-sep{height:2px;background:#2E8B57;margin:6px auto;width:60%;border-radius:2px;position:relative}
+  .doc-sep:after{content:"";position:absolute;left:50%;top:-3px;width:8px;height:8px;background:#2E8B57;border-radius:50%;transform:translateX(-50%)}
+  .doc-num{font-size:18px;font-weight:700;margin-top:4px;color:#0d0d0d}
+  .a4-separator{border-top:2px solid #2E8B57;margin:14px 0 18px}
+  .a4-info-grid{display:flex;gap:30px;margin-bottom:18px}
   .a4-info-left,.a4-info-right{flex:1}
-  .a4-field{display:flex;gap:6px;margin:4px 0;font-size:11px}
-  .a4-label{font-weight:700;min-width:120px;white-space:nowrap}
-  .a4-items{width:100%;border-collapse:collapse;margin:12px 0;font-size:11px}
-  .a4-items th{background:#f0f0f0;border:1px solid #999;padding:6px 8px;font-weight:700;text-align:left}
-  .a4-items td{border:1px solid #ccc;padding:5px 8px;vertical-align:top}
+  .a4-field{display:flex;gap:10px;margin:8px 0;font-size:13px;align-items:baseline}
+  .a4-label{font-weight:800;min-width:140px;white-space:nowrap;color:#0d0d0d}
+  .a4-items{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
+  .a4-items th{background:#E6F4EA;border:1px solid #B7DCC0;padding:8px 10px;font-weight:800;text-align:left;color:#0d0d0d}
+  .a4-items td{border:1px solid #D9EAD9;padding:7px 10px;vertical-align:top}
   .a4-items .tc{text-align:center}
   .a4-items .tr{text-align:right;white-space:nowrap}
-  .a4-totals{display:flex;flex-direction:column;align-items:flex-end;margin-top:8px;gap:4px}
-  .a4-total-row{display:flex;gap:16px;font-size:12px;min-width:280px;justify-content:space-between}
-  .a4-total-final{font-weight:900;font-size:14px;border-top:2px solid #000;padding-top:6px;margin-top:4px}
+  .a4-totals{display:flex;flex-direction:column;align-items:flex-end;margin-top:10px;gap:4px}
+  .a4-total-row{display:flex;gap:16px;font-size:13px;min-width:320px;justify-content:space-between}
+  .a4-total-final{font-weight:900;font-size:18px;padding-top:8px;margin-top:6px;color:#2E8B57}
+  .a4-total-final span:first-child{color:#0d0d0d;letter-spacing:1px}
   .a4-payment-info{display:flex;flex-direction:column;align-items:flex-end;margin-top:6px;gap:2px}
-  .a4-footer{text-align:center;margin-top:24px;font-size:10px;color:#555;border-top:1px solid #ccc;padding-top:12px}
-  @media print{body{padding:10px}.a4-container{border:none;padding:0}@page{margin:10mm}}
+  .a4-letras{margin:24px 0 18px;padding:14px 20px;border:1.5px solid #B7DCC0;border-radius:30px;display:flex;gap:10px;align-items:center;font-size:13px}
+  .a4-letras-label{color:#2E8B57;font-weight:900;letter-spacing:1px}
+  .a4-letras-text{font-style:italic}
+  .a4-promo{text-align:center;margin:22px 0 18px;font-size:12px;line-height:1.6}
+  .a4-promo b{color:#2E8B57}
+  .a4-thanks{text-align:center;margin:18px 0 14px;padding-top:14px;border-top:1px solid #D9EAD9}
+  .a4-thanks-title{font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:24px;color:#2E8B57;font-weight:700}
+  .a4-thanks-msg{margin-top:8px;font-size:11.5px;line-height:1.7;color:#333}
+  .a4-socials{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:14px;font-size:12px;font-weight:600;flex-wrap:wrap}
+  .a4-socials .soc{display:inline-flex;align-items:center;gap:4px}
+  .a4-socials .soc-sep{color:#cfd8cf}
+  .a4-tagline{text-align:center;margin-top:10px;font-size:12px;color:#2E8B57}
+  .a4-footer{text-align:center;margin-top:18px;font-size:10px;color:#888;border-top:1px solid #E6F4EA;padding-top:10px}
+  @media print{body{padding:8px}.a4-container{border:none;padding:0}@page{size:A4;margin:10mm}}
 </style></head><body>
 ${bodyContent}
 </body></html>`;
