@@ -680,8 +680,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   .a4-separator{border-top:2px solid #2E8B57;margin:14px 0 18px}
   .a4-info-grid{display:flex;gap:30px;margin-bottom:18px}
   .a4-info-left,.a4-info-right{flex:1}
-  .a4-field{display:flex;gap:10px;margin:8px 0;font-size:13px;align-items:baseline}
-  .a4-label{font-weight:800;min-width:140px;white-space:nowrap;color:#0d0d0d}
+  .a4-field{display:flex;gap:8px;margin:8px 0;font-size:13px;align-items:center}
+  .a4-field .a4-ico{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0}
+  .a4-label{font-weight:800;min-width:130px;white-space:nowrap;color:#0d0d0d}
   .a4-items{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
   .a4-items th{background:#E6F4EA;border:1px solid #B7DCC0;padding:8px 10px;font-weight:800;text-align:left;color:#0d0d0d}
   .a4-items td{border:1px solid #D9EAD9;padding:7px 10px;vertical-align:top}
@@ -692,20 +693,27 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   .a4-total-final{font-weight:900;font-size:18px;padding-top:8px;margin-top:6px;color:#2E8B57}
   .a4-total-final span:first-child{color:#0d0d0d;letter-spacing:1px}
   .a4-payment-info{display:flex;flex-direction:column;align-items:flex-end;margin-top:6px;gap:2px}
-  .a4-letras{margin:24px 0 18px;padding:14px 20px;border:1.5px solid #B7DCC0;border-radius:30px;display:flex;gap:10px;align-items:center;font-size:13px}
+  .a4-letras{margin:24px 0 18px;padding:14px 22px;border:1.5px solid #B7DCC0;border-radius:30px;display:flex;gap:12px;align-items:center;font-size:13px;background:#F4FAF5}
+  .a4-letras-ico{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#E6F4EA;flex-shrink:0}
   .a4-letras-label{color:#2E8B57;font-weight:900;letter-spacing:1px}
   .a4-letras-text{font-style:italic}
-  .a4-promo{text-align:center;margin:22px 0 18px;font-size:12px;line-height:1.6}
+  .a4-promo{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;margin:22px 0 18px;font-size:12px;line-height:1.6}
+  .a4-promo-ico{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#E6F4EA;flex-shrink:0}
   .a4-promo b{color:#2E8B57}
   .a4-thanks{text-align:center;margin:18px 0 14px;padding-top:14px;border-top:1px solid #D9EAD9}
-  .a4-thanks-title{font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:24px;color:#2E8B57;font-weight:700}
-  .a4-thanks-msg{margin-top:8px;font-size:11.5px;line-height:1.7;color:#333}
-  .a4-socials{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:14px;font-size:12px;font-weight:600;flex-wrap:wrap}
-  .a4-socials .soc{display:inline-flex;align-items:center;gap:4px}
-  .a4-socials .soc-sep{color:#cfd8cf}
-  .a4-tagline{text-align:center;margin-top:10px;font-size:12px;color:#2E8B57}
-  .a4-footer{text-align:center;margin-top:18px;font-size:10px;color:#888;border-top:1px solid #E6F4EA;padding-top:10px}
-  @media print{body{padding:8px}.a4-container{border:none;padding:0}@page{size:A4;margin:10mm}}
+  .a4-thanks-title{font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;color:#2E8B57;font-weight:700}
+  .a4-thanks-msg{margin-top:8px;font-size:11.5px;line-height:1.7;color:#333;white-space:pre-line}
+  .a4-socials{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:18px;font-size:12.5px;font-weight:600;flex-wrap:wrap}
+  .a4-socials .soc-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #eef2ee}
+  .a4-socials .soc-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%}
+  .a4-socials .soc-text{color:#0d0d0d}
+  .a4-socials .soc-sep{color:#cfd8cf;font-weight:400}
+  .a4-tagline{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;margin-top:14px;font-size:13px;color:#2E8B57;font-style:italic}
+  .a4-tagline .tag-deco{color:#2E8B57;font-weight:700;transform:scaleY(1.6);display:inline-block}
+  .a4-waves{position:relative;margin:24px -32px -28px;height:90px;overflow:hidden}
+  .a4-waves svg{position:absolute;bottom:0;left:0;width:100%;height:100%;display:block}
+  .a4-footer{text-align:center;margin-top:12px;font-size:10px;color:#888;padding-top:10px;position:relative;z-index:2}
+  @media print{body{padding:8px}.a4-container{border:none;padding:0}.a4-waves{margin-left:0;margin-right:0}@page{size:A4;margin:10mm}}
 </style></head><body>
 ${bodyContent}
 </body></html>`;
