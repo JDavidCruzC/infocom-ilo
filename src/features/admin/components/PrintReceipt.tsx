@@ -10,6 +10,47 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Printer, Settings2, FileText, Upload, Loader2, ImageIcon, Type } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import logoReceipt from "@/assets/logo-light-theme.png";
+
+// ───────── Número a letras (Soles) ─────────
+const _unidades = ["", "UNO", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE", "DIEZ", "ONCE", "DOCE", "TRECE", "CATORCE", "QUINCE", "DIECISEIS", "DIECISIETE", "DIECIOCHO", "DIECINUEVE", "VEINTE"];
+const _decenas = ["", "", "VEINTI", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA"];
+const _centenas = ["", "CIENTO", "DOSCIENTOS", "TRESCIENTOS", "CUATROCIENTOS", "QUINIENTOS", "SEISCIENTOS", "SETECIENTOS", "OCHOCIENTOS", "NOVECIENTOS"];
+const _cientos = (n: number): string => {
+  if (n === 0) return "";
+  if (n === 100) return "CIEN";
+  const c = Math.floor(n / 100);
+  const r = n % 100;
+  return [_centenas[c], r ? _decenasFn(r) : ""].filter(Boolean).join(" ");
+};
+const _decenasFn = (n: number): string => {
+  if (n <= 20) return _unidades[n];
+  if (n < 30) return "VEINTI" + _unidades[n - 20].toLowerCase().toUpperCase().replace(/^VEINTIUNO$/, "VEINTIUNO");
+  const d = Math.floor(n / 10);
+  const u = n % 10;
+  if (u === 0) return _decenas[d];
+  return _decenas[d] + " Y " + _unidades[u];
+};
+const _miles = (n: number): string => {
+  if (n < 1000) return _cientos(n);
+  const m = Math.floor(n / 1000);
+  const r = n % 1000;
+  const pref = m === 1 ? "MIL" : (_cientos(m) + " MIL");
+  return r ? pref + " " + _cientos(r) : pref;
+};
+const _millones = (n: number): string => {
+  if (n < 1000000) return _miles(n);
+  const mm = Math.floor(n / 1000000);
+  const r = n % 1000000;
+  const pref = mm === 1 ? "UN MILLON" : (_miles(mm) + " MILLONES");
+  return r ? pref + " " + _miles(r) : pref;
+};
+export const numeroALetrasSoles = (monto: number): string => {
+  const entero = Math.floor(Math.abs(monto));
+  const cent = Math.round((Math.abs(monto) - entero) * 100);
+  const palabras = entero === 0 ? "CERO" : _millones(entero);
+  return `${palabras} CON ${String(cent).padStart(2, "0")}/100 SOLES`;
+};
 
 const THERMAL_SIZES: Record<string, { label: string; width: string }> = {
   "50mm": { label: "50mm", width: "164px" },
