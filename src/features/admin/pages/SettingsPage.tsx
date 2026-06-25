@@ -17,6 +17,7 @@ import {
   DEFAULT_COMPANY_INFO,
   DEFAULT_TEMPLATE,
   DOCUMENT_KINDS,
+  SOCIAL_TYPE_OPTIONS,
   loadTemplateFromDb,
   saveTemplateToDb,
   type CompanyReceiptInfo,
