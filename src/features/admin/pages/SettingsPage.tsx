@@ -17,6 +17,7 @@ import {
   DEFAULT_COMPANY_INFO,
   DEFAULT_TEMPLATE,
   DOCUMENT_KINDS,
+  SOCIAL_TYPE_OPTIONS,
   loadTemplateFromDb,
   saveTemplateToDb,
   type CompanyReceiptInfo,
@@ -319,35 +320,127 @@ const SettingsPage = () => {
                 </label>
               </div>
               {companyInfo.saleFooterShowSocial && (
-                <div className="space-y-1.5">
-                  <Label className="text-sm">Usuario / Red Social</Label>
-                  <Input
-                    value={companyInfo.saleFooterSocial || ""}
-                    placeholder="@infocom.ilo"
-                    onChange={e => setCI({ saleFooterSocial: e.target.value })}
-                  />
+                <div className="space-y-2 rounded-lg border border-primary/20 p-3 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-bold">🔗 Redes sociales del comprobante</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const next = [...(companyInfo.saleFooterSocials || []), { type: "whatsapp", value: "" }];
+                        setCI({ saleFooterSocials: next as any });
+                      }}
+                    >
+                      + Agregar red
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Escogé el tipo de red y el texto que aparecerá. Cada red se muestra con su logo oficial.</p>
+                  {(companyInfo.saleFooterSocials || []).length === 0 && (
+                    <p className="text-xs italic text-muted-foreground py-2">Sin redes configuradas — agregá la primera con el botón de arriba.</p>
+                  )}
+                  {(companyInfo.saleFooterSocials || []).map((s, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <select
+                        className="h-9 rounded-md border bg-background px-2 text-sm"
+                        value={s.type}
+                        onChange={e => {
+                          const next = [...(companyInfo.saleFooterSocials || [])];
+                          next[idx] = { ...next[idx], type: e.target.value as any };
+                          setCI({ saleFooterSocials: next });
+                        }}
+                      >
+                        {SOCIAL_TYPE_OPTIONS.map(o => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <Input
+                        className="flex-1"
+                        value={s.value}
+                        placeholder="Usuario, número o texto a mostrar"
+                        onChange={e => {
+                          const next = [...(companyInfo.saleFooterSocials || [])];
+                          next[idx] = { ...next[idx], value: e.target.value };
+                          setCI({ saleFooterSocials: next });
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => {
+                          const next = (companyInfo.saleFooterSocials || []).filter((_, i) => i !== idx);
+                          setCI({ saleFooterSocials: next });
+                        }}
+                      >✕</Button>
+                    </div>
+                  ))}
                 </div>
               )}
+
+              {/* Visual extras: SON, iconos en campos, olas decorativas, tagline */}
+              <div className="space-y-3 rounded-lg border border-primary/20 p-3 bg-muted/20">
+                <Label className="text-sm font-bold">🎨 Detalles visuales del comprobante A4</Label>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <label className="flex items-center justify-between p-2 rounded border bg-background/60">
+                    <span className="text-sm">Iconos junto a Fecha/Cliente/Equipo</span>
+                    <Switch checked={companyInfo.saleFooterShowFieldIcons !== false} onCheckedChange={v => setCI({ saleFooterShowFieldIcons: v })} />
+                  </label>
+                  <label className="flex items-center justify-between p-2 rounded border bg-background/60">
+                    <span className="text-sm">Mostrar bloque "SON: …"</span>
+                    <Switch checked={companyInfo.saleFooterShowSon !== false} onCheckedChange={v => setCI({ saleFooterShowSon: v })} />
+                  </label>
+                  <label className="flex items-center justify-between p-2 rounded border bg-background/60">
+                    <span className="text-sm">Icono dentro del "SON"</span>
+                    <Switch checked={companyInfo.saleFooterShowSonIcon !== false} onCheckedChange={v => setCI({ saleFooterShowSonIcon: v })} />
+                  </label>
+                  <label className="flex items-center justify-between p-2 rounded border bg-background/60">
+                    <span className="text-sm">Olas decorativas inferiores</span>
+                    <Switch checked={companyInfo.saleFooterShowWaves !== false} onCheckedChange={v => setCI({ saleFooterShowWaves: v })} />
+                  </label>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Frase debajo de redes (cursiva)</Label>
+                    <Switch checked={companyInfo.saleFooterShowTagline !== false} onCheckedChange={v => setCI({ saleFooterShowTagline: v })} />
+                  </div>
+                  <Input
+                    value={companyInfo.saleFooterTagline || ""}
+                    placeholder="Síganos en nuestras redes y entérate de nuestras promociones"
+                    onChange={e => setCI({ saleFooterTagline: e.target.value })}
+                  />
+                </div>
+              </div>
 
               {/* Preview */}
               <div className="mt-2 p-4 rounded-lg border-2 border-dashed border-primary/30 bg-gradient-to-b from-muted/40 to-transparent">
                 <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Vista previa del pie del ticket:</p>
-                <div className="text-xs text-center font-mono leading-relaxed">
+                <div className="text-xs text-center leading-relaxed">
                   <div className="border-t border-dashed border-foreground/30 my-2" />
                   <p className="font-bold text-sm mb-1">{companyInfo.saleFooterTitle || "¡Gracias!"}</p>
                   {companyInfo.saleFooterMessage && (
-                    <p className="opacity-80 whitespace-pre-line">{companyInfo.saleFooterMessage}</p>
+                    <p className="opacity-80 whitespace-pre-line text-[11px]">{companyInfo.saleFooterMessage}</p>
                   )}
-                  <div className="mt-2 font-semibold space-y-0.5">
-                    {companyInfo.saleFooterShowEmail !== false && <p>✉ {companyInfo.email}</p>}
-                    {companyInfo.saleFooterShowPhone !== false && <p>☏ {companyInfo.telefono}</p>}
-                    {companyInfo.saleFooterShowSocial && companyInfo.saleFooterSocial && <p>📱 {companyInfo.saleFooterSocial}</p>}
-                  </div>
+                  {companyInfo.saleFooterShowSocial && (companyInfo.saleFooterSocials || []).length > 0 && (
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                      {(companyInfo.saleFooterSocials || []).map((s, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-background border text-[11px]">
+                          <span className="w-4 h-4 rounded-full bg-primary/80 inline-block" />
+                          {s.value || <em className="opacity-50">(vacío)</em>}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {companyInfo.saleFooterShowTagline !== false && companyInfo.saleFooterTagline && (
+                    <p className="mt-2 italic text-primary text-[11px]">❮ {companyInfo.saleFooterTagline} ❯</p>
+                  )}
                   <p className="mt-3 text-[10px] text-muted-foreground">© {new Date().getFullYear()} {companyInfo.copyright}.</p>
                 </div>
               </div>
             </CardContent>
           </Card>
+
 
           {/* ─── Plantilla global de comprobantes ─── */}
           <Card className="border-primary/10">
