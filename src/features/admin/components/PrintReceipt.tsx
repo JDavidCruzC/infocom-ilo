@@ -554,10 +554,24 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
         const icoWa = `<svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.91-7.02zM12.05 20.15h-.01a8.23 8.23 0 0 1-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.24 8.24 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.16.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29z"/></svg>`;
         const icoFb = `<svg viewBox="0 0 24 24" width="14" height="14" fill="#1877F2"><path d="M13.5 21v-7.5h2.5l.4-3.1h-2.9V8.4c0-.9.25-1.5 1.55-1.5H17V4.13C16.7 4.1 15.78 4 14.7 4c-2.25 0-3.8 1.38-3.8 3.9v2.5H8.4v3.1h2.5V21h2.6z"/></svg>`;
         const icoTk = `<svg viewBox="0 0 24 24" width="14" height="14" fill="#000"><path d="M16.5 2h-2.85v13.05a2.55 2.55 0 1 1-2.55-2.55c.18 0 .35.02.52.05V9.6a5.4 5.4 0 0 0-.52-.03 5.4 5.4 0 1 0 5.4 5.4V8.55a6.45 6.45 0 0 0 3.78 1.21V6.9a3.78 3.78 0 0 1-3.78-3.8V2z"/></svg>`;
-        const socials: string[] = [];
-        if (companyInfo.telefono) socials.push(`<span class="soc">${icoWa}&nbsp;${companyInfo.telefono}</span>`);
-        socials.push(`<span class="soc">${icoFb}&nbsp;Infocom Ilo</span>`);
-        if (companyInfo.saleFooterSocial) socials.push(`<span class="soc">${icoTk}&nbsp;${companyInfo.saleFooterSocial}</span>`);
+
+        // Build socials: prefer new editable list, fall back to legacy
+        const socialList: SocialLink[] = (companyInfo.saleFooterSocials && companyInfo.saleFooterSocials.length > 0)
+          ? companyInfo.saleFooterSocials
+          : [
+              ...(companyInfo.telefono ? [{ type: "whatsapp" as SocialLinkType, value: companyInfo.telefono }] : []),
+              { type: "facebook" as SocialLinkType, value: "Infocom Ilo" },
+              ...(companyInfo.saleFooterSocial ? [{ type: "tiktok" as SocialLinkType, value: companyInfo.saleFooterSocial }] : []),
+            ];
+        const showSocials = companyInfo.saleFooterShowSocial !== false && socialList.length > 0;
+        const showWaves = companyInfo.saleFooterShowWaves !== false;
+        const showSon = companyInfo.saleFooterShowSon !== false;
+        const showSonIcon = companyInfo.saleFooterShowSonIcon !== false;
+        const showFieldIcons = companyInfo.saleFooterShowFieldIcons !== false;
+        const tagline = companyInfo.saleFooterTagline || "Síganos en nuestras redes y entérate de nuestras promociones";
+        const showTagline = companyInfo.saleFooterShowTagline !== false && tagline.trim().length > 0;
+
+        const fIcon = (key: keyof typeof RECEIPT_ICONS) => showFieldIcons ? `<span class="a4-ico">${RECEIPT_ICONS[key]}</span>` : "";
 
         bodyContent = `
 <div class="a4-container">
@@ -582,17 +596,17 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   <div class="a4-separator"></div>
   <div class="a4-info-grid">
     <div class="a4-info-left">
-      <div class="a4-field"><span class="a4-label">Fecha de Emisión:</span><span>${order.date || new Date().toISOString().split("T")[0]}</span></div>
-      <div class="a4-field"><span class="a4-label">Hora:</span><span>${hora}</span></div>
-      ${order.customer_name ? `<div class="a4-field"><span class="a4-label">Cliente:</span><span>${order.customer_name}</span></div>` : ""}
-      ${order.customer_dni ? `<div class="a4-field"><span class="a4-label">D.N.I.:</span><span>${order.customer_dni}</span></div>` : ""}
-      ${order.customer_phone ? `<div class="a4-field"><span class="a4-label">Teléfono:</span><span>${order.customer_phone}</span></div>` : ""}
+      <div class="a4-field">${fIcon("calendar")}<span class="a4-label">Fecha de Emisión:</span><span>${order.date || new Date().toISOString().split("T")[0]}</span></div>
+      <div class="a4-field">${fIcon("clock")}<span class="a4-label">Hora:</span><span>${hora}</span></div>
+      ${order.customer_name ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Cliente:</span><span>${order.customer_name}</span></div>` : ""}
+      ${order.customer_dni ? `<div class="a4-field">${fIcon("badge")}<span class="a4-label">D.N.I.:</span><span>${order.customer_dni}</span></div>` : ""}
+      ${order.customer_phone ? `<div class="a4-field">${fIcon("phone")}<span class="a4-label">Teléfono:</span><span>${order.customer_phone}</span></div>` : ""}
     </div>
     <div class="a4-info-right">
-      ${isSale && (order.seller || order.emitido_por) ? `<div class="a4-field"><span class="a4-label">Vendedor:</span><span>${String(order.seller || order.emitido_por).toUpperCase()}</span></div>` : ""}
-      ${!isSale && order.responsible ? `<div class="a4-field"><span class="a4-label">Responsable:</span><span>${String(order.responsible).toUpperCase()}</span></div>` : ""}
-      ${order.payment_method ? `<div class="a4-field"><span class="a4-label">Condición de Pago:</span><span>${String(order.payment_method).toUpperCase()}</span></div>` : ""}
-      ${order.equipo || order.device_type ? `<div class="a4-field"><span class="a4-label">Equipo:</span><span>${String(order.equipo || order.device_type).toUpperCase()}</span></div>` : ""}
+      ${isSale && (order.seller || order.emitido_por) ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Vendedor:</span><span>${String(order.seller || order.emitido_por).toUpperCase()}</span></div>` : ""}
+      ${!isSale && order.responsible ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Responsable:</span><span>${String(order.responsible).toUpperCase()}</span></div>` : ""}
+      ${order.payment_method ? `<div class="a4-field">${fIcon("wallet")}<span class="a4-label">Condición de Pago:</span><span>${String(order.payment_method).toUpperCase()}</span></div>` : ""}
+      ${order.equipo || order.device_type ? `<div class="a4-field">${fIcon("device")}<span class="a4-label">Equipo:</span><span>${String(order.equipo || order.device_type).toUpperCase()}</span></div>` : ""}
     </div>
   </div>
   <table class="a4-items">
@@ -612,33 +626,41 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     <div class="a4-total-row"><span>Vuelto:</span><span>S/. ${(Number(order.amount_given) - totalFinal).toFixed(2)}</span></div>
   </div>` : ""}
 
-  <div class="a4-letras">
+  ${showSon ? `<div class="a4-letras">
+    ${showSonIcon ? `<span class="a4-letras-ico">${RECEIPT_ICONS.son}</span>` : ""}
     <span class="a4-letras-label">SON:</span>
     <span class="a4-letras-text">${montoLetras.charAt(0) + montoLetras.slice(1).toLowerCase()}.</span>
-  </div>
+  </div>` : ""}
 
   <div class="a4-promo">
+    <span class="a4-promo-ico">${RECEIPT_ICONS.web}</span>
     Si deseas conocer más sobre nuestros productos y nuestro catálogo,<br>
     puedes ingresar a <b>${companyInfo.web}</b>
   </div>
 
   <div class="a4-thanks">
-    <div class="a4-thanks-title">¡Gracias por su compra!</div>
-    <div class="a4-thanks-msg">
-      Su confianza es nuestro mayor orgullo.<br>
-      Si tiene alguna pregunta sobre este comprobante,<br>
-      no dude en comunicarse con nosotros.
-    </div>
+    <div class="a4-thanks-title">${companyInfo.saleFooterTitle || "¡Gracias por su compra!"}</div>
+    <div class="a4-thanks-msg">${(companyInfo.saleFooterMessage || "").replace(/\n/g, "<br>")}</div>
   </div>
 
-  <div class="a4-socials">${socials.join('<span class="soc-sep">|</span>')}</div>
-  <div class="a4-tagline"><i>Síganos en nuestras redes y entérate de nuestras promociones</i></div>
+  ${showSocials ? `<div class="a4-socials">${socialList.map(buildSocialChip).join('<span class="soc-sep">|</span>')}</div>` : ""}
+  ${showTagline ? `<div class="a4-tagline"><span class="tag-deco left">❮</span><i>${tagline}</i><span class="tag-deco right">❯</span></div>` : ""}
+
+  ${showWaves ? `
+  <div class="a4-waves">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,40 C200,110 400,0 600,50 C800,100 1000,20 1200,60 L1200,120 L0,120 Z" fill="#9BD49B" opacity="0.55"/>
+      <path d="M0,70 C220,30 420,110 640,70 C860,30 1020,90 1200,50 L1200,120 L0,120 Z" fill="#2E8B57" opacity="0.85"/>
+      <path d="M0,90 C240,60 460,120 700,95 C920,70 1080,110 1200,80 L1200,120 L0,120 Z" fill="#0d0d0d"/>
+    </svg>
+  </div>` : ""}
 
   <div class="a4-footer">
     <p>${buildCopyright(companyInfo)}</p>
   </div>
 </div>`;
       }
+
 
       const a4Html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>${type === "reception" ? t.receptionTitle : (type === "service" ? t.serviceTitle : resolvedSaleTitle)}</title>
