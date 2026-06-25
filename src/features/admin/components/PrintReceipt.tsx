@@ -210,6 +210,13 @@ const saveOrderOverrides = (orderId: string, o: OrderOverrides) => {
   localStorage.setItem(`receipt_overrides_${orderId}`, JSON.stringify(o));
 };
 
+export type SocialLinkType = "whatsapp" | "facebook" | "tiktok" | "instagram" | "youtube" | "x" | "web" | "email" | "phone";
+
+export interface SocialLink {
+  type: SocialLinkType;
+  value: string;
+}
+
 export interface CompanyReceiptInfo {
   ruc: string;
   direccion: string;
@@ -218,12 +225,19 @@ export interface CompanyReceiptInfo {
   web: string;
   email: string;
   copyright: string;
-  saleFooterTitle?: string;       // e.g. "¡Gracias por su compra!"
-  saleFooterMessage?: string;     // multi-line, supports \n
+  saleFooterTitle?: string;
+  saleFooterMessage?: string;
   saleFooterShowEmail?: boolean;
   saleFooterShowPhone?: boolean;
   saleFooterShowSocial?: boolean;
-  saleFooterSocial?: string;      // e.g. "@infocom.ilo"
+  saleFooterSocial?: string;            // legacy
+  saleFooterSocials?: SocialLink[];     // new editable list
+  saleFooterTagline?: string;           // italicized line under socials
+  saleFooterShowTagline?: boolean;
+  saleFooterShowSon?: boolean;          // show SON: ... block
+  saleFooterShowSonIcon?: boolean;      // show icon inside SON block
+  saleFooterShowFieldIcons?: boolean;   // icons next to Fecha/Cliente/etc
+  saleFooterShowWaves?: boolean;        // decorative green wave borders
 }
 
 export const DEFAULT_COMPANY_INFO: CompanyReceiptInfo = {
@@ -236,10 +250,78 @@ export const DEFAULT_COMPANY_INFO: CompanyReceiptInfo = {
   copyright: "INFOCOM SOLUCIONES",
   saleFooterTitle: "¡Gracias por su compra!",
   saleFooterMessage: "Su confianza es nuestro mayor orgullo.\nSi tiene alguna pregunta sobre este ticket,\nno dude en comunicarse con nosotros:",
-  saleFooterShowEmail: true,
-  saleFooterShowPhone: true,
+  saleFooterShowEmail: false,
+  saleFooterShowPhone: false,
   saleFooterShowSocial: true,
   saleFooterSocial: "@infocom.ilo",
+  saleFooterSocials: [
+    { type: "whatsapp", value: "963326971" },
+    { type: "facebook", value: "Infocom Ilo" },
+    { type: "tiktok",   value: "@infocom.ilo" },
+  ],
+  saleFooterTagline: "Síganos en nuestras redes y entérate de nuestras promociones",
+  saleFooterShowTagline: true,
+  saleFooterShowSon: true,
+  saleFooterShowSonIcon: true,
+  saleFooterShowFieldIcons: true,
+  saleFooterShowWaves: true,
+};
+
+// Inline SVG icon library used inside printed HTML
+export const RECEIPT_ICONS = {
+  calendar: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  user: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  phone: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg>`,
+  badge: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="2" x2="7" y2="6"/><line x1="17" y1="2" x2="17" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  device: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+  wallet: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>`,
+  son: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+  web: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+};
+
+// Brand icons for socials (filled, brand colors)
+const SOCIAL_ICONS_BRAND: Record<SocialLinkType, { svg: string; label: string }> = {
+  whatsapp: { label: "WhatsApp", svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.91-7.02zm-7 15.24a8.23 8.23 0 0 1-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.24 8.24 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.16.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29z"/></svg>` },
+  facebook: { label: "Facebook", svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M13.5 21v-7.5h2.5l.4-3.1h-2.9V8.4c0-.9.25-1.5 1.55-1.5H17V4.13C16.7 4.1 15.78 4 14.7 4c-2.25 0-3.8 1.38-3.8 3.9v2.5H8.4v3.1h2.5V21h2.6z"/></svg>` },
+  tiktok:   { label: "TikTok",   svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M16.5 2h-2.85v13.05a2.55 2.55 0 1 1-2.55-2.55c.18 0 .35.02.52.05V9.6a5.4 5.4 0 0 0-.52-.03 5.4 5.4 0 1 0 5.4 5.4V8.55a6.45 6.45 0 0 0 3.78 1.21V6.9a3.78 3.78 0 0 1-3.78-3.8V2z"/></svg>` },
+  instagram:{ label: "Instagram",svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M12 2.2c3.2 0 3.6 0 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.26.07 1.65.07 4.85s0 3.6-.07 4.85c-.05 1.17-.25 1.8-.41 2.23a3.7 3.7 0 0 1-.9 1.38c-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.26.06-1.65.07-4.85.07s-3.6 0-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.4 2.2 8.8 2.2 12 2.2zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4zm5.2-9.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"/></svg>` },
+  youtube:  { label: "YouTube",  svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M23 7.2s-.22-1.55-.9-2.23c-.85-.9-1.81-.9-2.25-.95C16.8 3.8 12 3.8 12 3.8h-.01s-4.79 0-7.84.22c-.44.05-1.4.06-2.25.95C1.22 5.65 1 7.2 1 7.2S.78 9.02.78 10.84v1.7c0 1.82.22 3.64.22 3.64s.22 1.55.9 2.23c.85.9 1.97.87 2.47.96 1.79.17 7.63.22 7.63.22s4.8-.01 7.85-.23c.44-.05 1.4-.06 2.25-.95.68-.68.9-2.23.9-2.23s.22-1.82.22-3.64v-1.7C23.22 9.02 23 7.2 23 7.2zM9.74 14.42V8.18l6.18 3.13z"/></svg>` },
+  x:        { label: "X",        svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M18.244 2H21l-6.523 7.46L22 22h-6.83l-5.36-7.01L3.6 22H.84l7-7.99L2 2h6.96l4.84 6.4zm-2.39 18h1.88L7.27 4H5.26z"/></svg>` },
+  web:      { label: "Web",      svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg>` },
+  email:    { label: "Correo",   svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>` },
+  phone:    { label: "Teléfono", svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M20 15.5c-1.2 0-2.4-.2-3.6-.6-.3-.1-.7 0-1 .2l-2.2 2.2a15.05 15.05 0 0 1-6.6-6.6l2.2-2.2c.3-.3.4-.7.2-1-.4-1.1-.6-2.3-.6-3.5 0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1 0 9.4 7.6 17 17 17 .6 0 1-.4 1-1v-3.5c0-.6-.4-1-1-1z"/></svg>` },
+};
+
+const SOCIAL_COLORS: Record<SocialLinkType, string> = {
+  whatsapp: "#25D366",
+  facebook: "#1877F2",
+  tiktok:   "#000000",
+  instagram:"#E4405F",
+  youtube:  "#FF0000",
+  x:        "#000000",
+  web:      "#2E8B57",
+  email:    "#6B7280",
+  phone:    "#2E8B57",
+};
+
+export const SOCIAL_TYPE_OPTIONS: { value: SocialLinkType; label: string }[] = [
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "facebook", label: "Facebook" },
+  { value: "tiktok",   label: "TikTok" },
+  { value: "instagram",label: "Instagram" },
+  { value: "youtube",  label: "YouTube" },
+  { value: "x",        label: "X (Twitter)" },
+  { value: "web",      label: "Sitio Web" },
+  { value: "email",    label: "Correo" },
+  { value: "phone",    label: "Teléfono" },
+];
+
+const buildSocialChip = (s: SocialLink) => {
+  const meta = SOCIAL_ICONS_BRAND[s.type];
+  if (!meta) return "";
+  const bg = SOCIAL_COLORS[s.type];
+  return `<span class="soc-chip"><span class="soc-badge" style="background:${bg}">${meta.svg}</span><span class="soc-text">${s.value}</span></span>`;
 };
 
 let _cachedCompanyInfo: CompanyReceiptInfo | null = null;
