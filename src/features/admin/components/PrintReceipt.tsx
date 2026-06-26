@@ -7,9 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Printer, Settings2, FileText, Upload, Loader2, ImageIcon, Type } from "lucide-react";
+import { Printer, Settings2, FileText, Upload, Loader2, ImageIcon, Type, Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import logoReceipt from "@/assets/logo-light-theme.png";
 
 // ───────── Número a letras (Soles) ─────────
@@ -437,7 +440,38 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     }
   };
 
-  const handlePrint = (overridePrinterType?: "thermal" | "a4") => {
+  const finalizeWindow = async (w: Window, isA4Local: boolean, mode: "print" | "download") => {
+    await new Promise((r) => setTimeout(r, 450));
+    if (mode === "print") { try { w.focus(); w.print(); } catch {} return; }
+    try {
+      const body = w.document.body;
+      const canvas = await html2canvas(body, { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: body.scrollWidth, windowHeight: body.scrollHeight });
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({ unit: "mm", format: isA4Local ? "a4" : [80, 297], orientation: "portrait" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pageW) / canvas.width;
+      if (imgH <= pageH) {
+        pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
+      } else {
+        let remaining = imgH; let pos = 0;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "JPEG", 0, pos, pageW, imgH);
+          remaining -= pageH; pos -= pageH;
+          if (remaining > 0) pdf.addPage();
+        }
+      }
+      const num = (order as any)?.numero_comprobante || (order as any)?.ticket_number || (order as any)?.order_number || "comprobante";
+      pdf.save(`Comprobante_${num}_${isA4Local ? "A4" : "Boletera"}.pdf`);
+      toast.success("PDF descargado");
+    } catch (e: any) {
+      toast.error("Error al generar PDF: " + (e?.message || "desconocido"));
+    } finally {
+      try { w.close(); } catch {}
+    }
+  };
+
+  const handlePrint = (overridePrinterType?: "thermal" | "a4", mode: "print" | "download" = "print") => {
     const t = template;
     const pType = overridePrinterType || t.printerType || "thermal";
     const isA4 = pType === "a4";
@@ -736,7 +770,7 @@ ${bodyContent}
 
       w.document.write(a4Html);
       w.document.close();
-      setTimeout(() => { w.print(); }, 300);
+      finalizeWindow(w, true, mode);
       return;
     }
 
@@ -855,7 +889,7 @@ ${bodyContent}
 
     w.document.write(html);
     w.document.close();
-    setTimeout(() => { w.print(); }, 300);
+    finalizeWindow(w, false, mode);
   };
 
   const updateTemplate = (partial: Partial<ReceiptTemplate>) => {
@@ -889,12 +923,29 @@ ${bodyContent}
           </SelectContent>
         </Select>
       )}
-      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint()}>
+      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint(undefined, "print")}>
         <Printer className="h-4 w-4" /> Boletera
       </Button>
-      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint("a4")}>
+      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint("a4", "print")}>
         <FileText className="h-4 w-4" /> A4
       </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-500/40 hover:bg-emerald-500/10">
+            <Download className="h-4 w-4" /> Descargar PDF
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Descargar comprobante</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => handlePrint(undefined, "download")} className="gap-2">
+            <Printer className="h-4 w-4" /> Versión Boletera (PDF)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePrint("a4", "download")} className="gap-2">
+            <FileText className="h-4 w-4" /> Versión A4 (PDF)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8">
