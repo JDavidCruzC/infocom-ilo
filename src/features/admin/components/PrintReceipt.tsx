@@ -252,6 +252,8 @@ export interface CompanyReceiptInfo {
   saleFooterShowFieldIcons?: boolean;   // icons next to Fecha/Cliente/etc
   saleFooterShowWaves?: boolean;        // decorative green wave borders
   saleFooterTaglineColor?: string;      // color for italic tagline below socials
+  saleFooterTitleFontSize?: number;     // px size for despedida title
+  saleFooterMessageFontSize?: number;   // px size for despedida message
 }
 
 export const DEFAULT_COMPANY_INFO: CompanyReceiptInfo = {
