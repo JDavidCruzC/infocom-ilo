@@ -394,9 +394,13 @@ interface PrintReceiptProps {
   order: any;
   type?: "reception" | "sale" | "service";
   defaultDocumentKind?: DocumentKind;
+  /** Compact icon-only mode used in tables (only Download + Share). */
+  compact?: boolean;
 }
 
-const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintReceiptProps) => {
+type ShareCtx = { network: "whatsapp" | "facebook"; phone?: string; message: string };
+
+const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact = false }: PrintReceiptProps) => {
   const [configOpen, setConfigOpen] = useState(false);
   const [template, setTemplate] = useState<ReceiptTemplate>(loadTemplate);
   const [orderOverrides, setOrderOverrides] = useState<OrderOverrides>(() =>
