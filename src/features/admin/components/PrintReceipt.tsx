@@ -666,8 +666,8 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     const sub = total / 1.18;
     const igv = total - sub;
     return `<div class="a4-totals">
-    <div class="a4-total-row"><span>Precio subtotal:</span><span>S/. ${sub.toFixed(2)}</span></div>
-    <div class="a4-total-row"><span>IGV:</span><span>S/. ${igv.toFixed(2)}</span></div>
+    <div class="a4-total-row"><span>Precio subtotal</span><span>S/. ${sub.toFixed(2)}</span></div>
+    <div class="a4-total-row"><span>IGV</span><span>S/. ${igv.toFixed(2)}</span></div>
     <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${total.toFixed(2)}</span></div>
   </div>`;
   })()}
@@ -684,12 +684,12 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   </div>` : ""}
 
   <div class="a4-promo">
-    <span class="a4-promo-ico">${RECEIPT_ICONS.web}</span>
-    Si deseas conocer más sobre nuestros productos y nuestro catálogo,<br>
-    puedes ingresar a <b>${companyInfo.web}</b>
+    <div class="a4-promo-text">Si deseas conocer más sobre nuestra variedad<br>de productos hazlo ingresando a:</div>
+    <div class="a4-promo-ico">${RECEIPT_ICONS.web}</div>
+    <a class="a4-promo-link" href="https://${companyInfo.web}" target="_blank">${companyInfo.web}</a>
   </div>
 
-  <div class="a4-thanks">
+  <div class="a4-thanks" style="${companyInfo.saleFooterTitleFontSize ? `--thanks-title-size:${companyInfo.saleFooterTitleFontSize}px;` : ""}${companyInfo.saleFooterMessageFontSize ? `--thanks-msg-size:${companyInfo.saleFooterMessageFontSize}px;` : ""}">
     <div class="a4-thanks-title">${companyInfo.saleFooterTitle || "¡Gracias por su compra!"}</div>
     <div class="a4-thanks-msg">${(companyInfo.saleFooterMessage || "").replace(/\n/g, "<br>")}</div>
   </div>
