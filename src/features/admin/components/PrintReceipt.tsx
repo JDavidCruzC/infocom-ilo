@@ -479,29 +479,55 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
         const navAny: any = navigator;
         const canFiles = !!(navAny.canShare && navAny.canShare({ files: [file] }) && navAny.share);
 
+        // 1) Mobile / supported browsers: native share with file attached
         if (canFiles) {
           try {
             await navAny.share({ files: [file], title: filename, text: shareCtx.message });
             toast.success(`Compartido por ${shareCtx.network === "whatsapp" ? "WhatsApp" : "Facebook"}`);
             return;
           } catch (err: any) {
-            // user cancelled or browser refused — fall through to fallback
             if (err?.name === "AbortError") return;
+            // fall through to upload+link fallback
           }
         }
 
-        // Fallback: save PDF and open share URL with text. The user adjuntará el PDF.
-        pdf.save(filename);
-        if (shareCtx.network === "whatsapp") {
-          const phone = (shareCtx.phone || "").replace(/\D/g, "");
-          const norm = phone ? (phone.startsWith("51") ? phone : "51" + phone) : "";
-          const text = encodeURIComponent(`${shareCtx.message}\n\n(PDF guardado en tu dispositivo: ${filename} — adjúntalo en este chat)`);
-          window.open(norm ? `https://wa.me/${norm}?text=${text}` : `https://wa.me/?text=${text}`, "_blank");
-          toast.message("PDF descargado", { description: "Adjúntalo en el chat de WhatsApp que se abrió." });
-        } else {
-          const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(shareCtx.message)}`;
-          window.open(url, "_blank");
-          toast.message("PDF descargado", { description: "Adjúntalo al publicar en Facebook." });
+        // 2) Desktop fallback: upload PDF to storage, get signed URL, open social network with the link
+        try {
+          toast.message("Preparando enlace para compartir…");
+          const path = `${new Date().toISOString().slice(0,10)}/${crypto.randomUUID()}_${filename}`;
+          const { error: upErr } = await supabase.storage
+            .from("shared-receipts")
+            .upload(path, blob, { contentType: "application/pdf", upsert: false });
+          if (upErr) throw upErr;
+          const { data: signed, error: sErr } = await supabase.storage
+            .from("shared-receipts")
+            .createSignedUrl(path, 60 * 60 * 24 * 30); // 30 días
+          if (sErr || !signed?.signedUrl) throw sErr || new Error("No se pudo generar el enlace");
+          const link = signed.signedUrl;
+
+          if (shareCtx.network === "whatsapp") {
+            const phone = (shareCtx.phone || "").replace(/\D/g, "");
+            const norm = phone ? (phone.startsWith("51") ? phone : "51" + phone) : "";
+            const text = encodeURIComponent(`${shareCtx.message}\n\n📄 Comprobante en PDF: ${link}`);
+            window.open(norm ? `https://wa.me/${norm}?text=${text}` : `https://web.whatsapp.com/send?text=${text}`, "_blank");
+            toast.success("WhatsApp abierto con el enlace del PDF");
+          } else {
+            const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}&quote=${encodeURIComponent(shareCtx.message)}`;
+            window.open(fbUrl, "_blank");
+            toast.success("Facebook abierto con el enlace del PDF");
+          }
+        } catch (e: any) {
+          // 3) Último recurso: descargar y abrir red sin link
+          pdf.save(filename);
+          if (shareCtx.network === "whatsapp") {
+            const phone = (shareCtx.phone || "").replace(/\D/g, "");
+            const norm = phone ? (phone.startsWith("51") ? phone : "51" + phone) : "";
+            const text = encodeURIComponent(`${shareCtx.message}\n\n(Adjunta el PDF descargado: ${filename})`);
+            window.open(norm ? `https://wa.me/${norm}?text=${text}` : `https://wa.me/?text=${text}`, "_blank");
+          } else {
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(shareCtx.message)}`, "_blank");
+          }
+          toast.message("No se pudo subir el PDF", { description: "Se descargó localmente — adjúntalo manualmente. " + (e?.message || "") });
         }
       }
     } catch (e: any) {
