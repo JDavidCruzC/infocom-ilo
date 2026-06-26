@@ -770,7 +770,7 @@ ${bodyContent}
 
       w.document.write(a4Html);
       w.document.close();
-      setTimeout(() => { w.print(); }, 300);
+      finalizeWindow(w, true, mode);
       return;
     }
 
