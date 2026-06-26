@@ -13,6 +13,7 @@ import { Eye, Search, History, Ban, Trash2, MessageCircle, Pencil } from "lucide
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import PrintReceipt from "./PrintReceipt";
+import QuickTransactionDialog from "./QuickTransactionDialog";
 
 interface Props {
   open: boolean;
