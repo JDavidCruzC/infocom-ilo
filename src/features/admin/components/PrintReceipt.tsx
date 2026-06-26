@@ -662,7 +662,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
 
 
       const a4Html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>${type === "reception" ? t.receptionTitle : (type === "service" ? t.serviceTitle : resolvedSaleTitle)}</title>
+<html><head><meta charset="utf-8"><title> </title>
+<!-- Empty title to suppress the redundant browser print header that repeats document name + URL + date -->
+
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff}
