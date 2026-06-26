@@ -336,6 +336,40 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
             )}
           </DialogContent>
         </Dialog>
+
+        {/* EDIT DIALOG */}
+        <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+          <DialogContent className="max-w-md w-[95vw]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Pencil className="h-5 w-5 text-blue-500" /> Editar Transacción {editing?.numero_comprobante ? `· ${editing.numero_comprobante}` : ""}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Cliente</Label>
+                <Input value={editForm.cliente_nombre} onChange={(e) => setEditForm((f) => ({ ...f, cliente_nombre: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Teléfono</Label>
+                <Input value={editForm.cliente_telefono} onChange={(e) => setEditForm((f) => ({ ...f, cliente_telefono: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Notas</Label>
+                <Textarea rows={3} value={editForm.notas} onChange={(e) => setEditForm((f) => ({ ...f, notas: e.target.value }))} />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Para editar productos, precios o estado de pago, abre la transacción desde Contabilidad.
+              </p>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Cancelar</Button>
+                <Button size="sm" onClick={() => saveEdit.mutate()} disabled={saveEdit.isPending}>
+                  {saveEdit.isPending ? "Guardando..." : "Guardar cambios"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
