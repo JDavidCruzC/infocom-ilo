@@ -109,16 +109,29 @@ export default function ReceiptTemplateManager() {
     },
   });
 
-  const startNew = () => {
+  const startNew = (preset?: { name: string; html: string; paper_size: "a4" | "ticket_80mm" }) => {
     setEditing({
       id: "",
       kind: selectedKind,
-      name: `Plantilla ${kindDef.label}`,
-      content_html: kindDef.defaultHtml,
-      paper_size: "a4",
+      name: preset?.name ? `${preset.name} — ${kindDef.label}` : `Plantilla ${kindDef.label}`,
+      content_html: preset?.html ?? kindDef.defaultHtml,
+      paper_size: preset?.paper_size ?? "a4",
       is_default: templates.length === 0,
     });
   };
+
+  const quickCreate = (preset: { name: string; html: string; paper_size: "a4" | "ticket_80mm" }) => {
+    saveMutation.mutate({
+      id: "",
+      kind: selectedKind,
+      name: `${preset.name} — ${kindDef.label}`,
+      content_html: preset.html,
+      paper_size: preset.paper_size,
+      is_default: templates.length === 0,
+    } as Tpl);
+  };
+
+  const presets = (kindDef as any).presets as Array<{ name: string; html: string; paper_size: "a4" | "ticket_80mm" }> | undefined;
 
   return (
     <Card className="border-primary/10">
@@ -143,15 +156,35 @@ export default function ReceiptTemplateManager() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={startNew} className="gap-2"><Plus className="h-4 w-4" /> Nueva plantilla</Button>
+          <Button onClick={() => startNew()} className="gap-2"><Plus className="h-4 w-4" /> Nueva plantilla</Button>
         </div>
 
         <div className="space-y-2">
           {isLoading && <p className="text-xs text-muted-foreground">Cargando...</p>}
           {!isLoading && templates.length === 0 && (
-            <div className="rounded-lg border border-dashed border-primary/30 p-6 text-center">
-              <p className="text-sm text-muted-foreground mb-3">No hay plantillas para este tipo todavía.</p>
-              <Button variant="outline" size="sm" onClick={startNew} className="gap-2"><Plus className="h-3.5 w-3.5" /> Crear primera plantilla</Button>
+            <div className="rounded-lg border border-dashed border-primary/30 p-6 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">No hay plantillas para este tipo todavía. Empezá con una plantilla lista o creá una en blanco.</p>
+              {presets && presets.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {presets.map(p => (
+                    <Button
+                      key={p.name}
+                      variant={p.name.includes("INFOCOM") ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => quickCreate(p)}
+                      className="gap-2"
+                      disabled={saveMutation.isPending}
+                    >
+                      <Star className="h-3.5 w-3.5" /> {p.name}
+                    </Button>
+                  ))}
+                </div>
+              )}
+              <div>
+                <Button variant="ghost" size="sm" onClick={() => startNew()} className="gap-2">
+                  <Plus className="h-3.5 w-3.5" /> Crear plantilla personalizada
+                </Button>
+              </div>
             </div>
           )}
           {templates.map(tpl => (
