@@ -410,6 +410,20 @@ const SettingsPage = () => {
                     placeholder="Síganos en nuestras redes y entérate de nuestras promociones"
                     onChange={e => setCI({ saleFooterTagline: e.target.value })}
                   />
+                  <div className="flex items-center gap-2 pt-1">
+                    <Label className="text-xs whitespace-nowrap">Color del texto</Label>
+                    <input
+                      type="color"
+                      value={companyInfo.saleFooterTaglineColor || "#0d0d0d"}
+                      onChange={e => setCI({ saleFooterTaglineColor: e.target.value })}
+                      className="h-8 w-12 rounded border bg-background cursor-pointer"
+                    />
+                    <Input
+                      value={companyInfo.saleFooterTaglineColor || "#0d0d0d"}
+                      onChange={e => setCI({ saleFooterTaglineColor: e.target.value })}
+                      className="h-8 w-28 text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 
