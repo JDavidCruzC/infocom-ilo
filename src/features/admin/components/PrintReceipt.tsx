@@ -670,7 +670,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
           <div><b>Tel.:</b> ${companyInfo.telefono}</div>
         </div>
         <div class="a4-meta-row">
-          <div><b>${companyInfo.ciudad.toUpperCase()} - PERÚ</b></div>
+          <div><b>${companyInfo.ciudad.toUpperCase().replace(/\s*-\s*PER[ÚU]\s*$/i, "")} - PERÚ</b></div>
           <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
         </div>
       </div>
