@@ -686,14 +686,14 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     <div class="a4-info-left">
       <div class="a4-field">${fIcon("calendar")}<span class="a4-label">Fecha de Emisión:</span><span>${order.date || new Date().toISOString().split("T")[0]}</span></div>
       <div class="a4-field">${fIcon("clock")}<span class="a4-label">Hora:</span><span>${hora}</span></div>
-      ${order.customer_name ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Cliente:</span><span>${order.customer_name}</span></div>` : ""}
-      ${order.customer_dni ? `<div class="a4-field">${fIcon("badge")}<span class="a4-label">D.N.I.:</span><span>${order.customer_dni}</span></div>` : ""}
-      ${order.customer_phone ? `<div class="a4-field">${fIcon("phone")}<span class="a4-label">Teléfono:</span><span>${order.customer_phone}</span></div>` : ""}
-    </div>
-    <div class="a4-info-right">
       ${isSale && (order.seller || order.emitido_por) ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Vendedor:</span><span>${String(order.seller || order.emitido_por).toUpperCase()}</span></div>` : ""}
       ${!isSale && order.responsible ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Responsable:</span><span>${String(order.responsible).toUpperCase()}</span></div>` : ""}
       ${order.payment_method ? `<div class="a4-field">${fIcon("wallet")}<span class="a4-label">Condición de Pago:</span><span>${String(order.payment_method).toUpperCase()}</span></div>` : ""}
+    </div>
+    <div class="a4-info-right">
+      ${order.customer_name ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Cliente:</span><span>${order.customer_name}</span></div>` : ""}
+      ${order.customer_dni ? `<div class="a4-field">${fIcon("badge")}<span class="a4-label">D.N.I.:</span><span>${order.customer_dni}</span></div>` : ""}
+      ${order.customer_phone ? `<div class="a4-field">${fIcon("phone")}<span class="a4-label">Teléfono:</span><span>${order.customer_phone}</span></div>` : ""}
       ${order.equipo || order.device_type ? `<div class="a4-field">${fIcon("device")}<span class="a4-label">Equipo:</span><span>${String(order.equipo || order.device_type).toUpperCase()}</span></div>` : ""}
     </div>
   </div>
