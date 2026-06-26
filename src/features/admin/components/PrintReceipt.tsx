@@ -961,6 +961,99 @@ ${bodyContent}
 
   const currentDocKind: DocumentKind = (orderOverrides.documentKind || defaultDocumentKind || "boleta");
 
+  const buildShareMessage = () => {
+    const num = (order as any)?.numero_comprobante || (order as any)?.ticket_number || (order as any)?.order_number || "";
+    const customer = (order as any)?.customer_name || "";
+    const total = Number((order as any)?.total || (order as any)?.price || 0).toFixed(2);
+    const tipo = type === "service" ? "Comprobante de Servicio" : "Comprobante de Venta";
+    return [
+      `*INFOCOM — ${tipo}*`,
+      num ? `N° ${num}` : null,
+      customer ? `Cliente: ${customer}` : null,
+      `Total: S/. ${total}`,
+      "",
+      "Adjunto el comprobante en PDF. ¡Gracias por su preferencia!",
+    ].filter(Boolean).join("\n");
+  };
+
+  const handleShare = (format: "boletera" | "a4", network: "whatsapp" | "facebook") => {
+    handlePrint(format === "a4" ? "a4" : undefined, "share", {
+      network,
+      phone: (order as any)?.customer_phone,
+      message: buildShareMessage(),
+    });
+  };
+
+  const ShareMenu = ({ variant = "outline" as "outline" | "ghost", iconOnly = false }: { variant?: "outline" | "ghost"; iconOnly?: boolean }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {iconOnly ? (
+          <Button variant={variant} size="icon" className="h-7 w-7 text-sky-500" title="Compartir comprobante (PDF)">
+            <Share2 className="h-3.5 w-3.5" />
+          </Button>
+        ) : (
+          <Button variant={variant} size="sm" className="gap-1.5 text-sky-600 border-sky-500/40 hover:bg-sky-500/10">
+            <Share2 className="h-4 w-4" /> Compartir
+          </Button>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel>Compartir como PDF</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-[10px] uppercase opacity-60 py-0.5">WhatsApp</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => handleShare("boletera", "whatsapp")} className="gap-2">
+          <MessageCircle className="h-4 w-4 text-emerald-500" /> Versión Boletera
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare("a4", "whatsapp")} className="gap-2">
+          <MessageCircle className="h-4 w-4 text-emerald-500" /> Versión A4
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-[10px] uppercase opacity-60 py-0.5">Facebook</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => handleShare("boletera", "facebook")} className="gap-2">
+          <Facebook className="h-4 w-4 text-blue-500" /> Versión Boletera
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare("a4", "facebook")} className="gap-2">
+          <Facebook className="h-4 w-4 text-blue-500" /> Versión A4
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const DownloadMenu = ({ iconOnly = false }: { iconOnly?: boolean }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {iconOnly ? (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Descargar PDF">
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-500/40 hover:bg-emerald-500/10">
+            <Download className="h-4 w-4" /> Descargar PDF
+          </Button>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Descargar comprobante</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => handlePrint(undefined, "download")} className="gap-2">
+          <Printer className="h-4 w-4" /> Versión Boletera (PDF)
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handlePrint("a4", "download")} className="gap-2">
+          <FileText className="h-4 w-4" /> Versión A4 (PDF)
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  if (compact) {
+    return (
+      <div className="inline-flex items-center gap-0.5">
+        <DownloadMenu iconOnly />
+        <ShareMenu iconOnly />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-1 items-center">
       {type === "sale" && (
