@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -14,6 +14,7 @@ import { Trash2, Plus, Search, Receipt, ShoppingCart, Wrench, FileText, Clock, F
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { notifyAllStaff } from "@/lib/notifications";
+import { usePersistentDraft } from "@/hooks/use-persistent-draft";
 
 interface QItem {
   item_type: "producto" | "servicio";
@@ -53,6 +54,7 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
   const [productSearch, setProductSearch] = useState("");
   const [clientOpen, setClientOpen] = useState(false);
 
+  const DRAFT_KEY = "quick_tx_dialog_draft_v1";
   const reset = () => {
     setForm({
       fecha: new Date().toISOString().split("T")[0],
@@ -66,7 +68,21 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
     setItems([]);
   };
 
-  useEffect(() => { if (!open) reset(); }, [open]);
+  // Persist draft so navigating to other tabs (WhatsApp/Facebook) doesn't wipe data
+  const { clearDraft } = usePersistentDraft({
+    storageKey: DRAFT_KEY,
+    value: { form, items },
+    isEmpty: (v: any) =>
+      !v?.items?.length &&
+      !v?.form?.cliente_nombre &&
+      !v?.form?.cliente_telefono &&
+      !v?.form?.notas,
+    onRestore: (v: any) => {
+      if (v?.form) setForm((prev) => ({ ...prev, ...v.form }));
+      if (Array.isArray(v?.items)) setItems(v.items);
+    },
+  });
+
 
   const { data: products = [] } = useQuery({
     queryKey: ["quick_tx_products"],
@@ -252,6 +268,8 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
         toast.success("Borrador guardado");
       }
       onOpenChange(false);
+      clearDraft();
+      reset();
     },
     onError: (e: any) => toast.error(e.message || "Error al guardar"),
   });

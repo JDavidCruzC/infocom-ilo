@@ -583,7 +583,6 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
         <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
         <div><b>Tel.:</b> ${companyInfo.telefono}</div>
         <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
-        <div>${companyInfo.ciudad}</div>
         <div><b>${companyInfo.web}</b></div>
       </div>
     </div>
@@ -663,7 +662,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
 
 
       const a4Html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>${type === "reception" ? t.receptionTitle : (type === "service" ? t.serviceTitle : resolvedSaleTitle)}</title>
+<html><head><meta charset="utf-8"><title> </title>
+<!-- Empty title to suppress the redundant browser print header that repeats document name + URL + date -->
+
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff}
@@ -809,7 +810,7 @@ ${Number(order.subtotal_productos || 0) > 0 && Number(order.subtotal_servicios |
     }
 
     const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Ticket</title>
+<html><head><meta charset="utf-8"><title> </title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Courier New',monospace;font-size:${fs}px;font-weight:700;padding:4px;width:${sz.width};max-width:${sz.width};margin:0 auto;color:#000;overflow:hidden;word-break:break-word}

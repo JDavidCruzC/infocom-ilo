@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import {
   Receipt, Plus, ShoppingCart, Wrench, TrendingUp, ChevronLeft, ChevronRight,
   Trash2, Pencil, Printer, FileText, Ban, Eye, Package, Settings2, List, Search, ChevronsUpDown, Check, RotateCcw, Gift,
-  Clock, CheckCircle2, FileBadge, FileCheck2, Palette
+  Clock, CheckCircle2, FileBadge, FileCheck2, Palette, MessageCircle
 } from "lucide-react";
 
 // ─── Highlight color presets for "Por Cobrar" rows ──────────────
@@ -2137,6 +2137,35 @@ const AccountingPage = () => {
                     })()}
                     type={viewingTx.tipo_general === "servicio" ? "service" : "sale"}
                   />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                    onClick={() => {
+                      const tx = viewingTx;
+                      const lines: string[] = [];
+                      lines.push(`*Comprobante INFOCOM*`);
+                      if (tx.numero_comprobante) lines.push(`N° ${tx.numero_comprobante}`);
+                      lines.push(`Fecha: ${tx.fecha}`);
+                      if (tx.cliente_nombre) lines.push(`Cliente: ${tx.cliente_nombre}`);
+                      lines.push("");
+                      (tx.items || []).forEach((it: any) => {
+                        lines.push(`• ${it.cantidad}x ${it.descripcion} — S/. ${Number(it.subtotal).toFixed(2)}`);
+                      });
+                      lines.push("");
+                      lines.push(`*TOTAL: S/. ${Number(tx.total).toFixed(2)}*`);
+                      lines.push("");
+                      lines.push("Gracias por su preferencia.");
+                      const text = encodeURIComponent(lines.join("\n"));
+                      const phone = (tx.cliente_telefono || "").replace(/\D/g, "");
+                      const url = phone
+                        ? `https://wa.me/${phone.startsWith("51") ? phone : "51" + phone}?text=${text}`
+                        : `https://wa.me/?text=${text}`;
+                      window.open(url, "_blank");
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4" /> Enviar por WhatsApp
+                  </Button>
                 </div>
               )}
             </div>
