@@ -667,11 +667,19 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     const total = Number(totalFinal) || 0;
     const sub = total / 1.18;
     const igv = total - sub;
-    return `<div class="a4-totals">
-    <div class="a4-total-row"><span>Precio subtotal</span><span>S/. ${sub.toFixed(2)}</span></div>
-    <div class="a4-total-row"><span>IGV</span><span>S/. ${igv.toFixed(2)}</span></div>
-    <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${total.toFixed(2)}</span></div>
-  </div>`;
+    const sonBlock = showSon ? `<div class="a4-letras">
+        ${showSonIcon ? `<span class="a4-letras-ico">${RECEIPT_ICONS.son}</span>` : ""}
+        <span class="a4-letras-label">SON:</span>
+        <span class="a4-letras-text">${montoLetras.charAt(0) + montoLetras.slice(1).toLowerCase()}.</span>
+      </div>` : `<div></div>`;
+    return `<div class="a4-totals-row">
+      <div class="a4-totals-left">${sonBlock}</div>
+      <div class="a4-totals">
+        <div class="a4-total-row"><span>Precio subtotal:</span><span>S/. ${sub.toFixed(2)}</span></div>
+        <div class="a4-total-row"><span>IGV</span><span>S/. ${igv.toFixed(2)}</span></div>
+        <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${total.toFixed(2)}</span></div>
+      </div>
+    </div>`;
   })()}
   ${order.amount_given && Number(order.amount_given) > 0 ? `
   <div class="a4-payment-info">
@@ -679,17 +687,14 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     <div class="a4-total-row"><span>Vuelto:</span><span>S/. ${(Number(order.amount_given) - totalFinal).toFixed(2)}</span></div>
   </div>` : ""}
 
-  ${showSon ? `<div class="a4-letras">
-    ${showSonIcon ? `<span class="a4-letras-ico">${RECEIPT_ICONS.son}</span>` : ""}
-    <span class="a4-letras-label">SON:</span>
-    <span class="a4-letras-text">${montoLetras.charAt(0) + montoLetras.slice(1).toLowerCase()}.</span>
-  </div>` : ""}
-
   <div class="a4-promo">
     <div class="a4-promo-text">Si deseas conocer más sobre nuestra variedad<br>de productos hazlo ingresando a:</div>
-    <div class="a4-promo-ico">${RECEIPT_ICONS.web}</div>
-    <a class="a4-promo-link" href="https://${companyInfo.web}" target="_blank">${companyInfo.web}</a>
+    <div class="a4-promo-link-wrap">
+      <span class="a4-promo-ico">${RECEIPT_ICONS.web}</span>
+      <a class="a4-promo-link" href="https://${companyInfo.web}" target="_blank">${companyInfo.web}</a>
+    </div>
   </div>
+
 
   <div class="a4-thanks" style="${companyInfo.saleFooterTitleFontSize ? `--thanks-title-size:${companyInfo.saleFooterTitleFontSize}px;` : ""}${companyInfo.saleFooterMessageFontSize ? `--thanks-msg-size:${companyInfo.saleFooterMessageFontSize}px;` : ""}">
     <div class="a4-thanks-title">${companyInfo.saleFooterTitle || "¡Gracias por su compra!"}</div>
