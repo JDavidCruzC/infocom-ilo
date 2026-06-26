@@ -923,12 +923,29 @@ ${bodyContent}
           </SelectContent>
         </Select>
       )}
-      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint()}>
+      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint(undefined, "print")}>
         <Printer className="h-4 w-4" /> Boletera
       </Button>
-      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint("a4")}>
+      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint("a4", "print")}>
         <FileText className="h-4 w-4" /> A4
       </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-500/40 hover:bg-emerald-500/10">
+            <Download className="h-4 w-4" /> Descargar PDF
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Descargar comprobante</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => handlePrint(undefined, "download")} className="gap-2">
+            <Printer className="h-4 w-4" /> Versión Boletera (PDF)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePrint("a4", "download")} className="gap-2">
+            <FileText className="h-4 w-4" /> Versión A4 (PDF)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8">
