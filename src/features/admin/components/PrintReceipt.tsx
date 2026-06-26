@@ -825,7 +825,7 @@ ${bodyContent}
 
       w.document.write(a4Html);
       w.document.close();
-      finalizeWindow(w, true, mode);
+      finalizeWindow(w, true, mode, shareCtx);
       return;
     }
 
