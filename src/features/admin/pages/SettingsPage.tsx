@@ -295,6 +295,15 @@ const SettingsPage = () => {
                   placeholder="¡Gracias por su compra!"
                   onChange={e => setCI({ saleFooterTitle: e.target.value })}
                 />
+                <div className="flex items-center gap-2 pt-1">
+                  <Label className="text-xs whitespace-nowrap">Tamaño título (px)</Label>
+                  <Input
+                    type="number" min={12} max={72}
+                    value={companyInfo.saleFooterTitleFontSize ?? 26}
+                    onChange={e => setCI({ saleFooterTitleFontSize: Number(e.target.value) || undefined })}
+                    className="h-8 w-24 text-xs"
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">Mensaje (varias líneas permitidas)</Label>
@@ -304,6 +313,16 @@ const SettingsPage = () => {
                   placeholder="Su confianza es nuestro mayor orgullo..."
                   onChange={e => setCI({ saleFooterMessage: e.target.value })}
                 />
+                <div className="flex items-center gap-2 pt-1">
+                  <Label className="text-xs whitespace-nowrap">Tamaño mensaje (px)</Label>
+                  <Input
+                    type="number" min={8} max={28}
+                    value={companyInfo.saleFooterMessageFontSize ?? 11.5}
+                    step={0.5}
+                    onChange={e => setCI({ saleFooterMessageFontSize: Number(e.target.value) || undefined })}
+                    className="h-8 w-24 text-xs"
+                  />
+                </div>
               </div>
               <div className="grid sm:grid-cols-3 gap-3">
                 <label className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
