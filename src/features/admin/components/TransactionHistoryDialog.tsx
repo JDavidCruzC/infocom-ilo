@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Eye, Search, History, Ban, Trash2, MessageCircle, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { PrintReceipt } from "./PrintReceipt";
+import PrintReceipt from "./PrintReceipt";
 
 interface Props {
   open: boolean;
