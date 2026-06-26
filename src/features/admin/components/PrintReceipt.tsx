@@ -745,20 +745,21 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   .a4-items .tc{text-align:center}
   .a4-items .tr{text-align:right;white-space:nowrap}
   .a4-totals{display:flex;flex-direction:column;align-items:flex-end;margin-top:10px;gap:4px}
-  .a4-total-row{display:flex;gap:16px;font-size:13px;min-width:320px;justify-content:space-between}
-  .a4-total-final{font-weight:900;font-size:18px;padding-top:8px;margin-top:6px;color:#2E8B57}
-  .a4-total-final span:first-child{color:#0d0d0d;letter-spacing:1px}
+  .a4-total-row{display:flex;gap:16px;font-size:13px;min-width:340px;justify-content:space-between}
+  .a4-total-final{font-weight:900;font-size:22px;padding-top:10px;margin-top:8px;color:#2E8B57;border-top:1px solid #D9EAD9}
+  .a4-total-final span:first-child{color:#0d0d0d;letter-spacing:1px;font-size:20px}
   .a4-payment-info{display:flex;flex-direction:column;align-items:flex-end;margin-top:6px;gap:2px}
   .a4-letras{margin:24px 0 18px;padding:14px 22px;border:1.5px solid #B7DCC0;border-radius:30px;display:flex;gap:12px;align-items:center;font-size:13px;background:#F4FAF5}
   .a4-letras-ico{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#E6F4EA;flex-shrink:0}
   .a4-letras-label{color:#2E8B57;font-weight:900;letter-spacing:1px}
   .a4-letras-text{font-style:italic}
-  .a4-promo{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;margin:22px 0 18px;font-size:12px;line-height:1.6}
-  .a4-promo-ico{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#E6F4EA;flex-shrink:0}
-  .a4-promo b{color:#2E8B57}
+  .a4-promo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;margin:22px 0 18px;font-size:12px;line-height:1.55}
+  .a4-promo-text{color:#0d0d0d}
+  .a4-promo-ico{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#E6F4EA}
+  .a4-promo-link{color:#2E8B57;font-weight:700;text-decoration:underline}
   .a4-thanks{text-align:center;margin:18px 0 14px;padding-top:14px;border-top:1px solid #D9EAD9}
-  .a4-thanks-title{font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;color:#2E8B57;font-weight:700}
-  .a4-thanks-msg{margin-top:8px;font-size:11.5px;line-height:1.7;color:#333;white-space:pre-line}
+  .a4-thanks-title{font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:var(--thanks-title-size,26px);color:#2E8B57;font-weight:700}
+  .a4-thanks-msg{margin-top:8px;font-size:var(--thanks-msg-size,11.5px);line-height:1.7;color:#333;white-space:pre-line}
   .a4-socials{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:18px;font-size:12.5px;font-weight:600;flex-wrap:wrap}
   .a4-socials .soc-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #eef2ee}
   .a4-socials .soc-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%}
