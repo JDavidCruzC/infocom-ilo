@@ -40,6 +40,7 @@ const SalesPage = () => {
   const [dniLoading, setDniLoading] = useState(false);
   const [dniNotFound, setDniNotFound] = useState(false);
   const [quickTxOpen, setQuickTxOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const navigate = useNavigate();
 
 
