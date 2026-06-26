@@ -314,9 +314,14 @@ ${lastSale.customer.metodo_pago === "cash" && lastSale.change > 0 ? `<div class=
             <h1 className="text-2xl font-display font-bold flex items-center gap-2">
               <ShoppingCart className="h-6 w-6 text-primary" /> Punto de Venta
             </h1>
-            <Button size="sm" className="gap-2" onClick={() => setQuickTxOpen(true)}>
-              <Plus className="h-4 w-4" /> Nueva Transacción
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="gap-2" onClick={() => setHistoryOpen(true)}>
+                <History className="h-4 w-4" /> Ver y editar transacciones
+              </Button>
+              <Button size="sm" className="gap-2" onClick={() => setQuickTxOpen(true)}>
+                <Plus className="h-4 w-4" /> Nueva Transacción
+              </Button>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
