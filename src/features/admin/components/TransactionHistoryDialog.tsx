@@ -13,6 +13,7 @@ import { Eye, Search, History, Ban, Trash2, MessageCircle, Pencil } from "lucide
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import PrintReceipt from "./PrintReceipt";
+import QuickTransactionDialog from "./QuickTransactionDialog";
 
 interface Props {
   open: boolean;
@@ -48,8 +49,7 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [viewing, setViewing] = useState<TxRow | null>(null);
-  const [editing, setEditing] = useState<TxRow | null>(null);
-  const [editForm, setEditForm] = useState({ cliente_nombre: "", cliente_telefono: "", notas: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["transactions_history_dialog", scopeToCurrentUser, user?.id],
@@ -121,35 +121,9 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
   });
 
   const startEdit = (tx: TxRow) => {
-    setEditing(tx);
-    setEditForm({
-      cliente_nombre: tx.cliente_nombre || "",
-      cliente_telefono: tx.cliente_telefono || "",
-      notas: tx.notas || "",
-    });
+    setEditingId(tx.id);
   };
 
-  const saveEdit = useMutation({
-    mutationFn: async () => {
-      if (!editing) throw new Error("Sin transacción");
-      const { error } = await supabase
-        .from("transactions")
-        .update({
-          cliente_nombre: editForm.cliente_nombre || null,
-          cliente_telefono: editForm.cliente_telefono || null,
-          notas: editForm.notas || null,
-        } as any)
-        .eq("id", editing.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions_history_dialog"] });
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      toast.success("Transacción actualizada");
-      setEditing(null);
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
 
   const shareWhatsApp = (tx: TxRow) => {
     const lines: string[] = [];
@@ -337,39 +311,18 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
           </DialogContent>
         </Dialog>
 
-        {/* EDIT DIALOG */}
-        <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-          <DialogContent className="max-w-md w-[95vw]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Pencil className="h-5 w-5 text-blue-500" /> Editar Transacción {editing?.numero_comprobante ? `· ${editing.numero_comprobante}` : ""}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-xs">Cliente</Label>
-                <Input value={editForm.cliente_nombre} onChange={(e) => setEditForm((f) => ({ ...f, cliente_nombre: e.target.value }))} />
-              </div>
-              <div>
-                <Label className="text-xs">Teléfono</Label>
-                <Input value={editForm.cliente_telefono} onChange={(e) => setEditForm((f) => ({ ...f, cliente_telefono: e.target.value }))} />
-              </div>
-              <div>
-                <Label className="text-xs">Notas</Label>
-                <Textarea rows={3} value={editForm.notas} onChange={(e) => setEditForm((f) => ({ ...f, notas: e.target.value }))} />
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Para editar productos, precios o estado de pago, abre la transacción desde Contabilidad.
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Cancelar</Button>
-                <Button size="sm" onClick={() => saveEdit.mutate()} disabled={saveEdit.isPending}>
-                  {saveEdit.isPending ? "Guardando..." : "Guardar cambios"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* FULL EDIT DIALOG — mirrors Contabilidad's edit flow */}
+        {editingId && (
+          <QuickTransactionDialog
+            open={!!editingId}
+            onOpenChange={(o) => { if (!o) setEditingId(null); }}
+            editTransactionId={editingId}
+            onSaved={() => {
+              qc.invalidateQueries({ queryKey: ["transactions_history_dialog"] });
+              qc.invalidateQueries({ queryKey: ["transactions"] });
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

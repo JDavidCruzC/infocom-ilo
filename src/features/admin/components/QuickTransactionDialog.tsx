@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Trash2, Plus, Search, Receipt, ShoppingCart, Wrench, FileText, Clock, FileBadge, FileCheck2 } from "lucide-react";
+import { Trash2, Plus, Search, Receipt, ShoppingCart, Wrench, FileText, Clock, FileBadge, FileCheck2, Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { notifyAllStaff } from "@/lib/notifications";
@@ -30,13 +30,18 @@ interface QItem {
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  /** When set, dialog opens in EDIT mode for that transaction */
+  editTransactionId?: string | null;
+  /** Called after a successful edit save */
+  onSaved?: () => void;
 }
 
 interface ServiceType { name: string; price: number }
 
 type DocKind = "ticket_venta" | "ticket_servicio" | "boleta" | "factura";
 
-export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
+export default function QuickTransactionDialog({ open, onOpenChange, editTransactionId = null, onSaved }: Props) {
+  const isEdit = !!editTransactionId;
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -68,20 +73,64 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
     setItems([]);
   };
 
-  // Persist draft so navigating to other tabs (WhatsApp/Facebook) doesn't wipe data
+  // Persist draft so navigating to other tabs (WhatsApp/Facebook) doesn't wipe data — only in CREATE mode
   const { clearDraft } = usePersistentDraft({
     storageKey: DRAFT_KEY,
     value: { form, items },
     isEmpty: (v: any) =>
-      !v?.items?.length &&
-      !v?.form?.cliente_nombre &&
-      !v?.form?.cliente_telefono &&
-      !v?.form?.notas,
+      isEdit ||
+      (!v?.items?.length &&
+        !v?.form?.cliente_nombre &&
+        !v?.form?.cliente_telefono &&
+        !v?.form?.notas),
     onRestore: (v: any) => {
+      if (isEdit) return;
       if (v?.form) setForm((prev) => ({ ...prev, ...v.form }));
       if (Array.isArray(v?.items)) setItems(v.items);
     },
   });
+
+  // Load existing transaction when entering edit mode
+  const { data: editingTx } = useQuery({
+    queryKey: ["quick_tx_edit", editTransactionId],
+    enabled: open && isEdit,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*, items:transaction_items(*)")
+        .eq("id", editTransactionId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (!isEdit || !editingTx) return;
+    setForm({
+      fecha: (editingTx as any).fecha || new Date().toISOString().split("T")[0],
+      cliente_nombre: (editingTx as any).cliente_nombre || "",
+      cliente_telefono: (editingTx as any).cliente_telefono || "",
+      notas: (editingTx as any).notas || "",
+      emitido_por: (editingTx as any).emitido_por || "Personal de Infocom",
+      por_cobrar: !!(editingTx as any).por_cobrar,
+      tipo_cliente: ((editingTx as any).tipo_cliente as any) || "publico",
+    });
+    const rawItems = ((editingTx as any).items || []) as any[];
+    setItems(
+      rawItems.map((it) => ({
+        item_type: it.item_type,
+        referencia_id: it.referencia_id,
+        descripcion: it.descripcion || "",
+        cantidad: Number(it.cantidad) || 1,
+        precio_unitario: Number(it.precio_unitario) || 0,
+        responsable: it.responsable || "",
+        tipo_equipo: it.tipo_equipo || "",
+        diagnostico: it.diagnostico || "",
+      }))
+    );
+  }, [isEdit, editingTx]);
+
 
 
   const { data: products = [] } = useQuery({
@@ -276,12 +325,84 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
 
   const canSave = items.length > 0 && !save.isPending;
 
+  const saveEdit = useMutation({
+    mutationFn: async () => {
+      if (!editTransactionId) throw new Error("Sin transacción");
+      if (items.length === 0) throw new Error("Agrega al menos un item");
+      if (items.some((i) => !i.descripcion.trim())) throw new Error("Completa la descripción de todos los items");
+
+      const { error: uErr } = await supabase
+        .from("transactions")
+        .update({
+          fecha: form.fecha,
+          cliente_nombre: form.cliente_nombre || null,
+          cliente_telefono: form.cliente_telefono || null,
+          notas: form.notas || null,
+          emitido_por: form.emitido_por || null,
+          por_cobrar: form.por_cobrar,
+          tipo_cliente: form.tipo_cliente,
+        } as any)
+        .eq("id", editTransactionId);
+      if (uErr) throw uErr;
+
+      const { error: dErr } = await supabase.from("transaction_items").delete().eq("transaction_id", editTransactionId);
+      if (dErr) throw dErr;
+
+      const payload = items.map((it) => ({
+        transaction_id: editTransactionId,
+        item_type: it.item_type,
+        referencia_id: it.referencia_id && it.referencia_id !== "service" ? it.referencia_id : null,
+        descripcion: it.descripcion,
+        cantidad: it.cantidad,
+        precio_unitario: it.precio_unitario,
+        subtotal: it.cantidad * it.precio_unitario,
+        responsable: it.responsable || null,
+        tipo_equipo: it.tipo_equipo || null,
+        diagnostico: it.diagnostico || null,
+      }));
+      const { error: ie } = await supabase.from("transaction_items").insert(payload as any);
+      if (ie) throw ie;
+
+      const subProd = items.filter((i) => i.item_type === "producto").reduce((a, i) => a + i.cantidad * i.precio_unitario, 0);
+      const subServ = items.filter((i) => i.item_type === "servicio").reduce((a, i) => a + i.cantidad * i.precio_unitario, 0);
+      const hasProd = items.some((i) => i.item_type === "producto");
+      const hasServ = items.some((i) => i.item_type === "servicio");
+      const tipo_general = hasProd && hasServ ? "mixto" : hasServ ? "servicio" : "venta";
+      await supabase
+        .from("transactions")
+        .update({
+          subtotal_productos: subProd,
+          subtotal_servicios: subServ,
+          total: subProd + subServ,
+          tipo_general: tipo_general as any,
+        } as any)
+        .eq("id", editTransactionId);
+
+      await supabase.from("transaction_history").insert({
+        transaction_id: editTransactionId,
+        accion: "editado",
+        detalles: { items: items.length } as any,
+        usuario_id: user?.id || null,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["transactions_history_dialog"] });
+      qc.invalidateQueries({ queryKey: ["quick_tx_edit"] });
+      toast.success("Transacción actualizada");
+      onSaved?.();
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Error al actualizar"),
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[98vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-primary" /> Nueva Transacción
+            {isEdit ? <Pencil className="h-5 w-5 text-blue-500" /> : <Receipt className="h-5 w-5 text-primary" />}
+            {isEdit ? `Editar Transacción${(editingTx as any)?.numero_comprobante ? ` · ${(editingTx as any).numero_comprobante}` : ""}` : "Nueva Transacción"}
           </DialogTitle>
         </DialogHeader>
 
@@ -532,18 +653,31 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2 flex-wrap">
-          <Button variant="secondary" onClick={() => save.mutate({ emit: false })} disabled={!canSave}>
-            Guardar como Borrador
-          </Button>
-          <Button variant="outline" onClick={() => save.mutate({ emit: true, docKind: items.some(i => i.item_type === "servicio") && !items.some(i => i.item_type === "producto") ? "ticket_servicio" : "ticket_venta" })} disabled={!canSave} className="gap-2">
-            <FileText className="h-4 w-4" /> Emitir Comprobante
-          </Button>
-          <Button onClick={() => save.mutate({ emit: true, docKind: "boleta" })} disabled={!canSave} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            <FileBadge className="h-4 w-4" /> Emitir Boleta
-          </Button>
-          <Button onClick={() => save.mutate({ emit: true, docKind: "factura" })} disabled={!canSave} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
-            <FileCheck2 className="h-4 w-4" /> Emitir Factura
-          </Button>
+          {isEdit ? (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saveEdit.isPending}>
+                Cancelar
+              </Button>
+              <Button onClick={() => saveEdit.mutate()} disabled={!canSave || saveEdit.isPending} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                <Save className="h-4 w-4" /> {saveEdit.isPending ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={() => save.mutate({ emit: false })} disabled={!canSave}>
+                Guardar como Borrador
+              </Button>
+              <Button variant="outline" onClick={() => save.mutate({ emit: true, docKind: items.some(i => i.item_type === "servicio") && !items.some(i => i.item_type === "producto") ? "ticket_servicio" : "ticket_venta" })} disabled={!canSave} className="gap-2">
+                <FileText className="h-4 w-4" /> Emitir Comprobante
+              </Button>
+              <Button onClick={() => save.mutate({ emit: true, docKind: "boleta" })} disabled={!canSave} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                <FileBadge className="h-4 w-4" /> Emitir Boleta
+              </Button>
+              <Button onClick={() => save.mutate({ emit: true, docKind: "factura" })} disabled={!canSave} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
+                <FileCheck2 className="h-4 w-4" /> Emitir Factura
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
