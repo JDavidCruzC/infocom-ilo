@@ -30,13 +30,18 @@ interface QItem {
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  /** When set, dialog opens in EDIT mode for that transaction */
+  editTransactionId?: string | null;
+  /** Called after a successful edit save */
+  onSaved?: () => void;
 }
 
 interface ServiceType { name: string; price: number }
 
 type DocKind = "ticket_venta" | "ticket_servicio" | "boleta" | "factura";
 
-export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
+export default function QuickTransactionDialog({ open, onOpenChange, editTransactionId = null, onSaved }: Props) {
+  const isEdit = !!editTransactionId;
   const { user } = useAuth();
   const qc = useQueryClient();
 
