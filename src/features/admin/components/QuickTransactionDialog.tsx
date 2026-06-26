@@ -14,6 +14,7 @@ import { Trash2, Plus, Search, Receipt, ShoppingCart, Wrench, FileText, Clock, F
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { notifyAllStaff } from "@/lib/notifications";
+import { usePersistentDraft } from "@/hooks/use-persistent-draft";
 
 interface QItem {
   item_type: "producto" | "servicio";
