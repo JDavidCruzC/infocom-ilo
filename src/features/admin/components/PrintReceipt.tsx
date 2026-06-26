@@ -667,11 +667,19 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     const total = Number(totalFinal) || 0;
     const sub = total / 1.18;
     const igv = total - sub;
-    return `<div class="a4-totals">
-    <div class="a4-total-row"><span>Precio subtotal</span><span>S/. ${sub.toFixed(2)}</span></div>
-    <div class="a4-total-row"><span>IGV</span><span>S/. ${igv.toFixed(2)}</span></div>
-    <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${total.toFixed(2)}</span></div>
-  </div>`;
+    const sonBlock = showSon ? `<div class="a4-letras">
+        ${showSonIcon ? `<span class="a4-letras-ico">${RECEIPT_ICONS.son}</span>` : ""}
+        <span class="a4-letras-label">SON:</span>
+        <span class="a4-letras-text">${montoLetras.charAt(0) + montoLetras.slice(1).toLowerCase()}.</span>
+      </div>` : `<div></div>`;
+    return `<div class="a4-totals-row">
+      <div class="a4-totals-left">${sonBlock}</div>
+      <div class="a4-totals">
+        <div class="a4-total-row"><span>Precio subtotal:</span><span>S/. ${sub.toFixed(2)}</span></div>
+        <div class="a4-total-row"><span>IGV</span><span>S/. ${igv.toFixed(2)}</span></div>
+        <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${total.toFixed(2)}</span></div>
+      </div>
+    </div>`;
   })()}
   ${order.amount_given && Number(order.amount_given) > 0 ? `
   <div class="a4-payment-info">
@@ -679,17 +687,14 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     <div class="a4-total-row"><span>Vuelto:</span><span>S/. ${(Number(order.amount_given) - totalFinal).toFixed(2)}</span></div>
   </div>` : ""}
 
-  ${showSon ? `<div class="a4-letras">
-    ${showSonIcon ? `<span class="a4-letras-ico">${RECEIPT_ICONS.son}</span>` : ""}
-    <span class="a4-letras-label">SON:</span>
-    <span class="a4-letras-text">${montoLetras.charAt(0) + montoLetras.slice(1).toLowerCase()}.</span>
-  </div>` : ""}
-
   <div class="a4-promo">
     <div class="a4-promo-text">Si deseas conocer más sobre nuestra variedad<br>de productos hazlo ingresando a:</div>
-    <div class="a4-promo-ico">${RECEIPT_ICONS.web}</div>
-    <a class="a4-promo-link" href="https://${companyInfo.web}" target="_blank">${companyInfo.web}</a>
+    <div class="a4-promo-link-wrap">
+      <span class="a4-promo-ico">${RECEIPT_ICONS.web}</span>
+      <a class="a4-promo-link" href="https://${companyInfo.web}" target="_blank">${companyInfo.web}</a>
+    </div>
   </div>
+
 
   <div class="a4-thanks" style="${companyInfo.saleFooterTitleFontSize ? `--thanks-title-size:${companyInfo.saleFooterTitleFontSize}px;` : ""}${companyInfo.saleFooterMessageFontSize ? `--thanks-msg-size:${companyInfo.saleFooterMessageFontSize}px;` : ""}">
     <div class="a4-thanks-title">${companyInfo.saleFooterTitle || "¡Gracias por su compra!"}</div>
@@ -744,19 +749,23 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   .a4-items td{border:1px solid #D9EAD9;padding:7px 10px;vertical-align:top}
   .a4-items .tc{text-align:center}
   .a4-items .tr{text-align:right;white-space:nowrap}
-  .a4-totals{display:flex;flex-direction:column;align-items:flex-end;margin-top:10px;gap:4px}
-  .a4-total-row{display:flex;gap:16px;font-size:13px;min-width:340px;justify-content:space-between}
+  .a4-totals-row{display:flex;gap:24px;align-items:flex-start;margin-top:14px}
+  .a4-totals-left{flex:1;display:flex;align-items:center}
+  .a4-totals{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:300px}
+  .a4-total-row{display:flex;gap:16px;font-size:13px;min-width:300px;justify-content:space-between}
   .a4-total-final{font-weight:900;font-size:22px;padding-top:10px;margin-top:8px;color:#2E8B57;border-top:1px solid #D9EAD9}
   .a4-total-final span:first-child{color:#0d0d0d;letter-spacing:1px;font-size:20px}
   .a4-payment-info{display:flex;flex-direction:column;align-items:flex-end;margin-top:6px;gap:2px}
-  .a4-letras{margin:24px 0 18px;padding:14px 22px;border:1.5px solid #B7DCC0;border-radius:30px;display:flex;gap:12px;align-items:center;font-size:13px;background:#F4FAF5}
+  .a4-letras{width:100%;margin:0;padding:14px 22px;border:1.5px solid #B7DCC0;border-radius:30px;display:flex;gap:12px;align-items:center;font-size:13px;background:#F4FAF5}
   .a4-letras-ico{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#E6F4EA;flex-shrink:0}
   .a4-letras-label{color:#2E8B57;font-weight:900;letter-spacing:1px}
   .a4-letras-text{font-style:italic}
-  .a4-promo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;margin:22px 0 18px;font-size:12px;line-height:1.55}
+  .a4-promo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;margin:22px 0 18px;font-size:12px;line-height:1.55}
   .a4-promo-text{color:#0d0d0d}
-  .a4-promo-ico{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#E6F4EA}
+  .a4-promo-link-wrap{display:inline-flex;align-items:center;gap:8px}
+  .a4-promo-ico{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#E6F4EA;flex-shrink:0}
   .a4-promo-link{color:#2E8B57;font-weight:700;text-decoration:underline}
+
   .a4-thanks{text-align:center;margin:18px 0 14px;padding-top:14px;border-top:1px solid #D9EAD9}
   .a4-thanks-title{font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:var(--thanks-title-size,26px);color:#2E8B57;font-weight:700}
   .a4-thanks-msg{margin-top:8px;font-size:var(--thanks-msg-size,11.5px);line-height:1.7;color:#333;white-space:pre-line}
