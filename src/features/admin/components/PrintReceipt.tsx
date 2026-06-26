@@ -583,7 +583,6 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
         <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
         <div><b>Tel.:</b> ${companyInfo.telefono}</div>
         <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
-        <div>${companyInfo.ciudad}</div>
         <div><b>${companyInfo.web}</b></div>
       </div>
     </div>
