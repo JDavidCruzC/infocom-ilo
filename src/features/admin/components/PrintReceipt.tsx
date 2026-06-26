@@ -810,7 +810,7 @@ ${Number(order.subtotal_productos || 0) > 0 && Number(order.subtotal_servicios |
     }
 
     const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Ticket</title>
+<html><head><meta charset="utf-8"><title> </title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Courier New',monospace;font-size:${fs}px;font-weight:700;padding:4px;width:${sz.width};max-width:${sz.width};margin:0 auto;color:#000;overflow:hidden;word-break:break-word}
