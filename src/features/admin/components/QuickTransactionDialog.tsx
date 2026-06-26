@@ -54,6 +54,7 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
   const [productSearch, setProductSearch] = useState("");
   const [clientOpen, setClientOpen] = useState(false);
 
+  const DRAFT_KEY = "quick_tx_dialog_draft_v1";
   const reset = () => {
     setForm({
       fecha: new Date().toISOString().split("T")[0],
@@ -67,7 +68,21 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
     setItems([]);
   };
 
-  useEffect(() => { if (!open) reset(); }, [open]);
+  // Persist draft so navigating to other tabs (WhatsApp/Facebook) doesn't wipe data
+  const { clearDraft } = usePersistentDraft({
+    storageKey: DRAFT_KEY,
+    value: { form, items },
+    isEmpty: (v: any) =>
+      !v?.items?.length &&
+      !v?.form?.cliente_nombre &&
+      !v?.form?.cliente_telefono &&
+      !v?.form?.notas,
+    onRestore: (v: any) => {
+      if (v?.form) setForm((prev) => ({ ...prev, ...v.form }));
+      if (Array.isArray(v?.items)) setItems(v.items);
+    },
+  });
+
 
   const { data: products = [] } = useQuery({
     queryKey: ["quick_tx_products"],
