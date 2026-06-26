@@ -238,6 +238,7 @@ export interface CompanyReceiptInfo {
   saleFooterShowSonIcon?: boolean;      // show icon inside SON block
   saleFooterShowFieldIcons?: boolean;   // icons next to Fecha/Cliente/etc
   saleFooterShowWaves?: boolean;        // decorative green wave borders
+  saleFooterTaglineColor?: string;      // color for italic tagline below socials
 }
 
 export const DEFAULT_COMPANY_INFO: CompanyReceiptInfo = {
@@ -265,6 +266,7 @@ export const DEFAULT_COMPANY_INFO: CompanyReceiptInfo = {
   saleFooterShowSonIcon: true,
   saleFooterShowFieldIcons: true,
   saleFooterShowWaves: true,
+  saleFooterTaglineColor: "#0d0d0d",
 };
 
 // Inline SVG icon library used inside printed HTML
