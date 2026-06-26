@@ -163,52 +163,62 @@ export const DEFAULT_RECEPCION_HTML = `<table style="border:none;width:100%"><tr
 <p style="text-align:center;margin-top:16px;font-size:11px">_______________________________<br/>Firma del cliente</p>`;
 
 // ─── Plantilla A4 oficial INFOCOM (réplica del comprobante actual) ───
-export const DEFAULT_A4_INFOCOM_HTML = `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;padding:20px">
-  <table style="border:none;width:100%">
-    <tr>
-      <td style="border:none;width:55%;vertical-align:top">
-        <h1 style="margin:0;color:#2E8B57;font-size:26px;letter-spacing:1px">{{empresa.nombre}}</h1>
-        <p style="margin:2px 0;font-size:11px;color:#444">Especialistas en tecnología</p>
-        <table style="border:none;width:100%;margin-top:10px;font-size:12px">
-          <tr>
-            <td style="border:none;padding:2px 8px 2px 0"><b>R.U.C.:</b> {{empresa.ruc}}</td>
-            <td style="border:none;padding:2px 0"><b>Tel.:</b> {{empresa.telefono}}</td>
-          </tr>
-          <tr>
-            <td style="border:none;padding:2px 8px 2px 0"><b>{{empresa.ciudad}} - PERÚ</b></td>
-            <td style="border:none;padding:2px 0"><b>DIRECCIÓN:</b> {{empresa.direccion}}</td>
-          </tr>
-        </table>
-      </td>
-      <td style="border:2px solid #2E8B57;width:35%;text-align:center;padding:14px;border-radius:6px;vertical-align:top">
-        <div style="font-weight:700;color:#2E8B57;font-size:14px">{{comprobante.titulo}}</div>
-        <div style="height:1px;background:#2E8B57;margin:6px 0"></div>
-        <div style="font-size:22px;font-weight:800;letter-spacing:2px">N° {{comprobante.numero}}</div>
-      </td>
-    </tr>
-  </table>
-
-  <div style="border:1px solid #ddd;border-radius:6px;padding:10px;margin:14px 0;background:#fafafa;font-size:12px">
-    <p style="margin:2px 0"><b>CLIENTE:</b> {{cliente.nombre}} &nbsp;&nbsp; <b>DNI/RUC:</b> {{cliente.documento}}</p>
-    <p style="margin:2px 0"><b>TELÉFONO:</b> {{cliente.telefono}} &nbsp;&nbsp; <b>DIRECCIÓN:</b> {{cliente.direccion}}</p>
-    <p style="margin:2px 0"><b>FECHA:</b> {{comprobante.fecha}} &nbsp; <b>HORA:</b> {{comprobante.hora}} &nbsp; <b>VENDEDOR:</b> {{vendedor.nombre}}</p>
+export const DEFAULT_A4_INFOCOM_HTML = `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;padding:24px;font-size:12px;line-height:1.5">
+  <!-- ENCABEZADO -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:nowrap">
+    <div style="flex:1 1 auto;min-width:0">
+      <h1 style="margin:0;color:#2E8B57;font-size:26px;letter-spacing:1px;font-weight:800">{{empresa.nombre}}</h1>
+      <p style="margin:2px 0 6px;font-size:11px;color:#444">Especialistas en tecnología</p>
+      <div style="display:flex;gap:28px;flex-wrap:nowrap;white-space:nowrap;font-size:12px;line-height:1.7">
+        <div style="white-space:nowrap"><b>R.U.C.:</b> {{empresa.ruc}}</div>
+        <div style="white-space:nowrap"><b>Tel.:</b> {{empresa.telefono}}</div>
+      </div>
+      <div style="display:flex;gap:28px;flex-wrap:nowrap;white-space:nowrap;font-size:12px;line-height:1.7">
+        <div style="white-space:nowrap"><b>{{empresa.ciudad}} - PERÚ</b></div>
+        <div style="white-space:nowrap"><b>DIRECCIÓN:</b> {{empresa.direccion}}</div>
+      </div>
+    </div>
+    <div style="border:2px solid #2E8B57;border-radius:10px;padding:12px 18px;text-align:center;min-width:220px;flex:0 0 auto;background:#fff">
+      <div style="font-weight:800;color:#2E8B57;font-size:14px;letter-spacing:1px">{{comprobante.titulo}}</div>
+      <div style="height:1px;background:#2E8B57;margin:6px 0"></div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:2px">N° {{comprobante.numero}}</div>
+    </div>
   </div>
 
+  <hr style="border:none;border-top:1px solid #2E8B57;margin:12px 0"/>
+
+  <!-- DATOS CLIENTE / VENDEDOR -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;line-height:1.7;margin-bottom:10px">
+    <div>
+      <div><b>Fecha de Emisión:</b> {{comprobante.fecha}}</div>
+      <div><b>Hora:</b> {{comprobante.hora}}</div>
+      <div><b>Cliente:</b> {{cliente.nombre}}</div>
+      <div><b>D.N.I.:</b> {{cliente.documento}}</div>
+      <div><b>Teléfono:</b> {{cliente.telefono}}</div>
+    </div>
+    <div>
+      <div><b>Vendedor:</b> {{vendedor.nombre}}</div>
+      <div><b>Condición de Pago:</b> {{comprobante.metodo_pago}}</div>
+    </div>
+  </div>
+
+  <!-- TABLA DE ITEMS -->
   <p style="margin:0">{{items_tabla}}</p>
 
+  <!-- TOTALES -->
   <table style="border:none;width:100%;margin-top:14px">
     <tr>
       <td style="border:none;vertical-align:top;width:55%;font-size:12px">
-        <p style="margin:0"><b>SON:</b> {{totales.total_letras}}</p>
+        <div><b>SON:</b> {{totales.total_letras}}.</div>
       </td>
       <td style="border:none;width:45%;font-size:12px">
         <table style="border:none;width:100%">
-          <tr><td style="border:none;text-align:right;padding:2px 8px">Precio subtotal</td><td style="border:none;text-align:right;width:90px">S/. {{totales.subtotal}}</td></tr>
+          <tr><td style="border:none;text-align:right;padding:2px 8px">Precio subtotal</td><td style="border:none;text-align:right;width:110px">S/. {{totales.subtotal}}</td></tr>
           <tr><td style="border:none;text-align:right;padding:2px 8px">IGV</td><td style="border:none;text-align:right">S/. {{totales.igv}}</td></tr>
           <tr><td colspan="2" style="border:none;border-top:2px solid #2E8B57;padding-top:4px"></td></tr>
           <tr>
-            <td style="border:none;text-align:right;padding:4px 8px;font-size:16px;font-weight:800;color:#2E8B57">IMPORTE TOTAL S/</td>
-            <td style="border:none;text-align:right;font-size:16px;font-weight:800;color:#2E8B57">S/. {{totales.total}}</td>
+            <td style="border:none;text-align:right;padding:4px 8px;font-size:22px;font-weight:800;color:#2E8B57">IMPORTE TOTAL S/</td>
+            <td style="border:none;text-align:right;font-size:22px;font-weight:800;color:#2E8B57">S/. {{totales.total}}</td>
           </tr>
         </table>
       </td>
@@ -217,10 +227,13 @@ export const DEFAULT_A4_INFOCOM_HTML = `<div style="font-family:Arial,Helvetica,
 
   <hr style="border:none;border-top:1px dashed #bbb;margin:18px 0"/>
 
+  <!-- PIE PROMOCIONAL -->
   <div style="text-align:center;font-size:12px;color:#111">
-    <p style="margin:2px 0">Si deseas conocer más sobre nuestra variedad</p>
-    <p style="margin:2px 0">de productos hazlo ingresando a:</p>
-    <p style="margin:6px 0">🌐 <a href="https://{{empresa.web}}" style="color:#2E8B57;text-decoration:underline;font-weight:700">{{empresa.web}}</a></p>
+    <p style="margin:2px 0">Si deseas conocer más sobre nuestra variedad de productos hazlo ingresando a:</p>
+    <p style="margin:6px 0;display:flex;align-items:center;justify-content:center;gap:6px">
+      <span>🌐</span>
+      <a href="https://{{empresa.web}}" style="color:#2E8B57;text-decoration:underline;font-weight:700">{{empresa.web}}</a>
+    </p>
   </div>
 </div>`;
 
