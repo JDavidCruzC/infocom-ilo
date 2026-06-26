@@ -260,6 +260,9 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
                 <Button size="sm" variant="outline" className="gap-1.5 h-8" onClick={() => setViewing(tx)}>
                   <Eye className="h-3.5 w-3.5" /> Ver
                 </Button>
+                <Button size="sm" variant="outline" className="gap-1.5 h-8 text-blue-600 border-blue-500/30 hover:bg-blue-500/10" onClick={() => startEdit(tx)}>
+                  <Pencil className="h-3.5 w-3.5" /> Editar
+                </Button>
                 <div className="scale-90 origin-left">
                   <PrintReceipt
                     order={toPrintOrder(tx) as any}
