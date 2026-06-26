@@ -187,9 +187,10 @@ export const loadTemplateFromDb = async (): Promise<ReceiptTemplate> => {
       .maybeSingle();
 
     if (data?.value) {
-      const t = { ...DEFAULT_TEMPLATE, ...(data.value as any) };
-      // Sync to localStorage
-      localStorage.setItem("receipt_template_v2", JSON.stringify(t));
+      const dbVal: any = { ...(data.value as any) };
+      delete dbVal.ticketVentaTitle; delete dbVal.ticketServicioTitle; delete dbVal.saleTitle; delete dbVal.serviceTitle;
+      const t = { ...DEFAULT_TEMPLATE, ...dbVal };
+      localStorage.setItem("receipt_template_v3", JSON.stringify(t));
       return t;
     }
   } catch { /* fall through */ }
@@ -198,7 +199,7 @@ export const loadTemplateFromDb = async (): Promise<ReceiptTemplate> => {
 
 // Keep backward compat
 export const saveTemplate = (t: ReceiptTemplate) => {
-  localStorage.setItem("receipt_template_v2", JSON.stringify(t));
+  localStorage.setItem("receipt_template_v3", JSON.stringify(t));
   // Fire and forget DB save
   saveTemplateToDb(t).catch(() => {});
 };
