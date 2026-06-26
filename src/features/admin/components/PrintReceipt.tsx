@@ -625,10 +625,14 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     <div class="a4-company">
       ${a4Header}
       <div class="a4-meta">
-        <div><b>R.U.C.:</b> ${companyInfo.ruc}</div>
-        <div><b>Tel.:</b> ${companyInfo.telefono}</div>
-        <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
-        <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
+        <div class="a4-meta-row">
+          <div><b>R.U.C.:</b> ${companyInfo.ruc}</div>
+          <div><b>Tel.:</b> ${companyInfo.telefono}</div>
+        </div>
+        <div class="a4-meta-row">
+          <div><b>${companyInfo.ciudad.toUpperCase()} - PERÚ</b></div>
+          <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
+        </div>
       </div>
     </div>
     <div class="a4-doc-type">
