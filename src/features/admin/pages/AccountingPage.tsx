@@ -126,6 +126,72 @@ const TYPE_MAP: Record<string, { label: string; icon: React.ReactNode; color: st
   mixto: { label: "Mixto", icon: <List className="h-4 w-4" />, color: "text-violet-500" },
 };
 
+// Compact per-row Download/Share buttons. Lazy-loads transaction items on first
+// interaction (hover/focus) so we don't issue a query for every row at mount.
+const RowReceiptActions: React.FC<{ tx: Transaction }> = ({ tx }) => {
+  const [items, setItems] = useState<TransactionItem[] | null>(tx.items ?? null);
+  const [loading, setLoading] = useState(false);
+  const loadedRef = useRef(false);
+  const ensureLoaded = useCallback(async () => {
+    if (loadedRef.current || items) return;
+    loadedRef.current = true;
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from("transaction_items")
+        .select("*")
+        .eq("transaction_id", tx.id)
+        .order("created_at");
+      setItems((data || []) as any);
+    } finally {
+      setLoading(false);
+    }
+  }, [tx.id, items]);
+
+  const order = useMemo(() => ({
+    id: tx.id,
+    created_at: tx.created_at,
+    date: tx.fecha,
+    numero_comprobante: tx.numero_comprobante,
+    ticket_number: tx.numero_comprobante,
+    customer_name: tx.cliente_nombre || "",
+    customer_phone: tx.cliente_telefono || "",
+    seller: tx.emitido_por || "Admin",
+    items: (items || []).map((it: any) => ({
+      descripcion: it.descripcion,
+      cantidad: it.cantidad,
+      precio_unitario: it.precio_unitario,
+      subtotal: it.subtotal,
+      item_type: it.item_type,
+      responsable: it.responsable,
+      tipo_equipo: it.tipo_equipo,
+      diagnostico: it.diagnostico,
+    })),
+    subtotal_productos: tx.subtotal_productos,
+    igv: tx.impuestos,
+    total: tx.total,
+    payment_method: (tx as any).metodo_pago,
+    notes: tx.notas,
+  }), [tx, items]);
+
+  return (
+    <span
+      onMouseEnter={ensureLoaded}
+      onFocus={ensureLoaded}
+      onClickCapture={ensureLoaded}
+      className="inline-flex"
+      title={loading ? "Cargando comprobante…" : undefined}
+    >
+      <PrintReceipt
+        order={order}
+        type={tx.tipo_general === "servicio" ? "service" : "sale"}
+        defaultDocumentKind={(tx.tipo_comprobante as DocumentKind) || "boleta"}
+        compact
+      />
+    </span>
+  );
+};
+
 // ─── Component ──────────────────────────────────────────────────
 const AccountingPage = () => {
   const qc = useQueryClient();
@@ -1469,6 +1535,9 @@ const AccountingPage = () => {
                                 <RotateCcw className="h-3 w-3" />
                               </Button>
                             </>
+                          )}
+                          {(tx.estado === "emitido" || tx.estado === "borrador" || tx.estado === "devuelto") && (
+                            <RowReceiptActions tx={tx} />
                           )}
                         </div>
                       </TableCell>

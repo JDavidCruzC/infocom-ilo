@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Printer, Settings2, FileText, Upload, Loader2, ImageIcon, Type, Download } from "lucide-react";
+import { Printer, Settings2, FileText, Upload, Loader2, ImageIcon, Type, Download, Share2, MessageCircle, Facebook } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -394,9 +394,13 @@ interface PrintReceiptProps {
   order: any;
   type?: "reception" | "sale" | "service";
   defaultDocumentKind?: DocumentKind;
+  /** Compact icon-only mode used in tables (only Download + Share). */
+  compact?: boolean;
 }
 
-const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintReceiptProps) => {
+type ShareCtx = { network: "whatsapp" | "facebook"; phone?: string; message: string };
+
+const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact = false }: PrintReceiptProps) => {
   const [configOpen, setConfigOpen] = useState(false);
   const [template, setTemplate] = useState<ReceiptTemplate>(loadTemplate);
   const [orderOverrides, setOrderOverrides] = useState<OrderOverrides>(() =>
@@ -442,7 +446,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     }
   };
 
-  const finalizeWindow = async (w: Window, isA4Local: boolean, mode: "print" | "download") => {
+  const finalizeWindow = async (w: Window, isA4Local: boolean, mode: "print" | "download" | "share", shareCtx?: ShareCtx) => {
     await new Promise((r) => setTimeout(r, 450));
     if (mode === "print") { try { w.focus(); w.print(); } catch {} return; }
     try {
@@ -464,8 +468,42 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
         }
       }
       const num = (order as any)?.numero_comprobante || (order as any)?.ticket_number || (order as any)?.order_number || "comprobante";
-      pdf.save(`Comprobante_${num}_${isA4Local ? "A4" : "Boletera"}.pdf`);
-      toast.success("PDF descargado");
+      const filename = `Comprobante_${num}_${isA4Local ? "A4" : "Boletera"}.pdf`;
+
+      if (mode === "download") {
+        pdf.save(filename);
+        toast.success("PDF descargado");
+      } else if (mode === "share" && shareCtx) {
+        const blob: Blob = pdf.output("blob");
+        const file = new File([blob], filename, { type: "application/pdf" });
+        const navAny: any = navigator;
+        const canFiles = !!(navAny.canShare && navAny.canShare({ files: [file] }) && navAny.share);
+
+        if (canFiles) {
+          try {
+            await navAny.share({ files: [file], title: filename, text: shareCtx.message });
+            toast.success(`Compartido por ${shareCtx.network === "whatsapp" ? "WhatsApp" : "Facebook"}`);
+            return;
+          } catch (err: any) {
+            // user cancelled or browser refused — fall through to fallback
+            if (err?.name === "AbortError") return;
+          }
+        }
+
+        // Fallback: save PDF and open share URL with text. The user adjuntará el PDF.
+        pdf.save(filename);
+        if (shareCtx.network === "whatsapp") {
+          const phone = (shareCtx.phone || "").replace(/\D/g, "");
+          const norm = phone ? (phone.startsWith("51") ? phone : "51" + phone) : "";
+          const text = encodeURIComponent(`${shareCtx.message}\n\n(PDF guardado en tu dispositivo: ${filename} — adjúntalo en este chat)`);
+          window.open(norm ? `https://wa.me/${norm}?text=${text}` : `https://wa.me/?text=${text}`, "_blank");
+          toast.message("PDF descargado", { description: "Adjúntalo en el chat de WhatsApp que se abrió." });
+        } else {
+          const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(shareCtx.message)}`;
+          window.open(url, "_blank");
+          toast.message("PDF descargado", { description: "Adjúntalo al publicar en Facebook." });
+        }
+      }
     } catch (e: any) {
       toast.error("Error al generar PDF: " + (e?.message || "desconocido"));
     } finally {
@@ -473,7 +511,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     }
   };
 
-  const handlePrint = (overridePrinterType?: "thermal" | "a4", mode: "print" | "download" = "print") => {
+  const handlePrint = (overridePrinterType?: "thermal" | "a4", mode: "print" | "download" | "share" = "print", shareCtx?: ShareCtx) => {
     const t = template;
     const pType = overridePrinterType || t.printerType || "thermal";
     const isA4 = pType === "a4";
@@ -787,7 +825,7 @@ ${bodyContent}
 
       w.document.write(a4Html);
       w.document.close();
-      finalizeWindow(w, true, mode);
+      finalizeWindow(w, true, mode, shareCtx);
       return;
     }
 
@@ -906,7 +944,7 @@ ${bodyContent}
 
     w.document.write(html);
     w.document.close();
-    finalizeWindow(w, false, mode);
+    finalizeWindow(w, false, mode, shareCtx);
   };
 
   const updateTemplate = (partial: Partial<ReceiptTemplate>) => {
@@ -922,6 +960,99 @@ ${bodyContent}
   };
 
   const currentDocKind: DocumentKind = (orderOverrides.documentKind || defaultDocumentKind || "boleta");
+
+  const buildShareMessage = () => {
+    const num = (order as any)?.numero_comprobante || (order as any)?.ticket_number || (order as any)?.order_number || "";
+    const customer = (order as any)?.customer_name || "";
+    const total = Number((order as any)?.total || (order as any)?.price || 0).toFixed(2);
+    const tipo = type === "service" ? "Comprobante de Servicio" : "Comprobante de Venta";
+    return [
+      `*INFOCOM — ${tipo}*`,
+      num ? `N° ${num}` : null,
+      customer ? `Cliente: ${customer}` : null,
+      `Total: S/. ${total}`,
+      "",
+      "Adjunto el comprobante en PDF. ¡Gracias por su preferencia!",
+    ].filter(Boolean).join("\n");
+  };
+
+  const handleShare = (format: "boletera" | "a4", network: "whatsapp" | "facebook") => {
+    handlePrint(format === "a4" ? "a4" : undefined, "share", {
+      network,
+      phone: (order as any)?.customer_phone,
+      message: buildShareMessage(),
+    });
+  };
+
+  const ShareMenu = ({ variant = "outline" as "outline" | "ghost", iconOnly = false }: { variant?: "outline" | "ghost"; iconOnly?: boolean }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {iconOnly ? (
+          <Button variant={variant} size="icon" className="h-7 w-7 text-sky-500" title="Compartir comprobante (PDF)">
+            <Share2 className="h-3.5 w-3.5" />
+          </Button>
+        ) : (
+          <Button variant={variant} size="sm" className="gap-1.5 text-sky-600 border-sky-500/40 hover:bg-sky-500/10">
+            <Share2 className="h-4 w-4" /> Compartir
+          </Button>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel>Compartir como PDF</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-[10px] uppercase opacity-60 py-0.5">WhatsApp</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => handleShare("boletera", "whatsapp")} className="gap-2">
+          <MessageCircle className="h-4 w-4 text-emerald-500" /> Versión Boletera
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare("a4", "whatsapp")} className="gap-2">
+          <MessageCircle className="h-4 w-4 text-emerald-500" /> Versión A4
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-[10px] uppercase opacity-60 py-0.5">Facebook</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => handleShare("boletera", "facebook")} className="gap-2">
+          <Facebook className="h-4 w-4 text-blue-500" /> Versión Boletera
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare("a4", "facebook")} className="gap-2">
+          <Facebook className="h-4 w-4 text-blue-500" /> Versión A4
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const DownloadMenu = ({ iconOnly = false }: { iconOnly?: boolean }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {iconOnly ? (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Descargar PDF">
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-500/40 hover:bg-emerald-500/10">
+            <Download className="h-4 w-4" /> Descargar PDF
+          </Button>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Descargar comprobante</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => handlePrint(undefined, "download")} className="gap-2">
+          <Printer className="h-4 w-4" /> Versión Boletera (PDF)
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handlePrint("a4", "download")} className="gap-2">
+          <FileText className="h-4 w-4" /> Versión A4 (PDF)
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  if (compact) {
+    return (
+      <div className="inline-flex items-center gap-0.5">
+        <DownloadMenu iconOnly />
+        <ShareMenu iconOnly />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-wrap gap-1 items-center">
@@ -946,23 +1077,8 @@ ${bodyContent}
       <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handlePrint("a4", "print")}>
         <FileText className="h-4 w-4" /> A4
       </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-500/40 hover:bg-emerald-500/10">
-            <Download className="h-4 w-4" /> Descargar PDF
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Descargar comprobante</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => handlePrint(undefined, "download")} className="gap-2">
-            <Printer className="h-4 w-4" /> Versión Boletera (PDF)
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePrint("a4", "download")} className="gap-2">
-            <FileText className="h-4 w-4" /> Versión A4 (PDF)
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <DownloadMenu />
+      <ShareMenu />
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8">
