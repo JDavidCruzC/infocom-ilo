@@ -1536,6 +1536,9 @@ const AccountingPage = () => {
                               </Button>
                             </>
                           )}
+                          {(tx.estado === "emitido" || tx.estado === "borrador" || tx.estado === "devuelto") && (
+                            <RowReceiptActions tx={tx} />
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
