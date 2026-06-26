@@ -162,7 +162,88 @@ export const DEFAULT_RECEPCION_HTML = `<table style="border:none;width:100%"><tr
 <p style="font-size:10px;text-align:justify"><strong>Condiciones:</strong> Pasados 30 días sin recoger el equipo, la empresa no se responsabiliza. Presentar este comprobante para retirar el equipo.</p>
 <p style="text-align:center;margin-top:16px;font-size:11px">_______________________________<br/>Firma del cliente</p>`;
 
+// ─── Plantilla A4 oficial INFOCOM (réplica del comprobante actual) ───
+export const DEFAULT_A4_INFOCOM_HTML = `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;padding:20px">
+  <table style="border:none;width:100%">
+    <tr>
+      <td style="border:none;width:55%;vertical-align:top">
+        <h1 style="margin:0;color:#2E8B57;font-size:26px;letter-spacing:1px">{{empresa.nombre}}</h1>
+        <p style="margin:2px 0;font-size:11px;color:#444">Especialistas en tecnología</p>
+        <table style="border:none;width:100%;margin-top:10px;font-size:12px">
+          <tr>
+            <td style="border:none;padding:2px 8px 2px 0"><b>R.U.C.:</b> {{empresa.ruc}}</td>
+            <td style="border:none;padding:2px 0"><b>Tel.:</b> {{empresa.telefono}}</td>
+          </tr>
+          <tr>
+            <td style="border:none;padding:2px 8px 2px 0"><b>{{empresa.ciudad}} - PERÚ</b></td>
+            <td style="border:none;padding:2px 0"><b>DIRECCIÓN:</b> {{empresa.direccion}}</td>
+          </tr>
+        </table>
+      </td>
+      <td style="border:2px solid #2E8B57;width:35%;text-align:center;padding:14px;border-radius:6px;vertical-align:top">
+        <div style="font-weight:700;color:#2E8B57;font-size:14px">{{comprobante.titulo}}</div>
+        <div style="height:1px;background:#2E8B57;margin:6px 0"></div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:2px">N° {{comprobante.numero}}</div>
+      </td>
+    </tr>
+  </table>
+
+  <div style="border:1px solid #ddd;border-radius:6px;padding:10px;margin:14px 0;background:#fafafa;font-size:12px">
+    <p style="margin:2px 0"><b>CLIENTE:</b> {{cliente.nombre}} &nbsp;&nbsp; <b>DNI/RUC:</b> {{cliente.documento}}</p>
+    <p style="margin:2px 0"><b>TELÉFONO:</b> {{cliente.telefono}} &nbsp;&nbsp; <b>DIRECCIÓN:</b> {{cliente.direccion}}</p>
+    <p style="margin:2px 0"><b>FECHA:</b> {{comprobante.fecha}} &nbsp; <b>HORA:</b> {{comprobante.hora}} &nbsp; <b>VENDEDOR:</b> {{vendedor.nombre}}</p>
+  </div>
+
+  <p style="margin:0">{{items_tabla}}</p>
+
+  <table style="border:none;width:100%;margin-top:14px">
+    <tr>
+      <td style="border:none;vertical-align:top;width:55%;font-size:12px">
+        <p style="margin:0"><b>SON:</b> {{totales.total_letras}}</p>
+      </td>
+      <td style="border:none;width:45%;font-size:12px">
+        <table style="border:none;width:100%">
+          <tr><td style="border:none;text-align:right;padding:2px 8px">Precio subtotal</td><td style="border:none;text-align:right;width:90px">S/. {{totales.subtotal}}</td></tr>
+          <tr><td style="border:none;text-align:right;padding:2px 8px">IGV</td><td style="border:none;text-align:right">S/. {{totales.igv}}</td></tr>
+          <tr><td colspan="2" style="border:none;border-top:2px solid #2E8B57;padding-top:4px"></td></tr>
+          <tr>
+            <td style="border:none;text-align:right;padding:4px 8px;font-size:16px;font-weight:800;color:#2E8B57">IMPORTE TOTAL S/</td>
+            <td style="border:none;text-align:right;font-size:16px;font-weight:800;color:#2E8B57">S/. {{totales.total}}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <hr style="border:none;border-top:1px dashed #bbb;margin:18px 0"/>
+
+  <div style="text-align:center;font-size:12px;color:#111">
+    <p style="margin:2px 0">Si deseas conocer más sobre nuestra variedad</p>
+    <p style="margin:2px 0">de productos hazlo ingresando a:</p>
+    <p style="margin:6px 0">🌐 <a href="https://{{empresa.web}}" style="color:#2E8B57;text-decoration:underline;font-weight:700">{{empresa.web}}</a></p>
+  </div>
+</div>`;
+
 export const TEMPLATE_KINDS = [
-  ...DOCUMENT_KINDS.map(d => ({ value: d.value, label: d.label, group: "Ventas" as const, defaultHtml: DEFAULT_RECEIPT_HTML, variables: RECEIPT_VARIABLES })),
-  { value: "recepcion_servicio", label: "Recepción de Servicio Técnico", group: "Servicio" as const, defaultHtml: DEFAULT_RECEPCION_HTML, variables: RECEPCION_VARIABLES },
+  ...DOCUMENT_KINDS.map(d => ({
+    value: d.value,
+    label: d.label,
+    group: "Ventas" as const,
+    defaultHtml: DEFAULT_RECEIPT_HTML,
+    presets: [
+      { name: "INFOCOM A4 (oficial)", html: DEFAULT_A4_INFOCOM_HTML, paper_size: "a4" as const },
+      { name: "Plantilla en blanco", html: DEFAULT_RECEIPT_HTML, paper_size: "a4" as const },
+    ],
+    variables: RECEIPT_VARIABLES,
+  })),
+  {
+    value: "recepcion_servicio",
+    label: "Recepción de Servicio Técnico",
+    group: "Servicio" as const,
+    defaultHtml: DEFAULT_RECEPCION_HTML,
+    presets: [
+      { name: "Plantilla en blanco", html: DEFAULT_RECEPCION_HTML, paper_size: "a4" as const },
+    ],
+    variables: RECEPCION_VARIABLES,
+  },
 ];
