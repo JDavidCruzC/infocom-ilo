@@ -944,7 +944,7 @@ ${bodyContent}
 
     w.document.write(html);
     w.document.close();
-    finalizeWindow(w, false, mode);
+    finalizeWindow(w, false, mode, shareCtx);
   };
 
   const updateTemplate = (partial: Partial<ReceiptTemplate>) => {
