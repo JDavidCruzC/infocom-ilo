@@ -766,12 +766,13 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff}
   .a4-container{max-width:780px;margin:0 auto;border:1px solid #d4e8d4;border-radius:8px;padding:28px 32px}
-  .a4-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:6px}
-  .a4-company{flex:1}
-  .a4-meta{font-size:12px;line-height:1.7;margin-top:6px;color:#0d0d0d}
+  .a4-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:6px;flex-wrap:nowrap}
+  .a4-company{flex:1 1 auto;min-width:0}
+  .a4-meta{font-size:12px;line-height:1.7;margin-top:6px;color:#0d0d0d;white-space:nowrap}
   .a4-meta b{font-weight:700}
-  .a4-meta-row{display:grid;grid-template-columns:1fr 1.4fr;gap:24px;align-items:start}
-  .a4-doc-type{border:2px solid #2E8B57;border-radius:10px;padding:14px 22px;text-align:center;min-width:240px;background:#fff}
+  .a4-meta-row{display:flex;gap:28px;align-items:start;flex-wrap:nowrap;white-space:nowrap}
+  .a4-meta-row > div{white-space:nowrap}
+  .a4-doc-type{border:2px solid #2E8B57;border-radius:10px;padding:12px 18px;text-align:center;min-width:220px;background:#fff;flex:0 0 auto}
   .doc-title{font-size:20px;font-weight:900;letter-spacing:1px;color:#2E8B57;text-transform:uppercase}
   .doc-sep{height:2px;background:#2E8B57;margin:6px auto;width:60%;border-radius:2px;position:relative}
   .doc-sep:after{content:"";position:absolute;left:50%;top:-3px;width:8px;height:8px;background:#2E8B57;border-radius:50%;transform:translateX(-50%)}
