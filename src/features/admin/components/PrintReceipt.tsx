@@ -464,15 +464,15 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     const resolvedSaleTitle = resolvedDocTitle;
 
 
-    // Helper to build items table rows
+    // Helper to build items table rows (A4 — no "Unidad" column, wider description)
     const buildItemsRows = () => {
       const items = order.items || [];
       if (items.length > 0) {
         return items.map((it: any, i: number) =>
-          `<tr><td class="tc">${i + 1}</td><td class="tc">${it.cantidad}</td><td>UNIDAD</td><td>${String(it.descripcion).toUpperCase()}</td><td class="tr">S/. ${Number(it.precio_unitario).toFixed(2)}</td><td class="tr">S/. ${Number(it.subtotal).toFixed(2)}</td></tr>`
+          `<tr><td class="tc">${i + 1}</td><td class="tc">${it.cantidad}</td><td>${String(it.descripcion).toUpperCase()}</td><td class="tr">S/. ${Number(it.precio_unitario).toFixed(2)}</td><td class="tr">S/. ${Number(it.subtotal).toFixed(2)}</td></tr>`
         ).join("");
       }
-      return `<tr><td class="tc">1</td><td class="tc">${order.quantity || 1}</td><td>UNIDAD</td><td>${String(order.product_description || order.description || "").toUpperCase()}</td><td class="tr">S/. ${Number(order.unit_price || order.price || 0).toFixed(2)}</td><td class="tr">S/. ${Number(order.total || order.price || 0).toFixed(2)}</td></tr>`;
+      return `<tr><td class="tc">1</td><td class="tc">${order.quantity || 1}</td><td>${String(order.product_description || order.description || "").toUpperCase()}</td><td class="tr">S/. ${Number(order.unit_price || order.price || 0).toFixed(2)}</td><td class="tr">S/. ${Number(order.total || order.price || 0).toFixed(2)}</td></tr>`;
     };
 
     const buildItemsRowsSimple = () => {
@@ -592,10 +592,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
       ${a4Header}
       <div class="a4-meta">
         <div><b>R.U.C.:</b> ${companyInfo.ruc}</div>
-        <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
         <div><b>Tel.:</b> ${companyInfo.telefono}</div>
+        <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
         <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
-        <div><b>${companyInfo.web}</b></div>
       </div>
     </div>
     <div class="a4-doc-type">
