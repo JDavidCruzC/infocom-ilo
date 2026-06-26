@@ -49,8 +49,7 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [viewing, setViewing] = useState<TxRow | null>(null);
-  const [editing, setEditing] = useState<TxRow | null>(null);
-  const [editForm, setEditForm] = useState({ cliente_nombre: "", cliente_telefono: "", notas: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["transactions_history_dialog", scopeToCurrentUser, user?.id],
