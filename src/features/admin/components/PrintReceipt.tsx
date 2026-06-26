@@ -145,15 +145,24 @@ const STORE_KEY = "receipt_template";
 /** Load template from DB (async) with localStorage fallback for initial render */
 export const loadTemplate = (): ReceiptTemplate => {
   try {
-    const saved = localStorage.getItem("receipt_template_v2");
-    return saved ? { ...DEFAULT_TEMPLATE, ...JSON.parse(saved) } : DEFAULT_TEMPLATE;
+    // v3: bumped to reset stale titles like "TICKET DE VENTA" → "COMPROBANTE DE VENTA"
+    const saved = localStorage.getItem("receipt_template_v3");
+    if (saved) return { ...DEFAULT_TEMPLATE, ...JSON.parse(saved) };
+    // Migrate from v2: drop stale title fields so defaults win
+    const legacy = localStorage.getItem("receipt_template_v2");
+    if (legacy) {
+      const j = JSON.parse(legacy);
+      delete j.ticketVentaTitle; delete j.ticketServicioTitle; delete j.saleTitle; delete j.serviceTitle;
+      return { ...DEFAULT_TEMPLATE, ...j };
+    }
+    return DEFAULT_TEMPLATE;
   } catch { return DEFAULT_TEMPLATE; }
 };
 
 /** Save template to both DB and localStorage */
 export const saveTemplateToDb = async (t: ReceiptTemplate) => {
   // Save to localStorage as immediate cache
-  localStorage.setItem("receipt_template_v2", JSON.stringify(t));
+  localStorage.setItem("receipt_template_v3", JSON.stringify(t));
   // Persist to database
   const { data: existing } = await supabase
     .from("store_settings")
@@ -178,9 +187,10 @@ export const loadTemplateFromDb = async (): Promise<ReceiptTemplate> => {
       .maybeSingle();
 
     if (data?.value) {
-      const t = { ...DEFAULT_TEMPLATE, ...(data.value as any) };
-      // Sync to localStorage
-      localStorage.setItem("receipt_template_v2", JSON.stringify(t));
+      const dbVal: any = { ...(data.value as any) };
+      delete dbVal.ticketVentaTitle; delete dbVal.ticketServicioTitle; delete dbVal.saleTitle; delete dbVal.serviceTitle;
+      const t = { ...DEFAULT_TEMPLATE, ...dbVal };
+      localStorage.setItem("receipt_template_v3", JSON.stringify(t));
       return t;
     }
   } catch { /* fall through */ }
@@ -189,7 +199,7 @@ export const loadTemplateFromDb = async (): Promise<ReceiptTemplate> => {
 
 // Keep backward compat
 export const saveTemplate = (t: ReceiptTemplate) => {
-  localStorage.setItem("receipt_template_v2", JSON.stringify(t));
+  localStorage.setItem("receipt_template_v3", JSON.stringify(t));
   // Fire and forget DB save
   saveTemplateToDb(t).catch(() => {});
 };
@@ -238,6 +248,7 @@ export interface CompanyReceiptInfo {
   saleFooterShowSonIcon?: boolean;      // show icon inside SON block
   saleFooterShowFieldIcons?: boolean;   // icons next to Fecha/Cliente/etc
   saleFooterShowWaves?: boolean;        // decorative green wave borders
+  saleFooterTaglineColor?: string;      // color for italic tagline below socials
 }
 
 export const DEFAULT_COMPANY_INFO: CompanyReceiptInfo = {
@@ -265,6 +276,7 @@ export const DEFAULT_COMPANY_INFO: CompanyReceiptInfo = {
   saleFooterShowSonIcon: true,
   saleFooterShowFieldIcons: true,
   saleFooterShowWaves: true,
+  saleFooterTaglineColor: "#0d0d0d",
 };
 
 // Inline SVG icon library used inside printed HTML
@@ -452,15 +464,15 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     const resolvedSaleTitle = resolvedDocTitle;
 
 
-    // Helper to build items table rows
+    // Helper to build items table rows (A4 — no "Unidad" column, wider description)
     const buildItemsRows = () => {
       const items = order.items || [];
       if (items.length > 0) {
         return items.map((it: any, i: number) =>
-          `<tr><td class="tc">${i + 1}</td><td class="tc">${it.cantidad}</td><td>UNIDAD</td><td>${String(it.descripcion).toUpperCase()}</td><td class="tr">S/. ${Number(it.precio_unitario).toFixed(2)}</td><td class="tr">S/. ${Number(it.subtotal).toFixed(2)}</td></tr>`
+          `<tr><td class="tc">${i + 1}</td><td class="tc">${it.cantidad}</td><td>${String(it.descripcion).toUpperCase()}</td><td class="tr">S/. ${Number(it.precio_unitario).toFixed(2)}</td><td class="tr">S/. ${Number(it.subtotal).toFixed(2)}</td></tr>`
         ).join("");
       }
-      return `<tr><td class="tc">1</td><td class="tc">${order.quantity || 1}</td><td>UNIDAD</td><td>${String(order.product_description || order.description || "").toUpperCase()}</td><td class="tr">S/. ${Number(order.unit_price || order.price || 0).toFixed(2)}</td><td class="tr">S/. ${Number(order.total || order.price || 0).toFixed(2)}</td></tr>`;
+      return `<tr><td class="tc">1</td><td class="tc">${order.quantity || 1}</td><td>${String(order.product_description || order.description || "").toUpperCase()}</td><td class="tr">S/. ${Number(order.unit_price || order.price || 0).toFixed(2)}</td><td class="tr">S/. ${Number(order.total || order.price || 0).toFixed(2)}</td></tr>`;
     };
 
     const buildItemsRowsSimple = () => {
@@ -580,10 +592,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
       ${a4Header}
       <div class="a4-meta">
         <div><b>R.U.C.:</b> ${companyInfo.ruc}</div>
-        <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
         <div><b>Tel.:</b> ${companyInfo.telefono}</div>
+        <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
         <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
-        <div><b>${companyInfo.web}</b></div>
       </div>
     </div>
     <div class="a4-doc-type">
@@ -609,16 +620,19 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     </div>
   </div>
   <table class="a4-items">
-    <thead><tr><th>N°</th><th>Cant.</th><th>Unidad</th><th>DESCRIPCIÓN</th><th>P. Unitario</th><th>Total</th></tr></thead>
+    <thead><tr><th style="width:6%">N°</th><th style="width:8%">Cant.</th><th style="width:54%">DESCRIPCIÓN</th><th style="width:16%">P. Unitario</th><th style="width:16%">Total</th></tr></thead>
     <tbody>${buildItemsRows()}</tbody>
   </table>
-  <div class="a4-totals">
-    ${Number(subtotalProductos) > 0 && Number(subtotalServicios) > 0 ? `
-      <div class="a4-total-row"><span>Subtotal Productos:</span><span>S/. ${Number(subtotalProductos).toFixed(2)}</span></div>
-      <div class="a4-total-row"><span>Subtotal Servicios:</span><span>S/. ${Number(subtotalServicios).toFixed(2)}</span></div>
-    ` : ""}
-    <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${totalFinal.toFixed(2)}</span></div>
-  </div>
+  ${(() => {
+    const total = Number(totalFinal) || 0;
+    const sub = total / 1.18;
+    const igv = total - sub;
+    return `<div class="a4-totals">
+    <div class="a4-total-row"><span>Precio subtotal:</span><span>S/. ${sub.toFixed(2)}</span></div>
+    <div class="a4-total-row"><span>IGV:</span><span>S/. ${igv.toFixed(2)}</span></div>
+    <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${total.toFixed(2)}</span></div>
+  </div>`;
+  })()}
   ${order.amount_given && Number(order.amount_given) > 0 ? `
   <div class="a4-payment-info">
     <div class="a4-total-row"><span>Monto Recibido:</span><span>S/. ${Number(order.amount_given).toFixed(2)}</span></div>
@@ -643,7 +657,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   </div>
 
   ${showSocials ? `<div class="a4-socials">${socialList.map(buildSocialChip).join('<span class="soc-sep">|</span>')}</div>` : ""}
-  ${showTagline ? `<div class="a4-tagline"><span class="tag-deco left">❮</span><i>${tagline}</i><span class="tag-deco right">❯</span></div>` : ""}
+  ${showTagline ? `<div class="a4-tagline" style="color:${companyInfo.saleFooterTaglineColor || "#0d0d0d"}"><span class="tag-deco left" style="color:inherit">❮</span><i>${tagline}</i><span class="tag-deco right" style="color:inherit">❯</span></div>` : ""}
 
   ${showWaves ? `
   <div class="a4-waves">
@@ -714,7 +728,8 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   .a4-waves{position:relative;margin:24px -32px -28px;height:90px;overflow:hidden}
   .a4-waves svg{position:absolute;bottom:0;left:0;width:100%;height:100%;display:block}
   .a4-footer{text-align:center;margin-top:12px;font-size:10px;color:#888;padding-top:10px;position:relative;z-index:2}
-  @media print{body{padding:8px}.a4-container{border:none;padding:0}.a4-waves{margin-left:0;margin-right:0}@page{size:A4;margin:10mm}}
+  @page{size:A4;margin:0}
+  @media print{body{padding:14mm 12mm}.a4-container{border:none;padding:0}.a4-waves{margin-left:0;margin-right:0}}
 </style></head><body>
 ${bodyContent}
 </body></html>`;
