@@ -120,6 +120,37 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
     onError: (e: any) => e.message !== "Cancelado" && toast.error(e.message),
   });
 
+  const startEdit = (tx: TxRow) => {
+    setEditing(tx);
+    setEditForm({
+      cliente_nombre: tx.cliente_nombre || "",
+      cliente_telefono: tx.cliente_telefono || "",
+      notas: tx.notas || "",
+    });
+  };
+
+  const saveEdit = useMutation({
+    mutationFn: async () => {
+      if (!editing) throw new Error("Sin transacción");
+      const { error } = await supabase
+        .from("transactions")
+        .update({
+          cliente_nombre: editForm.cliente_nombre || null,
+          cliente_telefono: editForm.cliente_telefono || null,
+          notas: editForm.notas || null,
+        } as any)
+        .eq("id", editing.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions_history_dialog"] });
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Transacción actualizada");
+      setEditing(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const shareWhatsApp = (tx: TxRow) => {
     const lines: string[] = [];
     lines.push(`*Comprobante INFOCOM*`);
