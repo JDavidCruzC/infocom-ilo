@@ -7,9 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Printer, Settings2, FileText, Upload, Loader2, ImageIcon, Type } from "lucide-react";
+import { Printer, Settings2, FileText, Upload, Loader2, ImageIcon, Type, Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import logoReceipt from "@/assets/logo-light-theme.png";
 
 // ───────── Número a letras (Soles) ─────────
