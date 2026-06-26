@@ -325,12 +325,84 @@ export default function QuickTransactionDialog({ open, onOpenChange, editTransac
 
   const canSave = items.length > 0 && !save.isPending;
 
+  const saveEdit = useMutation({
+    mutationFn: async () => {
+      if (!editTransactionId) throw new Error("Sin transacción");
+      if (items.length === 0) throw new Error("Agrega al menos un item");
+      if (items.some((i) => !i.descripcion.trim())) throw new Error("Completa la descripción de todos los items");
+
+      const { error: uErr } = await supabase
+        .from("transactions")
+        .update({
+          fecha: form.fecha,
+          cliente_nombre: form.cliente_nombre || null,
+          cliente_telefono: form.cliente_telefono || null,
+          notas: form.notas || null,
+          emitido_por: form.emitido_por || null,
+          por_cobrar: form.por_cobrar,
+          tipo_cliente: form.tipo_cliente,
+        } as any)
+        .eq("id", editTransactionId);
+      if (uErr) throw uErr;
+
+      const { error: dErr } = await supabase.from("transaction_items").delete().eq("transaction_id", editTransactionId);
+      if (dErr) throw dErr;
+
+      const payload = items.map((it) => ({
+        transaction_id: editTransactionId,
+        item_type: it.item_type,
+        referencia_id: it.referencia_id && it.referencia_id !== "service" ? it.referencia_id : null,
+        descripcion: it.descripcion,
+        cantidad: it.cantidad,
+        precio_unitario: it.precio_unitario,
+        subtotal: it.cantidad * it.precio_unitario,
+        responsable: it.responsable || null,
+        tipo_equipo: it.tipo_equipo || null,
+        diagnostico: it.diagnostico || null,
+      }));
+      const { error: ie } = await supabase.from("transaction_items").insert(payload as any);
+      if (ie) throw ie;
+
+      const subProd = items.filter((i) => i.item_type === "producto").reduce((a, i) => a + i.cantidad * i.precio_unitario, 0);
+      const subServ = items.filter((i) => i.item_type === "servicio").reduce((a, i) => a + i.cantidad * i.precio_unitario, 0);
+      const hasProd = items.some((i) => i.item_type === "producto");
+      const hasServ = items.some((i) => i.item_type === "servicio");
+      const tipo_general = hasProd && hasServ ? "mixto" : hasServ ? "servicio" : "venta";
+      await supabase
+        .from("transactions")
+        .update({
+          subtotal_productos: subProd,
+          subtotal_servicios: subServ,
+          total: subProd + subServ,
+          tipo_general: tipo_general as any,
+        } as any)
+        .eq("id", editTransactionId);
+
+      await supabase.from("transaction_history").insert({
+        transaction_id: editTransactionId,
+        accion: "editado",
+        detalles: { items: items.length } as any,
+        usuario_id: user?.id || null,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["transactions_history_dialog"] });
+      qc.invalidateQueries({ queryKey: ["quick_tx_edit"] });
+      toast.success("Transacción actualizada");
+      onSaved?.();
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Error al actualizar"),
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[98vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-primary" /> Nueva Transacción
+            {isEdit ? <Pencil className="h-5 w-5 text-blue-500" /> : <Receipt className="h-5 w-5 text-primary" />}
+            {isEdit ? `Editar Transacción${(editingTx as any)?.numero_comprobante ? ` · ${(editingTx as any).numero_comprobante}` : ""}` : "Nueva Transacción"}
           </DialogTitle>
         </DialogHeader>
 
