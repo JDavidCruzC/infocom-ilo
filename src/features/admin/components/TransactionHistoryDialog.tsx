@@ -39,9 +39,9 @@ interface TxRow {
 }
 
 export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCurrentUser = false }: Props) {
-  const { user, profile } = useAuth();
+  const { user, isAdmin } = useAuth();
   const qc = useQueryClient();
-  const isAdmin = profile?.role === "admin";
+
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
