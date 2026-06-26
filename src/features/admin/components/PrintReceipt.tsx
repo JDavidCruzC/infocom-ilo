@@ -620,16 +620,19 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     </div>
   </div>
   <table class="a4-items">
-    <thead><tr><th>N°</th><th>Cant.</th><th>Unidad</th><th>DESCRIPCIÓN</th><th>P. Unitario</th><th>Total</th></tr></thead>
+    <thead><tr><th style="width:6%">N°</th><th style="width:8%">Cant.</th><th style="width:54%">DESCRIPCIÓN</th><th style="width:16%">P. Unitario</th><th style="width:16%">Total</th></tr></thead>
     <tbody>${buildItemsRows()}</tbody>
   </table>
-  <div class="a4-totals">
-    ${Number(subtotalProductos) > 0 && Number(subtotalServicios) > 0 ? `
-      <div class="a4-total-row"><span>Subtotal Productos:</span><span>S/. ${Number(subtotalProductos).toFixed(2)}</span></div>
-      <div class="a4-total-row"><span>Subtotal Servicios:</span><span>S/. ${Number(subtotalServicios).toFixed(2)}</span></div>
-    ` : ""}
-    <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${totalFinal.toFixed(2)}</span></div>
-  </div>
+  ${(() => {
+    const total = Number(totalFinal) || 0;
+    const sub = total / 1.18;
+    const igv = total - sub;
+    return `<div class="a4-totals">
+    <div class="a4-total-row"><span>Precio subtotal:</span><span>S/. ${sub.toFixed(2)}</span></div>
+    <div class="a4-total-row"><span>IGV:</span><span>S/. ${igv.toFixed(2)}</span></div>
+    <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${total.toFixed(2)}</span></div>
+  </div>`;
+  })()}
   ${order.amount_given && Number(order.amount_given) > 0 ? `
   <div class="a4-payment-info">
     <div class="a4-total-row"><span>Monto Recibido:</span><span>S/. ${Number(order.amount_given).toFixed(2)}</span></div>
