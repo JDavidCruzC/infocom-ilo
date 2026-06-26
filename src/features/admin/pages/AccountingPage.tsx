@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import {
   Receipt, Plus, ShoppingCart, Wrench, TrendingUp, ChevronLeft, ChevronRight,
   Trash2, Pencil, Printer, FileText, Ban, Eye, Package, Settings2, List, Search, ChevronsUpDown, Check, RotateCcw, Gift,
-  Clock, CheckCircle2, FileBadge, FileCheck2, Palette
+  Clock, CheckCircle2, FileBadge, FileCheck2, Palette, MessageCircle
 } from "lucide-react";
 
 // ─── Highlight color presets for "Por Cobrar" rows ──────────────
