@@ -268,6 +268,8 @@ export default function QuickTransactionDialog({ open, onOpenChange }: Props) {
         toast.success("Borrador guardado");
       }
       onOpenChange(false);
+      clearDraft();
+      reset();
     },
     onError: (e: any) => toast.error(e.message || "Error al guardar"),
   });
