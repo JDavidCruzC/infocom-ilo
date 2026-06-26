@@ -653,18 +653,31 @@ export default function QuickTransactionDialog({ open, onOpenChange, editTransac
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2 flex-wrap">
-          <Button variant="secondary" onClick={() => save.mutate({ emit: false })} disabled={!canSave}>
-            Guardar como Borrador
-          </Button>
-          <Button variant="outline" onClick={() => save.mutate({ emit: true, docKind: items.some(i => i.item_type === "servicio") && !items.some(i => i.item_type === "producto") ? "ticket_servicio" : "ticket_venta" })} disabled={!canSave} className="gap-2">
-            <FileText className="h-4 w-4" /> Emitir Comprobante
-          </Button>
-          <Button onClick={() => save.mutate({ emit: true, docKind: "boleta" })} disabled={!canSave} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            <FileBadge className="h-4 w-4" /> Emitir Boleta
-          </Button>
-          <Button onClick={() => save.mutate({ emit: true, docKind: "factura" })} disabled={!canSave} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
-            <FileCheck2 className="h-4 w-4" /> Emitir Factura
-          </Button>
+          {isEdit ? (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saveEdit.isPending}>
+                Cancelar
+              </Button>
+              <Button onClick={() => saveEdit.mutate()} disabled={!canSave || saveEdit.isPending} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                <Save className="h-4 w-4" /> {saveEdit.isPending ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={() => save.mutate({ emit: false })} disabled={!canSave}>
+                Guardar como Borrador
+              </Button>
+              <Button variant="outline" onClick={() => save.mutate({ emit: true, docKind: items.some(i => i.item_type === "servicio") && !items.some(i => i.item_type === "producto") ? "ticket_servicio" : "ticket_venta" })} disabled={!canSave} className="gap-2">
+                <FileText className="h-4 w-4" /> Emitir Comprobante
+              </Button>
+              <Button onClick={() => save.mutate({ emit: true, docKind: "boleta" })} disabled={!canSave} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                <FileBadge className="h-4 w-4" /> Emitir Boleta
+              </Button>
+              <Button onClick={() => save.mutate({ emit: true, docKind: "factura" })} disabled={!canSave} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
+                <FileCheck2 className="h-4 w-4" /> Emitir Factura
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
