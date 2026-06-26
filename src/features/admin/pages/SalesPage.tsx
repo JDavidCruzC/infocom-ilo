@@ -56,7 +56,20 @@ const SalesPage = () => {
     monto_recibido: "",
   });
 
-  // Last completed sale for printing
+  // Persist POS cart & customer form so navigation/refresh does not wipe in-progress sale
+  usePersistentDraft({
+    storageKey: "pos_sales_cart_v1",
+    value: cart,
+    isEmpty: (v) => !v || v.length === 0,
+    onRestore: (v) => Array.isArray(v) && v.length > 0 && setCart(v),
+  });
+  usePersistentDraft({
+    storageKey: "pos_sales_customer_v1",
+    value: customerForm,
+    isEmpty: (v: any) => !v || (!v.dni && !v.nombre && !v.telefono && !v.email && !v.direccion && !v.metodo_pago && !v.monto_recibido),
+    onRestore: (v: any) => v && setCustomerForm((prev) => ({ ...prev, ...v })),
+  });
+
   const [lastSale, setLastSale] = useState<{ items: CartItem[]; customer: typeof customerForm; total: number; date: string; saleType: SaleType; change: number; ticket_number?: string; created_at?: string } | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
 
