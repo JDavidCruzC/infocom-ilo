@@ -657,7 +657,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   </div>
 
   ${showSocials ? `<div class="a4-socials">${socialList.map(buildSocialChip).join('<span class="soc-sep">|</span>')}</div>` : ""}
-  ${showTagline ? `<div class="a4-tagline"><span class="tag-deco left">❮</span><i>${tagline}</i><span class="tag-deco right">❯</span></div>` : ""}
+  ${showTagline ? `<div class="a4-tagline" style="color:${companyInfo.saleFooterTaglineColor || "#0d0d0d"}"><span class="tag-deco left" style="color:inherit">❮</span><i>${tagline}</i><span class="tag-deco right" style="color:inherit">❯</span></div>` : ""}
 
   ${showWaves ? `
   <div class="a4-waves">
@@ -728,7 +728,8 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   .a4-waves{position:relative;margin:24px -32px -28px;height:90px;overflow:hidden}
   .a4-waves svg{position:absolute;bottom:0;left:0;width:100%;height:100%;display:block}
   .a4-footer{text-align:center;margin-top:12px;font-size:10px;color:#888;padding-top:10px;position:relative;z-index:2}
-  @media print{body{padding:8px}.a4-container{border:none;padding:0}.a4-waves{margin-left:0;margin-right:0}@page{size:A4;margin:10mm}}
+  @page{size:A4;margin:0}
+  @media print{body{padding:14mm 12mm}.a4-container{border:none;padding:0}.a4-waves{margin-left:0;margin-right:0}}
 </style></head><body>
 ${bodyContent}
 </body></html>`;
