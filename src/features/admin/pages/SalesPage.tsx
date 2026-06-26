@@ -10,12 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ShoppingCart, Search, Plus, Minus, X, Receipt, User, Loader2, Printer, AlertCircle, FileText } from "lucide-react";
+import { ShoppingCart, Search, Plus, Minus, X, Receipt, User, Loader2, Printer, AlertCircle, FileText, History } from "lucide-react";
 import { loadTemplate, buildHeaderHtml, buildSaleFooter, buildCopyright, loadCompanyInfo, type CompanyReceiptInfo, DEFAULT_COMPANY_INFO } from "@/features/admin/components/PrintReceipt";
 import { CURRENCY, PAYMENT_METHOD_LABELS } from "@/lib/types";
 import type { PaymentMethod } from "@/lib/types";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import QuickTransactionDialog from "@/features/admin/components/QuickTransactionDialog";
+import TransactionHistoryDialog from "@/features/admin/components/TransactionHistoryDialog";
+import { usePersistentDraft } from "@/hooks/use-persistent-draft";
 
 interface CartItem {
   product_id: string;
