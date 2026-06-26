@@ -440,7 +440,38 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     }
   };
 
-  const handlePrint = (overridePrinterType?: "thermal" | "a4") => {
+  const finalizeWindow = async (w: Window, isA4Local: boolean, mode: "print" | "download") => {
+    await new Promise((r) => setTimeout(r, 450));
+    if (mode === "print") { try { w.focus(); w.print(); } catch {} return; }
+    try {
+      const body = w.document.body;
+      const canvas = await html2canvas(body, { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: body.scrollWidth, windowHeight: body.scrollHeight });
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({ unit: "mm", format: isA4Local ? "a4" : [80, 297], orientation: "portrait" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pageW) / canvas.width;
+      if (imgH <= pageH) {
+        pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
+      } else {
+        let remaining = imgH; let pos = 0;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "JPEG", 0, pos, pageW, imgH);
+          remaining -= pageH; pos -= pageH;
+          if (remaining > 0) pdf.addPage();
+        }
+      }
+      const num = (order as any)?.numero_comprobante || (order as any)?.ticket_number || (order as any)?.order_number || "comprobante";
+      pdf.save(`Comprobante_${num}_${isA4Local ? "A4" : "Boletera"}.pdf`);
+      toast.success("PDF descargado");
+    } catch (e: any) {
+      toast.error("Error al generar PDF: " + (e?.message || "desconocido"));
+    } finally {
+      try { w.close(); } catch {}
+    }
+  };
+
+  const handlePrint = (overridePrinterType?: "thermal" | "a4", mode: "print" | "download" = "print") => {
     const t = template;
     const pType = overridePrinterType || t.printerType || "thermal";
     const isA4 = pType === "a4";
