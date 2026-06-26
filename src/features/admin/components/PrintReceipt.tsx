@@ -778,11 +778,13 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   .doc-sep:after{content:"";position:absolute;left:50%;top:-3px;width:8px;height:8px;background:#2E8B57;border-radius:50%;transform:translateX(-50%)}
   .doc-num{font-size:18px;font-weight:700;margin-top:4px;color:#0d0d0d}
   .a4-separator{border-top:2px solid #2E8B57;margin:14px 0 18px}
-  .a4-info-grid{display:flex;gap:30px;margin-bottom:18px}
-  .a4-info-left,.a4-info-right{flex:1}
-  .a4-field{display:flex;gap:8px;margin:8px 0;font-size:13px;align-items:center}
-  .a4-field .a4-ico{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0}
-  .a4-label{font-weight:800;min-width:130px;white-space:nowrap;color:#0d0d0d}
+  .a4-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:18px}
+  .a4-info-left,.a4-info-right{min-width:0}
+  .a4-field{display:grid;grid-template-columns:20px 170px 1fr;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+  .a4-field .a4-ico{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0;color:#2E8B57}
+  .a4-field .a4-ico + .a4-label{grid-column:2}
+  .a4-field:not(:has(.a4-ico)) .a4-label{grid-column:1 / span 2}
+  .a4-label{font-weight:800;white-space:nowrap;color:#0d0d0d}
   .a4-items{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
   .a4-items th{background:#2E8B57;border:1px solid #2E8B57;padding:9px 10px;font-weight:800;text-align:left;color:#ffffff;text-transform:uppercase;letter-spacing:.3px}
   .a4-items td{border:1px solid #D9EAD9;padding:7px 10px;vertical-align:top}
