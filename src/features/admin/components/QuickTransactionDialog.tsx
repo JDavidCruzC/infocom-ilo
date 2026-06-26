@@ -73,20 +73,64 @@ export default function QuickTransactionDialog({ open, onOpenChange, editTransac
     setItems([]);
   };
 
-  // Persist draft so navigating to other tabs (WhatsApp/Facebook) doesn't wipe data
+  // Persist draft so navigating to other tabs (WhatsApp/Facebook) doesn't wipe data — only in CREATE mode
   const { clearDraft } = usePersistentDraft({
     storageKey: DRAFT_KEY,
     value: { form, items },
     isEmpty: (v: any) =>
-      !v?.items?.length &&
-      !v?.form?.cliente_nombre &&
-      !v?.form?.cliente_telefono &&
-      !v?.form?.notas,
+      isEdit ||
+      (!v?.items?.length &&
+        !v?.form?.cliente_nombre &&
+        !v?.form?.cliente_telefono &&
+        !v?.form?.notas),
     onRestore: (v: any) => {
+      if (isEdit) return;
       if (v?.form) setForm((prev) => ({ ...prev, ...v.form }));
       if (Array.isArray(v?.items)) setItems(v.items);
     },
   });
+
+  // Load existing transaction when entering edit mode
+  const { data: editingTx } = useQuery({
+    queryKey: ["quick_tx_edit", editTransactionId],
+    enabled: open && isEdit,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*, items:transaction_items(*)")
+        .eq("id", editTransactionId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (!isEdit || !editingTx) return;
+    setForm({
+      fecha: (editingTx as any).fecha || new Date().toISOString().split("T")[0],
+      cliente_nombre: (editingTx as any).cliente_nombre || "",
+      cliente_telefono: (editingTx as any).cliente_telefono || "",
+      notas: (editingTx as any).notas || "",
+      emitido_por: (editingTx as any).emitido_por || "Personal de Infocom",
+      por_cobrar: !!(editingTx as any).por_cobrar,
+      tipo_cliente: ((editingTx as any).tipo_cliente as any) || "publico",
+    });
+    const rawItems = ((editingTx as any).items || []) as any[];
+    setItems(
+      rawItems.map((it) => ({
+        item_type: it.item_type,
+        referencia_id: it.referencia_id,
+        descripcion: it.descripcion || "",
+        cantidad: Number(it.cantidad) || 1,
+        precio_unitario: Number(it.precio_unitario) || 0,
+        responsable: it.responsable || "",
+        tipo_equipo: it.tipo_equipo || "",
+        diagnostico: it.diagnostico || "",
+      }))
+    );
+  }, [isEdit, editingTx]);
+
 
 
   const { data: products = [] } = useQuery({
