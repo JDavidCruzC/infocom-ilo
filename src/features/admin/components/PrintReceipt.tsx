@@ -889,7 +889,7 @@ ${bodyContent}
 
     w.document.write(html);
     w.document.close();
-    setTimeout(() => { w.print(); }, 300);
+    finalizeWindow(w, false, mode);
   };
 
   const updateTemplate = (partial: Partial<ReceiptTemplate>) => {
