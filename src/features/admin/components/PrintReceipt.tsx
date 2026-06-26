@@ -145,15 +145,24 @@ const STORE_KEY = "receipt_template";
 /** Load template from DB (async) with localStorage fallback for initial render */
 export const loadTemplate = (): ReceiptTemplate => {
   try {
-    const saved = localStorage.getItem("receipt_template_v2");
-    return saved ? { ...DEFAULT_TEMPLATE, ...JSON.parse(saved) } : DEFAULT_TEMPLATE;
+    // v3: bumped to reset stale titles like "TICKET DE VENTA" → "COMPROBANTE DE VENTA"
+    const saved = localStorage.getItem("receipt_template_v3");
+    if (saved) return { ...DEFAULT_TEMPLATE, ...JSON.parse(saved) };
+    // Migrate from v2: drop stale title fields so defaults win
+    const legacy = localStorage.getItem("receipt_template_v2");
+    if (legacy) {
+      const j = JSON.parse(legacy);
+      delete j.ticketVentaTitle; delete j.ticketServicioTitle; delete j.saleTitle; delete j.serviceTitle;
+      return { ...DEFAULT_TEMPLATE, ...j };
+    }
+    return DEFAULT_TEMPLATE;
   } catch { return DEFAULT_TEMPLATE; }
 };
 
 /** Save template to both DB and localStorage */
 export const saveTemplateToDb = async (t: ReceiptTemplate) => {
   // Save to localStorage as immediate cache
-  localStorage.setItem("receipt_template_v2", JSON.stringify(t));
+  localStorage.setItem("receipt_template_v3", JSON.stringify(t));
   // Persist to database
   const { data: existing } = await supabase
     .from("store_settings")
