@@ -446,7 +446,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     }
   };
 
-  const finalizeWindow = async (w: Window, isA4Local: boolean, mode: "print" | "download") => {
+  const finalizeWindow = async (w: Window, isA4Local: boolean, mode: "print" | "download" | "share", shareCtx?: ShareCtx) => {
     await new Promise((r) => setTimeout(r, 450));
     if (mode === "print") { try { w.focus(); w.print(); } catch {} return; }
     try {
@@ -468,8 +468,42 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
         }
       }
       const num = (order as any)?.numero_comprobante || (order as any)?.ticket_number || (order as any)?.order_number || "comprobante";
-      pdf.save(`Comprobante_${num}_${isA4Local ? "A4" : "Boletera"}.pdf`);
-      toast.success("PDF descargado");
+      const filename = `Comprobante_${num}_${isA4Local ? "A4" : "Boletera"}.pdf`;
+
+      if (mode === "download") {
+        pdf.save(filename);
+        toast.success("PDF descargado");
+      } else if (mode === "share" && shareCtx) {
+        const blob: Blob = pdf.output("blob");
+        const file = new File([blob], filename, { type: "application/pdf" });
+        const navAny: any = navigator;
+        const canFiles = !!(navAny.canShare && navAny.canShare({ files: [file] }) && navAny.share);
+
+        if (canFiles) {
+          try {
+            await navAny.share({ files: [file], title: filename, text: shareCtx.message });
+            toast.success(`Compartido por ${shareCtx.network === "whatsapp" ? "WhatsApp" : "Facebook"}`);
+            return;
+          } catch (err: any) {
+            // user cancelled or browser refused — fall through to fallback
+            if (err?.name === "AbortError") return;
+          }
+        }
+
+        // Fallback: save PDF and open share URL with text. The user adjuntará el PDF.
+        pdf.save(filename);
+        if (shareCtx.network === "whatsapp") {
+          const phone = (shareCtx.phone || "").replace(/\D/g, "");
+          const norm = phone ? (phone.startsWith("51") ? phone : "51" + phone) : "";
+          const text = encodeURIComponent(`${shareCtx.message}\n\n(PDF guardado en tu dispositivo: ${filename} — adjúntalo en este chat)`);
+          window.open(norm ? `https://wa.me/${norm}?text=${text}` : `https://wa.me/?text=${text}`, "_blank");
+          toast.message("PDF descargado", { description: "Adjúntalo en el chat de WhatsApp que se abrió." });
+        } else {
+          const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(shareCtx.message)}`;
+          window.open(url, "_blank");
+          toast.message("PDF descargado", { description: "Adjúntalo al publicar en Facebook." });
+        }
+      }
     } catch (e: any) {
       toast.error("Error al generar PDF: " + (e?.message || "desconocido"));
     } finally {
@@ -477,7 +511,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     }
   };
 
-  const handlePrint = (overridePrinterType?: "thermal" | "a4", mode: "print" | "download" = "print") => {
+  const handlePrint = (overridePrinterType?: "thermal" | "a4", mode: "print" | "download" | "share" = "print", shareCtx?: ShareCtx) => {
     const t = template;
     const pType = overridePrinterType || t.printerType || "thermal";
     const isA4 = pType === "a4";
