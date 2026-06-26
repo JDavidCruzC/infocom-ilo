@@ -625,10 +625,14 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
     <div class="a4-company">
       ${a4Header}
       <div class="a4-meta">
-        <div><b>R.U.C.:</b> ${companyInfo.ruc}</div>
-        <div><b>Tel.:</b> ${companyInfo.telefono}</div>
-        <div><b>${companyInfo.ciudad.toUpperCase()}</b></div>
-        <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
+        <div class="a4-meta-row">
+          <div><b>R.U.C.:</b> ${companyInfo.ruc}</div>
+          <div><b>Tel.:</b> ${companyInfo.telefono}</div>
+        </div>
+        <div class="a4-meta-row">
+          <div><b>${companyInfo.ciudad.toUpperCase()} - PERÚ</b></div>
+          <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
+        </div>
       </div>
     </div>
     <div class="a4-doc-type">
@@ -721,6 +725,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   .a4-company{flex:1}
   .a4-meta{font-size:12px;line-height:1.7;margin-top:6px;color:#0d0d0d}
   .a4-meta b{font-weight:700}
+  .a4-meta-row{display:grid;grid-template-columns:1fr 1.4fr;gap:24px;align-items:start}
   .a4-doc-type{border:2px solid #2E8B57;border-radius:10px;padding:14px 22px;text-align:center;min-width:240px;background:#fff}
   .doc-title{font-size:20px;font-weight:900;letter-spacing:1px;color:#2E8B57;text-transform:uppercase}
   .doc-sep{height:2px;background:#2E8B57;margin:6px auto;width:60%;border-radius:2px;position:relative}
@@ -733,7 +738,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind }: PrintR
   .a4-field .a4-ico{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0}
   .a4-label{font-weight:800;min-width:130px;white-space:nowrap;color:#0d0d0d}
   .a4-items{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
-  .a4-items th{background:#E6F4EA;border:1px solid #B7DCC0;padding:8px 10px;font-weight:800;text-align:left;color:#0d0d0d}
+  .a4-items th{background:#2E8B57;border:1px solid #2E8B57;padding:9px 10px;font-weight:800;text-align:left;color:#ffffff;text-transform:uppercase;letter-spacing:.3px}
   .a4-items td{border:1px solid #D9EAD9;padding:7px 10px;vertical-align:top}
   .a4-items .tc{text-align:center}
   .a4-items .tr{text-align:right;white-space:nowrap}
