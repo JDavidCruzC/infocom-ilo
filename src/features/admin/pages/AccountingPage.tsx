@@ -1513,7 +1513,7 @@ const AccountingPage = () => {
                               <Button variant="ghost" size="sm" className="h-7 px-3 text-success font-semibold" onClick={() => emitirMutation.mutate(tx.id)} title="Emitir">
                                 <FileText className="h-3 w-3 mr-1" /> Emitir
                               </Button>
-                              {isAdmin && (
+                              {canDelete && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Eliminar borrador?")) deleteMutation.mutate(tx.id); }}>
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
