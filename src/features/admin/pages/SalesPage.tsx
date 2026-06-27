@@ -238,7 +238,8 @@ const SalesPage = () => {
         date: new Date().toLocaleString("es-PE"),
         saleType,
         change: cambio,
-        ticket_number: (tx as any).ticket_number || "",
+        ticket_number: (tx as any).numero_comprobante || (tx as any).ticket_number || "",
+        numero_comprobante: (tx as any).numero_comprobante || null,
         created_at: (tx as any).created_at || new Date().toISOString(),
       });
 
