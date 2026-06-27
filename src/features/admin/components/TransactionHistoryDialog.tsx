@@ -302,6 +302,7 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
                     order={toPrintOrder(viewing) as any}
                     type={viewing.tipo_general === "servicio" ? "service" : "sale"}
                     defaultDocumentKind={(viewing.tipo_comprobante as any) || undefined}
+                    compact
                   />
                   <Button size="sm" variant="outline" className="gap-1.5 text-emerald-600 border-emerald-500/30" onClick={() => shareWhatsApp(viewing)}>
                     <MessageCircle className="h-4 w-4" /> Enviar por WhatsApp
