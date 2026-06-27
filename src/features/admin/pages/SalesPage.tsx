@@ -178,9 +178,14 @@ const SalesPage = () => {
     setProcessing(true);
 
     try {
+      const docKind = saleType === "boleta" ? "boleta" : "ticket_venta";
+      const { data: numData, error: numErr } = await supabase.rpc("next_comprobante_number" as any, { _kind: docKind });
+      if (numErr) throw numErr;
+      const numeroComprobante = String(numData);
+
       const notaParts = [];
-      if (saleType === "boleta") notaParts.push(`BOLETA | DNI: ${customerForm.dni || "N/A"}`);
-      else notaParts.push("VENTA SIMPLE");
+      if (saleType === "boleta") notaParts.push(`BOLETA N° ${numeroComprobante} | DNI: ${customerForm.dni || "N/A"}`);
+      else notaParts.push(`VENTA SIMPLE N° ${numeroComprobante}`);
       if (customerForm.direccion) notaParts.push(`Dir: ${customerForm.direccion}`);
       if (customerForm.email) notaParts.push(`Email: ${customerForm.email}`);
       notaParts.push(`Pago: ${PAYMENT_METHOD_LABELS[customerForm.metodo_pago as PaymentMethod] || customerForm.metodo_pago}`);
@@ -193,8 +198,10 @@ const SalesPage = () => {
         estado: "emitido" as any,
         emitido_en: new Date().toISOString(),
         emitido_por: user?.email || "POS",
+        tipo_comprobante: docKind as any,
+        numero_comprobante: numeroComprobante,
         created_by: user?.id || null,
-      }).select("id, ticket_number, created_at").single();
+      } as any).select("id, ticket_number, numero_comprobante, created_at").single();
       if (txErr) throw txErr;
 
       const itemPayload = cart.map(c => ({
