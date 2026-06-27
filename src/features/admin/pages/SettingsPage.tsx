@@ -25,6 +25,8 @@ import {
 } from "@/features/admin/components/PrintReceipt";
 import { FileText } from "lucide-react";
 import ReceiptTemplateManager from "@/features/admin/components/ReceiptTemplateManager";
+import { useSecurityFlags, useSetSecurityFlag } from "@/features/admin/hooks/useSecurityFlags";
+import { ShieldAlert } from "lucide-react";
 
 const THEME_EMOJIS: Record<string, string> = {
   default: "🎮", san_valentin: "❤️", halloween: "🎃", navidad: "🎄",
