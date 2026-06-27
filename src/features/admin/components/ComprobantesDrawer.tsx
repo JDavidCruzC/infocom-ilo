@@ -119,17 +119,19 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
     if (ids.length === 0) { toast.error("No hay comprobantes para descargar"); return; }
     setGenerating(true);
     try {
-      // Load items + company info in batch
-      const { data: items } = await supabase
-        .from("transaction_items")
-        .select("transaction_id, descripcion, cantidad, precio_unitario, subtotal, item_type")
-        .in("transaction_id", ids);
+      // Load items + template + company info in batch
+      const [{ data: items }, template, companyInfo] = await Promise.all([
+        supabase
+          .from("transaction_items")
+          .select("transaction_id, descripcion, cantidad, precio_unitario, subtotal, item_type")
+          .in("transaction_id", ids),
+        loadTemplateFromDb(),
+        loadCompanyInfo(),
+      ]);
       const itemsByTx: Record<string, any[]> = {};
       (items || []).forEach((it: any) => {
         (itemsByTx[it.transaction_id] = itemsByTx[it.transaction_id] || []).push(it);
       });
-
-      const company = { name: "INFOCOM SOLUCIONES" };
 
       const zip = new JSZip();
       const txMap: Record<string, any> = {};
@@ -138,12 +140,12 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
       for (const id of ids) {
         const tx = txMap[id];
         if (!tx) continue;
-        const pdf = buildPdf(tx, itemsByTx[id] || [], company);
+        const pdfBuf = await renderTransactionToPdf(tx, itemsByTx[id] || [], template, companyInfo);
         const kindDef = DOCUMENT_KINDS.find(d => d.value === tx.tipo_comprobante);
         const kindShort = (kindDef?.short || tx.tipo_comprobante || "comp").replace(/[^a-z0-9]/gi, "_");
         const num = (tx.numero_comprobante || tx.ticket_number || tx.id.slice(0,6));
         const fname = `${kindShort}_${num}_${(tx.cliente_nombre || "sin_cliente").replace(/[^a-z0-9]/gi, "_").slice(0,30)}.pdf`;
-        zip.file(fname, pdf.output("arraybuffer"));
+        zip.file(fname, pdfBuf);
       }
 
       const blob = await zip.generateAsync({ type: "blob" });
