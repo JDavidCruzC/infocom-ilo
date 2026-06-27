@@ -47,6 +47,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useSecurityFlags } from "@/features/admin/hooks/useSecurityFlags";
 import DataImportExport from "@/features/admin/components/DataImportExport";
 import PrintReceipt, { DocumentKind, DOCUMENT_KINDS } from "@/features/admin/components/PrintReceipt";
 import { notifyAllStaff } from "@/lib/notifications";
@@ -196,6 +197,8 @@ const RowReceiptActions: React.FC<{ tx: Transaction }> = ({ tx }) => {
 const AccountingPage = () => {
   const qc = useQueryClient();
   const { isAdmin, user } = useAuth();
+  const { data: secFlags } = useSecurityFlags();
+  const canDelete = isAdmin && !!secFlags?.allow_delete_transactions;
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
@@ -1510,7 +1513,7 @@ const AccountingPage = () => {
                               <Button variant="ghost" size="sm" className="h-7 px-3 text-success font-semibold" onClick={() => emitirMutation.mutate(tx.id)} title="Emitir">
                                 <FileText className="h-3 w-3 mr-1" /> Emitir
                               </Button>
-                              {isAdmin && (
+                              {canDelete && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Eliminar borrador?")) deleteMutation.mutate(tx.id); }}>
                                   <Trash2 className="h-3 w-3" />
                                 </Button>

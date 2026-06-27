@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import PrintReceipt from "./PrintReceipt";
 import QuickTransactionDialog from "./QuickTransactionDialog";
+import { useSecurityFlags } from "@/features/admin/hooks/useSecurityFlags";
 
 interface Props {
   open: boolean;
@@ -43,6 +44,8 @@ interface TxRow {
 
 export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCurrentUser = false }: Props) {
   const { user, isAdmin } = useAuth();
+  const { data: secFlags } = useSecurityFlags();
+  const canDelete = isAdmin && !!secFlags?.allow_delete_transactions;
   const qc = useQueryClient();
 
 
@@ -250,7 +253,7 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
                     <Ban className="h-3.5 w-3.5" /> Anular
                   </Button>
                 )}
-                {isAdmin && (
+                {canDelete && (
                   <Button size="sm" variant="outline" className="gap-1.5 h-8 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => remove.mutate(tx.id)}>
                     <Trash2 className="h-3.5 w-3.5" /> Eliminar
                   </Button>
