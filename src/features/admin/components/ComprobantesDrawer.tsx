@@ -12,12 +12,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Pencil, FileText, FolderArchive, Download, Loader2, Receipt, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { DOCUMENT_KINDS, DocumentKind } from "./PrintReceipt";
+import { DOCUMENT_KINDS, DocumentKind, buildA4SaleHtml, loadTemplateFromDb, loadCompanyInfo } from "./PrintReceipt";
 import CustomPrintDialog from "./CustomPrintDialog";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 interface Props {
   isAdmin: boolean;
