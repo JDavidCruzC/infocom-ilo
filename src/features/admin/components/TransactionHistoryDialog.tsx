@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import PrintReceipt from "./PrintReceipt";
 import QuickTransactionDialog from "./QuickTransactionDialog";
+import { useSecurityFlags } from "@/features/admin/hooks/useSecurityFlags";
 
 interface Props {
   open: boolean;
