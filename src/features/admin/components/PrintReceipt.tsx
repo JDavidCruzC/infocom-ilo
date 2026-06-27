@@ -334,7 +334,7 @@ export const SOCIAL_TYPE_OPTIONS: { value: SocialLinkType; label: string }[] = [
   { value: "phone",    label: "Teléfono" },
 ];
 
-const buildSocialChip = (s: SocialLink) => {
+export const buildSocialChip = (s: SocialLink) => {
   const meta = SOCIAL_ICONS_BRAND[s.type];
   if (!meta) return "";
   const bg = SOCIAL_COLORS[s.type];
