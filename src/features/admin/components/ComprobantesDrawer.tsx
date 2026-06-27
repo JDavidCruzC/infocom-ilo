@@ -354,70 +354,86 @@ export default function ComprobantesDrawer({ isAdmin }: Props) {
   );
 }
 
-function buildPdf(tx: any, items: any[], company: any): jsPDF {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const kindDef = DOCUMENT_KINDS.find(d => d.value === tx.tipo_comprobante);
-  const title = (kindDef?.label || "COMPROBANTE").toUpperCase();
-  const num = tx.numero_comprobante || tx.ticket_number || "------";
+/**
+ * Render a transaction to a PDF (ArrayBuffer) using the official A4 layout.
+ * Renders the HTML in a hidden iframe, snapshots it with html2canvas and
+ * paginates into A4 pages with jsPDF.
+ */
+async function renderTransactionToPdf(
+  tx: any,
+  items: any[],
+  template: any,
+  companyInfo: any
+): Promise<ArrayBuffer> {
+  // Resolve doc kind to determine sale vs service title
+  const kind: DocumentKind = (tx.tipo_comprobante || "boleta") as DocumentKind;
+  const isService = kind === "ticket_servicio";
 
-  // Header
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text(String(company.name || "INFOCOM").toUpperCase(), 14, 18);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  let y = 23;
-  if (company.ruc) { doc.text(`RUC: ${company.ruc}`, 14, y); y += 4; }
-  if (company.address) { doc.text(String(company.address), 14, y); y += 4; }
-  if (company.phone) { doc.text(`Tel: ${company.phone}`, 14, y); y += 4; }
+  // Map transaction → order shape consumed by buildA4SaleHtml
+  const order = {
+    items: (items || []).map((it: any) => ({
+      cantidad: it.cantidad,
+      descripcion: it.descripcion,
+      precio_unitario: it.precio_unitario,
+      subtotal: it.subtotal,
+    })),
+    total: tx.total,
+    subtotal_productos: tx.subtotal_productos,
+    subtotal_servicios: tx.subtotal_servicios,
+    numero_comprobante: tx.numero_comprobante,
+    ticket_number: tx.ticket_number,
+    date: tx.fecha ? new Date(tx.fecha).toISOString().split("T")[0] : undefined,
+    created_at: tx.fecha,
+    customer_name: tx.cliente_nombre,
+    customer_phone: tx.cliente_telefono,
+    customer_dni: tx.cliente_dni,
+    seller: tx.emitido_por,
+    emitido_por: tx.emitido_por,
+    responsible: tx.responsable,
+    payment_method: tx.metodo_pago,
+    equipo: tx.equipo,
+  };
 
-  // Title box
-  doc.setDrawColor(0);
-  doc.setLineWidth(0.5);
-  doc.rect(140, 14, 55, 18);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text(title, 167.5, 21, { align: "center" });
-  doc.setFontSize(12);
-  doc.text(`N° ${num}`, 167.5, 28, { align: "center" });
-
-  // Customer info
-  y = Math.max(y, 38);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(9);
-  doc.text("Fecha:", 14, y); doc.setFont("helvetica", "normal");
-  doc.text(new Date(tx.fecha).toLocaleDateString("es-PE"), 30, y);
-  doc.setFont("helvetica", "bold"); doc.text("Cliente:", 80, y); doc.setFont("helvetica", "normal");
-  doc.text(String(tx.cliente_nombre || "—"), 100, y);
-  y += 5;
-  if (tx.cliente_telefono) {
-    doc.setFont("helvetica", "bold"); doc.text("Teléfono:", 14, y); doc.setFont("helvetica", "normal");
-    doc.text(String(tx.cliente_telefono), 30, y);
-    y += 5;
-  }
-
-  // Items table
-  autoTable(doc, {
-    startY: y + 2,
-    head: [["N°", "Cant.", "Descripción", "P. Unit.", "Subtotal"]],
-    body: items.map((it, i) => [
-      String(i + 1),
-      String(it.cantidad),
-      String(it.descripcion || ""),
-      `S/ ${Number(it.precio_unitario).toFixed(2)}`,
-      `S/ ${Number(it.subtotal).toFixed(2)}`,
-    ]),
-    styles: { fontSize: 9, cellPadding: 2 },
-    headStyles: { fillColor: [40, 40, 40], textColor: 255 },
-    columnStyles: { 0: { halign: "center", cellWidth: 10 }, 1: { halign: "center", cellWidth: 15 }, 3: { halign: "right", cellWidth: 28 }, 4: { halign: "right", cellWidth: 30 } },
+  const html = buildA4SaleHtml(order, template, companyInfo, {
+    type: isService ? "service" : "sale",
+    documentKind: kind,
   });
 
-  const endY = (doc as any).lastAutoTable.finalY + 4;
-  doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-  doc.text("TOTAL: S/ " + Number(tx.total || 0).toFixed(2), 195, endY + 4, { align: "right" });
+  // Hidden iframe sized at A4 width
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;visibility:hidden";
+  document.body.appendChild(iframe);
+  try {
+    const doc = iframe.contentDocument!;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    // Wait for layout + images
+    await new Promise<void>((r) => setTimeout(r, 350));
+    const imgs = Array.from(doc.images);
+    await Promise.all(imgs.map(im => im.complete ? Promise.resolve() : new Promise(res => { im.onload = im.onerror = () => res(null); })));
+    await new Promise<void>((r) => setTimeout(r, 100));
 
-  // Footer
-  doc.setFont("helvetica", "italic"); doc.setFontSize(8);
-  doc.text(`© ${new Date().getFullYear()} ${company.name || "INFOCOM"}`, 105, 285, { align: "center" });
-
-  return doc;
+    const target = (doc.querySelector(".a4-container") as HTMLElement) || doc.body;
+    const canvas = await html2canvas(target, { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: target.scrollWidth, windowHeight: target.scrollHeight });
+    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgH = (canvas.height * pageW) / canvas.width;
+    if (imgH <= pageH) {
+      pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
+    } else {
+      let remaining = imgH; let pos = 0;
+      while (remaining > 0) {
+        pdf.addImage(imgData, "JPEG", 0, pos, pageW, imgH);
+        remaining -= pageH; pos -= pageH;
+        if (remaining > 0) pdf.addPage();
+      }
+    }
+    return pdf.output("arraybuffer");
+  } finally {
+    document.body.removeChild(iframe);
+  }
 }
+
