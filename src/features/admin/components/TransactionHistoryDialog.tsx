@@ -237,11 +237,12 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
                 <Button size="sm" variant="outline" className="gap-1.5 h-8 text-blue-600 border-blue-500/30 hover:bg-blue-500/10" onClick={() => startEdit(tx)}>
                   <Pencil className="h-3.5 w-3.5" /> Editar
                 </Button>
-                <div className="scale-90 origin-left">
+                <div className="inline-flex">
                   <PrintReceipt
                     order={toPrintOrder(tx) as any}
                     type={tx.tipo_general === "servicio" ? "service" : "sale"}
                     defaultDocumentKind={(tx.tipo_comprobante as any) || undefined}
+                    compact
                   />
                 </div>
                 <Button size="sm" variant="outline" className="gap-1.5 h-8 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10" onClick={() => shareWhatsApp(tx)}>
