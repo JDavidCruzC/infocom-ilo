@@ -720,6 +720,44 @@ const SettingsPage = () => {
 
         {/* ─── SISTEMA ─── */}
         <TabsContent value="sistema" className="space-y-6 mt-4">
+          <Card className="border-amber-500/40 bg-amber-500/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-amber-500" /> Seguridad y permisos sensibles
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Acciones críticas que pueden afectar la integridad de la información. Permanecen ocultas por defecto.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start justify-between gap-4 p-3 rounded-lg border border-border bg-background">
+                <div className="space-y-1">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    🗑️ Permitir eliminar transacciones definitivamente
+                  </Label>
+                  <p className="text-xs text-muted-foreground max-w-xl">
+                    Cuando está desactivado, el botón <span className="font-semibold">Eliminar</span> no aparece en
+                    Punto de Venta ni en Contabilidad — solo se puede <span className="font-semibold">Anular</span>.
+                    Actívalo solo si necesitas borrar registros por error de captura. Solo administradores ven el botón.
+                  </p>
+                </div>
+                <Switch
+                  checked={!!secFlags?.allow_delete_transactions}
+                  onCheckedChange={(v) =>
+                    setSecurityFlag.mutate(
+                      { allow_delete_transactions: v },
+                      {
+                        onSuccess: () =>
+                          toast.success(v ? "Eliminar habilitado para administradores" : "Eliminar oculto del sistema"),
+                        onError: (e: any) => toast.error("Error: " + e.message),
+                      }
+                    )
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-primary/10">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2"><Database className="h-5 w-5 text-primary" /> Backup del Sistema</CardTitle>
