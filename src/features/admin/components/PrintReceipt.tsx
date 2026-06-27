@@ -1380,3 +1380,221 @@ ${bodyContent}
 };
 
 export default PrintReceipt;
+
+/**
+ * Build the full A4 sale/service HTML document (same layout used when printing
+ * from PrintReceipt). Used by mass-download (ZIP) so every PDF matches the
+ * official INFOCOM A4 design.
+ */
+export const buildA4SaleHtml = (
+  order: any,
+  template: ReceiptTemplate,
+  companyInfo: CompanyReceiptInfo,
+  opts?: { type?: "sale" | "service"; documentKind?: DocumentKind }
+): string => {
+  const t = template;
+  const type = opts?.type || "sale";
+  const docKind = opts?.documentKind;
+
+  const resolvedDocTitle = (() => {
+    if (docKind) {
+      const def = DOCUMENT_KINDS.find(d => d.value === docKind);
+      if (def && t[def.templateKey]) return t[def.templateKey] as string;
+    }
+    if (type === "service") return t.serviceTitle;
+    return t.saleTitle;
+  })();
+
+  const ticketType = resolvedDocTitle;
+  const ticketNum = order.numero_comprobante || order.ticket_number || "------";
+  const hora = order.created_at
+    ? new Date(order.created_at).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true })
+    : new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+  const officialLogo = `${window.location.origin}${logoReceipt}`;
+  const a4Header = t.headerMode === "logo" && t.logoUrl
+    ? `<img src="${t.logoUrl}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`
+    : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`;
+
+  const totalFinal = Number(order.total || order.price || 0);
+  const isSale = type === "sale";
+  const montoLetras = numeroALetrasSoles(Number(totalFinal));
+
+  const buildItemsRows = () => {
+    const items = order.items || [];
+    if (items.length > 0) {
+      return items.map((it: any, i: number) =>
+        `<tr><td class="tc">${i + 1}</td><td class="tc">${it.cantidad}</td><td>${String(it.descripcion).toUpperCase()}</td><td class="tr">S/. ${Number(it.precio_unitario).toFixed(2)}</td><td class="tr">S/. ${Number(it.subtotal).toFixed(2)}</td></tr>`
+      ).join("");
+    }
+    return `<tr><td class="tc">1</td><td class="tc">${order.quantity || 1}</td><td>${String(order.product_description || order.description || "").toUpperCase()}</td><td class="tr">S/. ${Number(order.unit_price || order.price || 0).toFixed(2)}</td><td class="tr">S/. ${Number(order.total || order.price || 0).toFixed(2)}</td></tr>`;
+  };
+
+  const socialList: SocialLink[] = (companyInfo.saleFooterSocials && companyInfo.saleFooterSocials.length > 0)
+    ? companyInfo.saleFooterSocials
+    : [
+        ...(companyInfo.telefono ? [{ type: "whatsapp" as SocialLinkType, value: companyInfo.telefono }] : []),
+        { type: "facebook" as SocialLinkType, value: "Infocom Ilo" },
+        ...(companyInfo.saleFooterSocial ? [{ type: "tiktok" as SocialLinkType, value: companyInfo.saleFooterSocial }] : []),
+      ];
+  const showSocials = companyInfo.saleFooterShowSocial !== false && socialList.length > 0;
+  const showWaves = companyInfo.saleFooterShowWaves !== false;
+  const showSon = companyInfo.saleFooterShowSon !== false;
+  const showSonIcon = companyInfo.saleFooterShowSonIcon !== false;
+  const showFieldIcons = companyInfo.saleFooterShowFieldIcons !== false;
+  const tagline = companyInfo.saleFooterTagline || "Síganos en nuestras redes y entérate de nuestras promociones";
+  const showTagline = companyInfo.saleFooterShowTagline !== false && tagline.trim().length > 0;
+  const fIcon = (key: keyof typeof RECEIPT_ICONS) => showFieldIcons ? `<span class="a4-ico">${RECEIPT_ICONS[key]}</span>` : "";
+
+  const total = Number(totalFinal) || 0;
+  const sub = total / 1.18;
+  const igv = total - sub;
+  const sonBlock = showSon ? `<div class="a4-letras">
+      ${showSonIcon ? `<span class="a4-letras-ico">${RECEIPT_ICONS.son}</span>` : ""}
+      <span class="a4-letras-label">SON:</span>
+      <span class="a4-letras-text">${montoLetras.charAt(0) + montoLetras.slice(1).toLowerCase()}.</span>
+    </div>` : `<div></div>`;
+
+  const bodyContent = `
+<div class="a4-container">
+  <div class="a4-header">
+    <div class="a4-company">
+      ${a4Header}
+      <div class="a4-meta">
+        <div class="a4-meta-row">
+          <div><b>R.U.C.:</b> ${companyInfo.ruc}</div>
+          <div><b>Tel.:</b> ${companyInfo.telefono}</div>
+        </div>
+        <div class="a4-meta-row">
+          <div><b>${companyInfo.ciudad.toUpperCase().replace(/\s*-\s*PER[ÚU]\s*$/i, "")} - PERÚ</b></div>
+          <div><b>DIRECCIÓN:</b> ${companyInfo.direccion}</div>
+        </div>
+      </div>
+    </div>
+    <div class="a4-doc-type">
+      <div class="doc-title">${ticketType}</div>
+      <div class="doc-sep"></div>
+      <div class="doc-num">N° ${String(ticketNum).padStart(6, "0")}</div>
+    </div>
+  </div>
+  <div class="a4-separator"></div>
+  <div class="a4-info-grid">
+    <div class="a4-info-left">
+      <div class="a4-field">${fIcon("calendar")}<span class="a4-label">Fecha de Emisión:</span><span>${order.date || new Date().toISOString().split("T")[0]}</span></div>
+      <div class="a4-field">${fIcon("clock")}<span class="a4-label">Hora:</span><span>${hora}</span></div>
+      ${isSale && (order.seller || order.emitido_por) ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Vendedor:</span><span>${String(order.seller || order.emitido_por).toUpperCase()}</span></div>` : ""}
+      ${!isSale && order.responsible ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Responsable:</span><span>${String(order.responsible).toUpperCase()}</span></div>` : ""}
+      ${order.payment_method ? `<div class="a4-field">${fIcon("wallet")}<span class="a4-label">Condición de Pago:</span><span>${String(order.payment_method).toUpperCase()}</span></div>` : ""}
+    </div>
+    <div class="a4-info-right">
+      ${order.customer_name ? `<div class="a4-field">${fIcon("user")}<span class="a4-label">Cliente:</span><span>${order.customer_name}</span></div>` : ""}
+      ${order.customer_dni ? `<div class="a4-field">${fIcon("badge")}<span class="a4-label">D.N.I.:</span><span>${order.customer_dni}</span></div>` : ""}
+      ${order.customer_phone ? `<div class="a4-field">${fIcon("phone")}<span class="a4-label">Teléfono:</span><span>${order.customer_phone}</span></div>` : ""}
+      ${order.equipo || order.device_type ? `<div class="a4-field">${fIcon("device")}<span class="a4-label">Equipo:</span><span>${String(order.equipo || order.device_type).toUpperCase()}</span></div>` : ""}
+    </div>
+  </div>
+  <table class="a4-items">
+    <thead><tr><th style="width:6%">N°</th><th style="width:8%">Cant.</th><th style="width:54%">DESCRIPCIÓN</th><th style="width:16%">P. Unitario</th><th style="width:16%">Total</th></tr></thead>
+    <tbody>${buildItemsRows()}</tbody>
+  </table>
+  <div class="a4-totals-row">
+    <div class="a4-totals-left">${sonBlock}</div>
+    <div class="a4-totals">
+      <div class="a4-total-row"><span>Precio subtotal:</span><span>S/. ${sub.toFixed(2)}</span></div>
+      <div class="a4-total-row"><span>IGV</span><span>S/. ${igv.toFixed(2)}</span></div>
+      <div class="a4-total-row a4-total-final"><span>IMPORTE TOTAL S/</span><span>S/. ${total.toFixed(2)}</span></div>
+    </div>
+  </div>
+  <div class="a4-bottom">
+    <div class="a4-promo">
+      <div class="a4-promo-text">Si deseas conocer más sobre nuestra variedad<br>de productos hazlo ingresando a:</div>
+      <div class="a4-promo-link-wrap">
+        <span class="a4-promo-ico">${RECEIPT_ICONS.web}</span>
+        <a class="a4-promo-link" href="https://${companyInfo.web}" target="_blank">${companyInfo.web}</a>
+      </div>
+    </div>
+    <div class="a4-thanks" style="${companyInfo.saleFooterTitleFontSize ? `--thanks-title-size:${companyInfo.saleFooterTitleFontSize}px;` : ""}${companyInfo.saleFooterMessageFontSize ? `--thanks-msg-size:${companyInfo.saleFooterMessageFontSize}px;` : ""}">
+      <div class="a4-thanks-title">${companyInfo.saleFooterTitle || "¡Gracias por su compra!"}</div>
+      <div class="a4-thanks-msg">${(companyInfo.saleFooterMessage || "").replace(/\n/g, "<br>")}</div>
+    </div>
+    ${showSocials ? `<div class="a4-socials">${socialList.map(buildSocialChip).join('<span class="soc-sep">|</span>')}</div>` : ""}
+    ${showTagline ? `<div class="a4-tagline" style="color:${companyInfo.saleFooterTaglineColor || "#0d0d0d"}"><span class="tag-deco left" style="color:inherit">❮</span><i>${tagline}</i><span class="tag-deco right" style="color:inherit">❯</span></div>` : ""}
+    ${showWaves ? `
+    <div class="a4-waves">
+      <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+        <path d="M0,40 C200,110 400,0 600,50 C800,100 1000,20 1200,60 L1200,120 L0,120 Z" fill="#9BD49B" opacity="0.55"/>
+        <path d="M0,70 C220,30 420,110 640,70 C860,30 1020,90 1200,50 L1200,120 L0,120 Z" fill="#2E8B57" opacity="0.85"/>
+        <path d="M0,90 C240,60 460,120 700,95 C920,70 1080,110 1200,80 L1200,120 L0,120 Z" fill="#0d0d0d"/>
+      </svg>
+    </div>` : ""}
+    <div class="a4-footer">
+      <p>${buildCopyright(companyInfo)}</p>
+    </div>
+  </div>
+</div>`;
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title> </title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  *,*::before,*::after{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  .a4-container{width:210mm;min-height:297mm;margin:0 auto;border:1px solid #d4e8d4;border-radius:8px;padding:14mm 12mm;display:flex;flex-direction:column;background:#fff}
+  .a4-bottom{margin-top:auto}
+  .a4-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:6px;flex-wrap:nowrap}
+  .a4-company{flex:1 1 auto;min-width:0}
+  .a4-meta{font-size:12px;line-height:1.7;margin-top:6px;color:#0d0d0d;white-space:nowrap}
+  .a4-meta b{font-weight:700}
+  .a4-meta-row{display:flex;gap:28px;align-items:start;flex-wrap:nowrap;white-space:nowrap}
+  .a4-meta-row > div{white-space:nowrap}
+  .a4-doc-type{border:2px solid #2E8B57;border-radius:10px;padding:12px 18px;text-align:center;min-width:220px;background:#fff;flex:0 0 auto}
+  .doc-title{font-size:20px;font-weight:900;letter-spacing:1px;color:#2E8B57;text-transform:uppercase}
+  .doc-sep{height:2px;background:#2E8B57;margin:6px auto;width:60%;border-radius:2px;position:relative}
+  .doc-sep:after{content:"";position:absolute;left:50%;top:-3px;width:8px;height:8px;background:#2E8B57;border-radius:50%;transform:translateX(-50%)}
+  .doc-num{font-size:18px;font-weight:700;margin-top:4px;color:#0d0d0d}
+  .a4-separator{border-top:2px solid #2E8B57;margin:14px 0 18px}
+  .a4-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:18px}
+  .a4-info-left,.a4-info-right{min-width:0}
+  .a4-field{display:grid;grid-template-columns:20px 150px 1fr;align-items:center;gap:8px;margin:8px 0;font-size:13px;white-space:nowrap}
+  .a4-field .a4-ico{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0;color:#2E8B57}
+  .a4-field .a4-ico + .a4-label{grid-column:2}
+  .a4-field:not(:has(.a4-ico)) .a4-label{grid-column:1 / span 2}
+  .a4-label{font-weight:800;white-space:nowrap;color:#0d0d0d}
+  .a4-items{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
+  .a4-items th{background:#2E8B57 !important;border:1px solid #2E8B57;padding:9px 10px;font-weight:800;text-align:left;color:#ffffff !important;text-transform:uppercase;letter-spacing:.3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .a4-items td{border:1px solid #D9EAD9;padding:7px 10px;vertical-align:top}
+  .a4-items .tc{text-align:center}
+  .a4-items .tr{text-align:right;white-space:nowrap}
+  .a4-totals-row{display:flex;gap:24px;align-items:flex-start;margin-top:14px}
+  .a4-totals-left{flex:1;display:flex;align-items:center}
+  .a4-totals{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:300px}
+  .a4-total-row{display:flex;gap:16px;font-size:13px;min-width:300px;justify-content:space-between}
+  .a4-total-final{font-weight:900;font-size:22px;padding-top:10px;margin-top:8px;color:#2E8B57;border-top:1px solid #D9EAD9}
+  .a4-total-final span:first-child{color:#0d0d0d;letter-spacing:1px;font-size:20px}
+  .a4-letras{width:100%;margin:0;padding:14px 22px;border:1.5px solid #B7DCC0;border-radius:30px;display:flex;gap:12px;align-items:center;font-size:13px;background:#F4FAF5}
+  .a4-letras-ico{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#E6F4EA;flex-shrink:0}
+  .a4-letras-label{color:#2E8B57;font-weight:900;letter-spacing:1px}
+  .a4-letras-text{font-style:italic}
+  .a4-promo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;margin:22px 0 18px;font-size:12px;line-height:1.55}
+  .a4-promo-text{color:#0d0d0d}
+  .a4-promo-link-wrap{display:inline-flex;align-items:center;gap:8px}
+  .a4-promo-ico{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#E6F4EA;flex-shrink:0}
+  .a4-promo-link{color:#2E8B57;font-weight:700;text-decoration:underline}
+  .a4-thanks{text-align:center;margin:18px 0 14px;padding-top:14px;border-top:1px solid #D9EAD9}
+  .a4-thanks-title{font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:var(--thanks-title-size,26px);color:#2E8B57;font-weight:700}
+  .a4-thanks-msg{margin-top:8px;font-size:var(--thanks-msg-size,11.5px);line-height:1.7;color:#333;white-space:pre-line}
+  .a4-socials{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:18px;font-size:12.5px;font-weight:600;flex-wrap:wrap}
+  .a4-socials .soc-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #eef2ee}
+  .a4-socials .soc-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%}
+  .a4-socials .soc-text{color:#0d0d0d}
+  .a4-socials .soc-sep{color:#cfd8cf;font-weight:400}
+  .a4-tagline{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;margin-top:14px;font-size:13px;color:#2E8B57;font-style:italic}
+  .a4-tagline .tag-deco{color:#2E8B57;font-weight:700;transform:scaleY(1.6);display:inline-block}
+  .a4-waves{position:relative;margin:24px -32px -28px;height:90px;overflow:hidden}
+  .a4-waves svg{position:absolute;bottom:0;left:0;width:100%;height:100%;display:block}
+  .a4-footer{text-align:center;margin-top:12px;font-size:10px;color:#888;padding-top:10px;position:relative;z-index:2}
+</style></head><body>
+${bodyContent}
+</body></html>`;
+};
+
