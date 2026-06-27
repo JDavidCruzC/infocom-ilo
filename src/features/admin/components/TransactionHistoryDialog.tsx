@@ -237,14 +237,11 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
                 <Button size="sm" variant="outline" className="gap-1.5 h-8 text-blue-600 border-blue-500/30 hover:bg-blue-500/10" onClick={() => startEdit(tx)}>
                   <Pencil className="h-3.5 w-3.5" /> Editar
                 </Button>
-                <div className="inline-flex">
-                  <PrintReceipt
-                    order={toPrintOrder(tx) as any}
-                    type={tx.tipo_general === "servicio" ? "service" : "sale"}
-                    defaultDocumentKind={(tx.tipo_comprobante as any) || undefined}
-                    compact
-                  />
-                </div>
+                <PrintReceipt
+                  order={toPrintOrder(tx) as any}
+                  type={tx.tipo_general === "servicio" ? "service" : "sale"}
+                  defaultDocumentKind={(tx.tipo_comprobante as any) || undefined}
+                />
                 <Button size="sm" variant="outline" className="gap-1.5 h-8 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10" onClick={() => shareWhatsApp(tx)}>
                   <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </Button>
@@ -302,7 +299,6 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
                     order={toPrintOrder(viewing) as any}
                     type={viewing.tipo_general === "servicio" ? "service" : "sale"}
                     defaultDocumentKind={(viewing.tipo_comprobante as any) || undefined}
-                    compact
                   />
                   <Button size="sm" variant="outline" className="gap-1.5 text-emerald-600 border-emerald-500/30" onClick={() => shareWhatsApp(viewing)}>
                     <MessageCircle className="h-4 w-4" /> Enviar por WhatsApp
