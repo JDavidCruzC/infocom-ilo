@@ -751,6 +751,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     <div class="a4-total-row"><span>Vuelto:</span><span>S/. ${(Number(order.amount_given) - totalFinal).toFixed(2)}</span></div>
   </div>` : ""}
 
+  <div class="a4-bottom">
   <div class="a4-promo">
     <div class="a4-promo-text">Si deseas conocer más sobre nuestra variedad<br>de productos hazlo ingresando a:</div>
     <div class="a4-promo-link-wrap">
@@ -780,7 +781,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   <div class="a4-footer">
     <p>${buildCopyright(companyInfo)}</p>
   </div>
+  </div>
 </div>`;
+
       }
 
 
@@ -791,7 +794,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff}
-  .a4-container{max-width:780px;margin:0 auto;border:1px solid #d4e8d4;border-radius:8px;padding:28px 32px}
+  .a4-container{max-width:780px;margin:0 auto;border:1px solid #d4e8d4;border-radius:8px;padding:28px 32px;min-height:calc(100vh - 40px);display:flex;flex-direction:column}
+  .a4-bottom{margin-top:auto}
+
   .a4-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:6px;flex-wrap:nowrap}
   .a4-company{flex:1 1 auto;min-width:0}
   .a4-meta{font-size:12px;line-height:1.7;margin-top:6px;color:#0d0d0d;white-space:nowrap}
@@ -847,7 +852,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   .a4-waves svg{position:absolute;bottom:0;left:0;width:100%;height:100%;display:block}
   .a4-footer{text-align:center;margin-top:12px;font-size:10px;color:#888;padding-top:10px;position:relative;z-index:2}
   @page{size:A4;margin:0}
-  @media print{body{padding:14mm 12mm}.a4-container{border:none;padding:0}.a4-waves{margin-left:0;margin-right:0}}
+  @media print{body{padding:14mm 12mm}.a4-container{border:none;padding:0;min-height:calc(297mm - 28mm)}.a4-waves{margin-left:0;margin-right:0}.a4-bottom{break-inside:avoid;page-break-inside:avoid}}
 </style></head><body>
 ${bodyContent}
 </body></html>`;
