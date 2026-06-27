@@ -793,7 +793,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
 
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  *,*::before,*::after{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+
   .a4-container{width:210mm;min-height:297mm;margin:0 auto;border:1px solid #d4e8d4;border-radius:8px;padding:14mm 12mm;display:flex;flex-direction:column;background:#fff}
   .a4-bottom{margin-top:auto}
 
@@ -818,7 +820,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   .a4-field:not(:has(.a4-ico)) .a4-label{grid-column:1 / span 2}
   .a4-label{font-weight:800;white-space:nowrap;color:#0d0d0d}
   .a4-items{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
-  .a4-items th{background:#2E8B57;border:1px solid #2E8B57;padding:9px 10px;font-weight:800;text-align:left;color:#ffffff;text-transform:uppercase;letter-spacing:.3px}
+  .a4-items th{background:#2E8B57 !important;border:1px solid #2E8B57;padding:9px 10px;font-weight:800;text-align:left;color:#ffffff !important;text-transform:uppercase;letter-spacing:.3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .a4-items td{border:1px solid #D9EAD9;padding:7px 10px;vertical-align:top}
   .a4-items .tc{text-align:center}
   .a4-items .tr{text-align:right;white-space:nowrap}
