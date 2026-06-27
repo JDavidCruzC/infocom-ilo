@@ -253,7 +253,7 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
                     <Ban className="h-3.5 w-3.5" /> Anular
                   </Button>
                 )}
-                {isAdmin && (
+                {canDelete && (
                   <Button size="sm" variant="outline" className="gap-1.5 h-8 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => remove.mutate(tx.id)}>
                     <Trash2 className="h-3.5 w-3.5" /> Eliminar
                   </Button>
