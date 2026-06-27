@@ -853,7 +853,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   .a4-waves svg{position:absolute;bottom:0;left:0;width:100%;height:100%;display:block}
   .a4-footer{text-align:center;margin-top:12px;font-size:10px;color:#888;padding-top:10px;position:relative;z-index:2}
   @page{size:A4;margin:0}
-  @media print{body{padding:14mm 12mm}.a4-container{border:none;padding:0;min-height:calc(297mm - 28mm)}.a4-waves{margin-left:0;margin-right:0}.a4-bottom{break-inside:avoid;page-break-inside:avoid}}
+  @media print{html,body{width:210mm}body{padding:0;margin:0}.a4-container{border:none;border-radius:0;box-shadow:none;width:210mm;min-height:297mm;padding:14mm 12mm}.a4-waves{margin-left:-12mm;margin-right:-12mm;margin-bottom:-14mm}.a4-bottom{break-inside:avoid;page-break-inside:avoid}}
 </style></head><body>
 ${bodyContent}
 </body></html>`;
