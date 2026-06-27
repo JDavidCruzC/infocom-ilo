@@ -53,6 +53,8 @@ const SettingsPage = () => {
   const [saving, setSaving] = useState(false);
   const [template, setTemplate] = useState<ReceiptTemplate>(DEFAULT_TEMPLATE);
   const [savingTpl, setSavingTpl] = useState(false);
+  const { data: secFlags } = useSecurityFlags();
+  const setSecurityFlag = useSetSecurityFlag();
 
   useEffect(() => {
     loadTemplateFromDb().then(setTemplate);
