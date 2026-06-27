@@ -820,7 +820,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   .a4-field:not(:has(.a4-ico)) .a4-label{grid-column:1 / span 2}
   .a4-label{font-weight:800;white-space:nowrap;color:#0d0d0d}
   .a4-items{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
-  .a4-items th{background:#2E8B57;border:1px solid #2E8B57;padding:9px 10px;font-weight:800;text-align:left;color:#ffffff;text-transform:uppercase;letter-spacing:.3px}
+  .a4-items th{background:#2E8B57 !important;border:1px solid #2E8B57;padding:9px 10px;font-weight:800;text-align:left;color:#ffffff !important;text-transform:uppercase;letter-spacing:.3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .a4-items td{border:1px solid #D9EAD9;padding:7px 10px;vertical-align:top}
   .a4-items .tc{text-align:center}
   .a4-items .tr{text-align:right;white-space:nowrap}
