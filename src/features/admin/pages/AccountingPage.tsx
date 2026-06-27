@@ -47,6 +47,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useSecurityFlags } from "@/features/admin/hooks/useSecurityFlags";
 import DataImportExport from "@/features/admin/components/DataImportExport";
 import PrintReceipt, { DocumentKind, DOCUMENT_KINDS } from "@/features/admin/components/PrintReceipt";
 import { notifyAllStaff } from "@/lib/notifications";
