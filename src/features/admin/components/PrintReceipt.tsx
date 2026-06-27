@@ -751,6 +751,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     <div class="a4-total-row"><span>Vuelto:</span><span>S/. ${(Number(order.amount_given) - totalFinal).toFixed(2)}</span></div>
   </div>` : ""}
 
+  <div class="a4-bottom">
   <div class="a4-promo">
     <div class="a4-promo-text">Si deseas conocer más sobre nuestra variedad<br>de productos hazlo ingresando a:</div>
     <div class="a4-promo-link-wrap">
@@ -780,7 +781,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   <div class="a4-footer">
     <p>${buildCopyright(companyInfo)}</p>
   </div>
+  </div>
 </div>`;
+
       }
 
 
