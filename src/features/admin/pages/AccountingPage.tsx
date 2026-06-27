@@ -196,6 +196,8 @@ const RowReceiptActions: React.FC<{ tx: Transaction }> = ({ tx }) => {
 const AccountingPage = () => {
   const qc = useQueryClient();
   const { isAdmin, user } = useAuth();
+  const { data: secFlags } = useSecurityFlags();
+  const canDelete = isAdmin && !!secFlags?.allow_delete_transactions;
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
