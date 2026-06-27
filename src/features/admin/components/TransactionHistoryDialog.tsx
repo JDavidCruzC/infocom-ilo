@@ -36,6 +36,7 @@ interface TxRow {
   tipo_general: string | null;
   tipo_comprobante: string | null;
   numero_comprobante: string | null;
+  ticket_number: string | null;
   emitido_por: string | null;
   notas: string | null;
   created_by: string | null;
@@ -131,7 +132,8 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
   const shareWhatsApp = (tx: TxRow) => {
     const lines: string[] = [];
     lines.push(`*Comprobante INFOCOM*`);
-    if (tx.numero_comprobante) lines.push(`N° ${tx.numero_comprobante}`);
+    const displayNumber = tx.numero_comprobante || tx.ticket_number;
+    if (displayNumber) lines.push(`N° ${displayNumber}`);
     lines.push(`Fecha: ${tx.fecha}`);
     if (tx.cliente_nombre) lines.push(`Cliente: ${tx.cliente_nombre}`);
     lines.push("");
@@ -159,8 +161,8 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
     id: tx.id,
     created_at: tx.created_at,
     date: tx.fecha,
-    numero_comprobante: tx.numero_comprobante,
-    ticket_number: tx.numero_comprobante,
+    numero_comprobante: tx.numero_comprobante || tx.ticket_number,
+    ticket_number: tx.ticket_number || tx.numero_comprobante,
     customer_name: tx.cliente_nombre || "",
     customer_phone: tx.cliente_telefono || "",
     seller: tx.emitido_por || "Admin",
@@ -222,7 +224,7 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="font-mono font-bold text-primary">{tx.numero_comprobante || "—"}</span>
+                    <span className="font-mono font-bold text-primary">{tx.numero_comprobante || tx.ticket_number || "—"}</span>
                     {stateBadge(tx.estado)}
                     {tx.tipo_general && <Badge variant="outline" className="capitalize text-[10px]">{tx.tipo_general}</Badge>}
                   </div>
@@ -274,7 +276,7 @@ export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCu
             {viewing && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-muted-foreground">N°:</span> <span className="font-mono font-bold">{viewing.numero_comprobante || "—"}</span></div>
+                  <div><span className="text-muted-foreground">N°:</span> <span className="font-mono font-bold">{viewing.numero_comprobante || viewing.ticket_number || "—"}</span></div>
                   <div><span className="text-muted-foreground">Estado:</span> {stateBadge(viewing.estado)}</div>
                   <div><span className="text-muted-foreground">Fecha:</span> {viewing.fecha}</div>
                   <div><span className="text-muted-foreground">Tipo:</span> <span className="capitalize">{viewing.tipo_general}</span></div>
