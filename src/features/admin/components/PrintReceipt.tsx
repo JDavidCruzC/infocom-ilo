@@ -793,7 +793,9 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
 
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#0d0d0d;padding:20px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  *,*::before,*::after{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+
   .a4-container{width:210mm;min-height:297mm;margin:0 auto;border:1px solid #d4e8d4;border-radius:8px;padding:14mm 12mm;display:flex;flex-direction:column;background:#fff}
   .a4-bottom{margin-top:auto}
 
