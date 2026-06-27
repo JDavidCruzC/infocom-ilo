@@ -70,7 +70,7 @@ const SalesPage = () => {
     onRestore: (v: any) => v && setCustomerForm((prev) => ({ ...prev, ...v })),
   });
 
-  const [lastSale, setLastSale] = useState<{ items: CartItem[]; customer: typeof customerForm; total: number; date: string; saleType: SaleType; change: number; ticket_number?: string; created_at?: string } | null>(null);
+  const [lastSale, setLastSale] = useState<{ items: CartItem[]; customer: typeof customerForm; total: number; date: string; saleType: SaleType; change: number; ticket_number?: string; numero_comprobante?: string | null; created_at?: string } | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
 
   const { data: products = [] } = useQuery({
