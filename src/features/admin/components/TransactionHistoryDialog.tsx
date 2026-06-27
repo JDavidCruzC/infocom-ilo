@@ -44,6 +44,8 @@ interface TxRow {
 
 export default function TransactionHistoryDialog({ open, onOpenChange, scopeToCurrentUser = false }: Props) {
   const { user, isAdmin } = useAuth();
+  const { data: secFlags } = useSecurityFlags();
+  const canDelete = isAdmin && !!secFlags?.allow_delete_transactions;
   const qc = useQueryClient();
 
 
