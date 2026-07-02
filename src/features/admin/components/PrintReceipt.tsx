@@ -75,6 +75,14 @@ export interface ReceiptTemplate {
   footerText: string;
   headerMode: "text" | "logo";
   logoUrl: string;
+  /** Logo específico para boletera térmica (58/80mm). Fallback: logoUrl */
+  logoUrlTicket?: string;
+  /** Logo específico para A4. Fallback: logoUrl */
+  logoUrlA4?: string;
+  /** Altura máx (px) del logo en boletera térmica */
+  logoSizeTicket?: number;
+  /** Altura máx (px) del logo en A4 */
+  logoSizeA4?: number;
   receptionTitle: string;
   receptionSectionClient: string;
   receptionSectionDevice: string;
@@ -120,6 +128,10 @@ export const DEFAULT_TEMPLATE: ReceiptTemplate = {
   companySubtitle: "ESPECIALISTAS EN TECNOLOGIA\nSoporte Tecnico Especializado",
   headerMode: "text",
   logoUrl: "",
+  logoUrlTicket: "",
+  logoUrlA4: "",
+  logoSizeTicket: 60,
+  logoSizeA4: 70,
   footerText: "Gracias por confiar en INFOCOM\nConserve este ticket para recoger su equipo",
   receptionTitle: "TICKET DE RECEPCION",
   receptionSectionClient: "DATOS DEL CLIENTE",
@@ -384,8 +396,10 @@ export const SALE_FOOTER_TEXT = buildSaleFooter(DEFAULT_COMPANY_INFO);
 export const buildHeaderHtml = (t: ReceiptTemplate, includeCompanyInfo = false, ci?: CompanyReceiptInfo) => {
   const info = ci || getCachedCompanyInfo();
   const companyBlock = includeCompanyInfo ? `<div class="company-info">${buildCompanyInfoBlock(info)}</div>` : "";
-  if (t.headerMode === "logo" && t.logoUrl) {
-    return `<div class="center"><img src="${t.logoUrl}" alt="Logo" style="max-width:80%;max-height:60px;margin:0 auto 4px;display:block" />${companyBlock}<div class="subtitle">${t.companySubtitle.replace(/\n/g, "<br>")}</div></div>`;
+  const ticketLogo = t.logoUrlTicket || t.logoUrl;
+  if (t.headerMode === "logo" && ticketLogo) {
+    const maxH = t.logoSizeTicket ?? 60;
+    return `<div class="center"><img src="${ticketLogo}" alt="Logo" style="max-width:95%;max-height:${maxH}px;margin:0 auto 4px;display:block" />${companyBlock}<div class="subtitle">${t.companySubtitle.replace(/\n/g, "<br>")}</div></div>`;
   }
   return `<div class="center"><div class="title">${t.companyName}</div>${companyBlock}<div class="subtitle">${t.companySubtitle.replace(/\n/g, "<br>")}</div></div>`;
 };
@@ -410,6 +424,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   const [dbLoaded, setDbLoaded] = useState(false);
   const [companyInfo, setCompanyInfo] = useState<CompanyReceiptInfo>(DEFAULT_COMPANY_INFO);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefA4 = useRef<HTMLInputElement>(null);
 
   // Load from DB on mount
   useEffect(() => {
@@ -422,7 +437,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     }
   }, [dbLoaded]);
 
-  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadLogo = (target: "ticket" | "a4" | "both" = "both") => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -432,17 +447,22 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "png";
-      const path = `logo-${Date.now()}.${ext}`;
+      const path = `logo-${target}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("receipt-assets").upload(path, file, { upsert: true });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from("receipt-assets").getPublicUrl(path);
-      updateTemplate({ logoUrl: urlData.publicUrl, headerMode: "logo" });
+      const patch: Partial<ReceiptTemplate> = { headerMode: "logo" };
+      if (target === "ticket" || target === "both") patch.logoUrlTicket = urlData.publicUrl;
+      if (target === "a4" || target === "both") patch.logoUrlA4 = urlData.publicUrl;
+      if (target === "both") patch.logoUrl = urlData.publicUrl;
+      updateTemplate(patch);
       toast.success("Logo subido correctamente");
     } catch (err: any) {
       toast.error("Error al subir logo: " + err.message);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInputRefA4.current) fileInputRefA4.current.value = "";
     }
   };
 
@@ -592,8 +612,10 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     if (isA4) {
       if (type === "reception") {
         // ─── A4 RECEPTION FORMAT ───
-        const a4Header = t.headerMode === "logo" && t.logoUrl
-          ? `<img src="${t.logoUrl}" alt="Logo" style="max-height:60px;margin-bottom:4px" />`
+        const a4LogoUrl = t.logoUrlA4 || t.logoUrl;
+        const a4LogoH = t.logoSizeA4 ?? 60;
+        const a4Header = t.headerMode === "logo" && a4LogoUrl
+          ? `<img src="${a4LogoUrl}" alt="Logo" style="max-height:${a4LogoH}px;margin-bottom:4px" />`
           : `<div style="font-size:20px;font-weight:900;letter-spacing:2px">${t.companyName}</div>`;
 
         bodyContent = `
@@ -655,9 +677,11 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
           : new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
 
         const officialLogo = `${window.location.origin}${logoReceipt}`;
-        const a4Header = t.headerMode === "logo" && t.logoUrl
-          ? `<img src="${t.logoUrl}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`
-          : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`;
+        const a4LogoUrl2 = t.logoUrlA4 || t.logoUrl;
+        const a4LogoH2 = t.logoSizeA4 ?? 70;
+        const a4Header = t.headerMode === "logo" && a4LogoUrl2
+          ? `<img src="${a4LogoUrl2}" alt="INFOCOM" style="max-height:${a4LogoH2}px;margin-bottom:4px" />`
+          : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:${a4LogoH2}px;margin-bottom:4px" />`;
 
         const isSale = type === "sale";
         const montoLetras = numeroALetrasSoles(Number(totalFinal));
@@ -1237,41 +1261,73 @@ ${bodyContent}
                   </Label>
                 </div>
                 {template.headerMode === "logo" && (
-                  <div className="ml-8 space-y-3 border-l-2 border-primary/30 pl-3">
-                    {template.logoUrl && (
-                      <div className="p-3 bg-secondary/30 rounded-lg text-center">
-                        <img src={template.logoUrl} alt="Logo actual" className="max-h-14 mx-auto" />
-                        <p className="text-xs text-muted-foreground mt-1">Logo actual</p>
+                  <div className="ml-8 space-y-4 border-l-2 border-primary/30 pl-3">
+                    <p className="text-[11px] text-muted-foreground">
+                      Podés usar un logo distinto para la <b>boletera térmica</b> (58/80mm) y para el <b>A4</b>, con tamaños independientes.
+                    </p>
+
+                    {/* ── LOGO BOLETERA ── */}
+                    <div className="rounded-lg border border-primary/20 p-3 space-y-2 bg-secondary/20">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-primary">🧾 Logo Boletera (58/80mm)</Label>
+                        {(template.logoUrlTicket || template.logoUrl) && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {template.logoUrlTicket ? "Personalizado" : "Compartido con A4"}
+                          </span>
+                        )}
                       </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label className="text-xs">Subir logo (PNG sin fondo recomendado)</Label>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleUploadLogo}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full gap-2"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                      >
-                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        {uploading ? "Subiendo..." : template.logoUrl ? "Cambiar Logo" : "Subir Logo"}
-                      </Button>
+                      {(template.logoUrlTicket || template.logoUrl) && (
+                        <div className="p-2 bg-background rounded text-center">
+                          <img src={template.logoUrlTicket || template.logoUrl} alt="Logo boletera" style={{ maxHeight: `${template.logoSizeTicket ?? 60}px` }} className="mx-auto" />
+                        </div>
+                      )}
+                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadLogo("ticket")} />
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1 gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {template.logoUrlTicket ? "Cambiar" : "Subir logo"}
+                        </Button>
+                        {template.logoUrlTicket && (
+                          <Button variant="ghost" size="sm" onClick={() => updateTemplate({ logoUrlTicket: "" })}>Quitar</Button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[11px] w-28">Alto (px):</Label>
+                        <Input type="number" min={20} max={200} value={template.logoSizeTicket ?? 60} onChange={e => updateTemplate({ logoSizeTicket: Number(e.target.value) || 60 })} className="h-8 text-xs" />
+                      </div>
+                      <Input value={template.logoUrlTicket ?? ""} onChange={e => updateTemplate({ logoUrlTicket: e.target.value })} placeholder="O pegar URL..." className="text-[11px] h-8" />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">O pegar URL directamente:</Label>
-                      <Input
-                        value={template.logoUrl}
-                        onChange={e => updateTemplate({ logoUrl: e.target.value })}
-                        placeholder="https://..."
-                        className="text-xs"
-                      />
+
+                    {/* ── LOGO A4 ── */}
+                    <div className="rounded-lg border border-primary/20 p-3 space-y-2 bg-secondary/20">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-primary">📄 Logo A4 (hoja completa)</Label>
+                        {(template.logoUrlA4 || template.logoUrl) && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {template.logoUrlA4 ? "Personalizado" : "Compartido con boletera"}
+                          </span>
+                        )}
+                      </div>
+                      {(template.logoUrlA4 || template.logoUrl) && (
+                        <div className="p-2 bg-background rounded text-center">
+                          <img src={template.logoUrlA4 || template.logoUrl} alt="Logo A4" style={{ maxHeight: `${template.logoSizeA4 ?? 70}px` }} className="mx-auto" />
+                        </div>
+                      )}
+                      <input ref={fileInputRefA4} type="file" accept="image/*" className="hidden" onChange={handleUploadLogo("a4")} />
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1 gap-2" onClick={() => fileInputRefA4.current?.click()} disabled={uploading}>
+                          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {template.logoUrlA4 ? "Cambiar" : "Subir logo"}
+                        </Button>
+                        {template.logoUrlA4 && (
+                          <Button variant="ghost" size="sm" onClick={() => updateTemplate({ logoUrlA4: "" })}>Quitar</Button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[11px] w-28">Alto (px):</Label>
+                        <Input type="number" min={20} max={200} value={template.logoSizeA4 ?? 70} onChange={e => updateTemplate({ logoSizeA4: Number(e.target.value) || 70 })} className="h-8 text-xs" />
+                      </div>
+                      <Input value={template.logoUrlA4 ?? ""} onChange={e => updateTemplate({ logoUrlA4: e.target.value })} placeholder="O pegar URL..." className="text-[11px] h-8" />
                     </div>
                   </div>
                 )}
@@ -1412,9 +1468,11 @@ export const buildA4SaleHtml = (
     : new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
 
   const officialLogo = `${window.location.origin}${logoReceipt}`;
-  const a4Header = t.headerMode === "logo" && t.logoUrl
-    ? `<img src="${t.logoUrl}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`
-    : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`;
+  const a4LogoUrl3 = t.logoUrlA4 || t.logoUrl;
+  const a4LogoH3 = t.logoSizeA4 ?? 70;
+  const a4Header = t.headerMode === "logo" && a4LogoUrl3
+    ? `<img src="${a4LogoUrl3}" alt="INFOCOM" style="max-height:${a4LogoH3}px;margin-bottom:4px" />`
+    : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:${a4LogoH3}px;margin-bottom:4px" />`;
 
   const totalFinal = Number(order.total || order.price || 0);
   const isSale = type === "sale";
