@@ -75,6 +75,14 @@ export interface ReceiptTemplate {
   footerText: string;
   headerMode: "text" | "logo";
   logoUrl: string;
+  /** Logo específico para boletera térmica (58/80mm). Fallback: logoUrl */
+  logoUrlTicket?: string;
+  /** Logo específico para A4. Fallback: logoUrl */
+  logoUrlA4?: string;
+  /** Altura máx (px) del logo en boletera térmica */
+  logoSizeTicket?: number;
+  /** Altura máx (px) del logo en A4 */
+  logoSizeA4?: number;
   receptionTitle: string;
   receptionSectionClient: string;
   receptionSectionDevice: string;
