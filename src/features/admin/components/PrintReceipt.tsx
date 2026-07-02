@@ -1261,41 +1261,73 @@ ${bodyContent}
                   </Label>
                 </div>
                 {template.headerMode === "logo" && (
-                  <div className="ml-8 space-y-3 border-l-2 border-primary/30 pl-3">
-                    {template.logoUrl && (
-                      <div className="p-3 bg-secondary/30 rounded-lg text-center">
-                        <img src={template.logoUrl} alt="Logo actual" className="max-h-14 mx-auto" />
-                        <p className="text-xs text-muted-foreground mt-1">Logo actual</p>
+                  <div className="ml-8 space-y-4 border-l-2 border-primary/30 pl-3">
+                    <p className="text-[11px] text-muted-foreground">
+                      Podés usar un logo distinto para la <b>boletera térmica</b> (58/80mm) y para el <b>A4</b>, con tamaños independientes.
+                    </p>
+
+                    {/* ── LOGO BOLETERA ── */}
+                    <div className="rounded-lg border border-primary/20 p-3 space-y-2 bg-secondary/20">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-primary">🧾 Logo Boletera (58/80mm)</Label>
+                        {(template.logoUrlTicket || template.logoUrl) && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {template.logoUrlTicket ? "Personalizado" : "Compartido con A4"}
+                          </span>
+                        )}
                       </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label className="text-xs">Subir logo (PNG sin fondo recomendado)</Label>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleUploadLogo}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full gap-2"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                      >
-                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        {uploading ? "Subiendo..." : template.logoUrl ? "Cambiar Logo" : "Subir Logo"}
-                      </Button>
+                      {(template.logoUrlTicket || template.logoUrl) && (
+                        <div className="p-2 bg-background rounded text-center">
+                          <img src={template.logoUrlTicket || template.logoUrl} alt="Logo boletera" style={{ maxHeight: `${template.logoSizeTicket ?? 60}px` }} className="mx-auto" />
+                        </div>
+                      )}
+                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadLogo("ticket")} />
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1 gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {template.logoUrlTicket ? "Cambiar" : "Subir logo"}
+                        </Button>
+                        {template.logoUrlTicket && (
+                          <Button variant="ghost" size="sm" onClick={() => updateTemplate({ logoUrlTicket: "" })}>Quitar</Button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[11px] w-28">Alto (px):</Label>
+                        <Input type="number" min={20} max={200} value={template.logoSizeTicket ?? 60} onChange={e => updateTemplate({ logoSizeTicket: Number(e.target.value) || 60 })} className="h-8 text-xs" />
+                      </div>
+                      <Input value={template.logoUrlTicket ?? ""} onChange={e => updateTemplate({ logoUrlTicket: e.target.value })} placeholder="O pegar URL..." className="text-[11px] h-8" />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">O pegar URL directamente:</Label>
-                      <Input
-                        value={template.logoUrl}
-                        onChange={e => updateTemplate({ logoUrl: e.target.value })}
-                        placeholder="https://..."
-                        className="text-xs"
-                      />
+
+                    {/* ── LOGO A4 ── */}
+                    <div className="rounded-lg border border-primary/20 p-3 space-y-2 bg-secondary/20">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-primary">📄 Logo A4 (hoja completa)</Label>
+                        {(template.logoUrlA4 || template.logoUrl) && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {template.logoUrlA4 ? "Personalizado" : "Compartido con boletera"}
+                          </span>
+                        )}
+                      </div>
+                      {(template.logoUrlA4 || template.logoUrl) && (
+                        <div className="p-2 bg-background rounded text-center">
+                          <img src={template.logoUrlA4 || template.logoUrl} alt="Logo A4" style={{ maxHeight: `${template.logoSizeA4 ?? 70}px` }} className="mx-auto" />
+                        </div>
+                      )}
+                      <input ref={fileInputRefA4} type="file" accept="image/*" className="hidden" onChange={handleUploadLogo("a4")} />
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1 gap-2" onClick={() => fileInputRefA4.current?.click()} disabled={uploading}>
+                          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {template.logoUrlA4 ? "Cambiar" : "Subir logo"}
+                        </Button>
+                        {template.logoUrlA4 && (
+                          <Button variant="ghost" size="sm" onClick={() => updateTemplate({ logoUrlA4: "" })}>Quitar</Button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[11px] w-28">Alto (px):</Label>
+                        <Input type="number" min={20} max={200} value={template.logoSizeA4 ?? 70} onChange={e => updateTemplate({ logoSizeA4: Number(e.target.value) || 70 })} className="h-8 text-xs" />
+                      </div>
+                      <Input value={template.logoUrlA4 ?? ""} onChange={e => updateTemplate({ logoUrlA4: e.target.value })} placeholder="O pegar URL..." className="text-[11px] h-8" />
                     </div>
                   </div>
                 )}
