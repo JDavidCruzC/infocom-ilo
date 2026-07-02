@@ -396,8 +396,10 @@ export const SALE_FOOTER_TEXT = buildSaleFooter(DEFAULT_COMPANY_INFO);
 export const buildHeaderHtml = (t: ReceiptTemplate, includeCompanyInfo = false, ci?: CompanyReceiptInfo) => {
   const info = ci || getCachedCompanyInfo();
   const companyBlock = includeCompanyInfo ? `<div class="company-info">${buildCompanyInfoBlock(info)}</div>` : "";
-  if (t.headerMode === "logo" && t.logoUrl) {
-    return `<div class="center"><img src="${t.logoUrl}" alt="Logo" style="max-width:80%;max-height:60px;margin:0 auto 4px;display:block" />${companyBlock}<div class="subtitle">${t.companySubtitle.replace(/\n/g, "<br>")}</div></div>`;
+  const ticketLogo = t.logoUrlTicket || t.logoUrl;
+  if (t.headerMode === "logo" && ticketLogo) {
+    const maxH = t.logoSizeTicket ?? 60;
+    return `<div class="center"><img src="${ticketLogo}" alt="Logo" style="max-width:95%;max-height:${maxH}px;margin:0 auto 4px;display:block" />${companyBlock}<div class="subtitle">${t.companySubtitle.replace(/\n/g, "<br>")}</div></div>`;
   }
   return `<div class="center"><div class="title">${t.companyName}</div>${companyBlock}<div class="subtitle">${t.companySubtitle.replace(/\n/g, "<br>")}</div></div>`;
 };
