@@ -606,8 +606,10 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     if (isA4) {
       if (type === "reception") {
         // ─── A4 RECEPTION FORMAT ───
-        const a4Header = t.headerMode === "logo" && t.logoUrl
-          ? `<img src="${t.logoUrl}" alt="Logo" style="max-height:60px;margin-bottom:4px" />`
+        const a4LogoUrl = t.logoUrlA4 || t.logoUrl;
+        const a4LogoH = t.logoSizeA4 ?? 60;
+        const a4Header = t.headerMode === "logo" && a4LogoUrl
+          ? `<img src="${a4LogoUrl}" alt="Logo" style="max-height:${a4LogoH}px;margin-bottom:4px" />`
           : `<div style="font-size:20px;font-weight:900;letter-spacing:2px">${t.companyName}</div>`;
 
         bodyContent = `
