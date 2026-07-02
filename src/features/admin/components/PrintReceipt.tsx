@@ -424,6 +424,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
   const [dbLoaded, setDbLoaded] = useState(false);
   const [companyInfo, setCompanyInfo] = useState<CompanyReceiptInfo>(DEFAULT_COMPANY_INFO);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefA4 = useRef<HTMLInputElement>(null);
 
   // Load from DB on mount
   useEffect(() => {
