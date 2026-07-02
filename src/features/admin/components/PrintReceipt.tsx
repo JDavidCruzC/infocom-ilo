@@ -436,7 +436,7 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     }
   }, [dbLoaded]);
 
-  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadLogo = (target: "ticket" | "a4" | "both" = "both") => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -446,17 +446,22 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "png";
-      const path = `logo-${Date.now()}.${ext}`;
+      const path = `logo-${target}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("receipt-assets").upload(path, file, { upsert: true });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from("receipt-assets").getPublicUrl(path);
-      updateTemplate({ logoUrl: urlData.publicUrl, headerMode: "logo" });
+      const patch: Partial<ReceiptTemplate> = { headerMode: "logo" };
+      if (target === "ticket" || target === "both") patch.logoUrlTicket = urlData.publicUrl;
+      if (target === "a4" || target === "both") patch.logoUrlA4 = urlData.publicUrl;
+      if (target === "both") patch.logoUrl = urlData.publicUrl;
+      updateTemplate(patch);
       toast.success("Logo subido correctamente");
     } catch (err: any) {
       toast.error("Error al subir logo: " + err.message);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInputRefA4.current) fileInputRefA4.current.value = "";
     }
   };
 
