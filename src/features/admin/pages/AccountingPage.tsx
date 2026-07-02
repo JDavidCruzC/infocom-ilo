@@ -432,7 +432,13 @@ const AccountingPage = () => {
   });
 
   // ─── Items summary (descripción breve por transacción) ───────
-  const txIds = transactions.map(t => t.id);
+  // Incluye tx del mes actual + TODOS los pendientes por cobrar (pueden ser de meses previos)
+  const txIds = useMemo(() => {
+    const ids = new Set<string>();
+    transactions.forEach(t => ids.add(t.id));
+    (allPorCobrar as Transaction[]).forEach(t => ids.add(t.id));
+    return Array.from(ids);
+  }, [transactions, allPorCobrar]);
   const { data: itemsSummary = {} } = useQuery({
     queryKey: ["tx_items_summary", txIds.join(",")],
     enabled: txIds.length > 0,
@@ -445,8 +451,13 @@ const AccountingPage = () => {
       if (error) throw error;
       const map: Record<string, { descripcion: string; count: number; total: number }> = {};
       (data || []).forEach((it: any) => {
-        if (!map[it.transaction_id]) map[it.transaction_id] = { descripcion: it.descripcion, count: 1, total: 1 };
-        else { map[it.transaction_id].count += 1; map[it.transaction_id].total += 1; }
+        const desc = (it.descripcion && String(it.descripcion).trim()) || "(sin descripción)";
+        if (!map[it.transaction_id]) map[it.transaction_id] = { descripcion: desc, count: 1, total: 1 };
+        else {
+          if (map[it.transaction_id].count < 2) map[it.transaction_id].descripcion += ` + ${desc}`;
+          map[it.transaction_id].count += 1;
+          map[it.transaction_id].total += 1;
+        }
       });
       return map;
     },
