@@ -1430,9 +1430,11 @@ export const buildA4SaleHtml = (
     : new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
 
   const officialLogo = `${window.location.origin}${logoReceipt}`;
-  const a4Header = t.headerMode === "logo" && t.logoUrl
-    ? `<img src="${t.logoUrl}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`
-    : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`;
+  const a4LogoUrl3 = t.logoUrlA4 || t.logoUrl;
+  const a4LogoH3 = t.logoSizeA4 ?? 70;
+  const a4Header = t.headerMode === "logo" && a4LogoUrl3
+    ? `<img src="${a4LogoUrl3}" alt="INFOCOM" style="max-height:${a4LogoH3}px;margin-bottom:4px" />`
+    : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:${a4LogoH3}px;margin-bottom:4px" />`;
 
   const totalFinal = Number(order.total || order.price || 0);
   const isSale = type === "sale";
