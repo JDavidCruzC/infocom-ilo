@@ -671,9 +671,11 @@ const PrintReceipt = ({ order, type = "reception", defaultDocumentKind, compact 
           : new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
 
         const officialLogo = `${window.location.origin}${logoReceipt}`;
-        const a4Header = t.headerMode === "logo" && t.logoUrl
-          ? `<img src="${t.logoUrl}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`
-          : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:70px;margin-bottom:4px" />`;
+        const a4LogoUrl2 = t.logoUrlA4 || t.logoUrl;
+        const a4LogoH2 = t.logoSizeA4 ?? 70;
+        const a4Header = t.headerMode === "logo" && a4LogoUrl2
+          ? `<img src="${a4LogoUrl2}" alt="INFOCOM" style="max-height:${a4LogoH2}px;margin-bottom:4px" />`
+          : `<img src="${officialLogo}" alt="INFOCOM" style="max-height:${a4LogoH2}px;margin-bottom:4px" />`;
 
         const isSale = type === "sale";
         const montoLetras = numeroALetrasSoles(Number(totalFinal));
