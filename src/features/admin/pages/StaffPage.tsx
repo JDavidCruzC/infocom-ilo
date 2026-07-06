@@ -260,6 +260,11 @@ const StaffPage = () => {
       email: s.email || "", document_number: s.document_number || "", user_id: s.user_id || "",
       institution: s.institution || "",
       address: s.address || "",
+      start_date: s.start_date || "",
+      end_date: s.end_date || "",
+      end_mode: "date",
+      end_amount: "",
+      end_unit: "months",
     });
     setEditingId(s.id); setDialogOpen(true);
   };
