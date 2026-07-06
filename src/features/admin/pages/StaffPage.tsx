@@ -110,12 +110,19 @@ const StaffPage = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (f: typeof emptyForm) => {
+      if (!f.start_date) throw new Error("La fecha de inicio es obligatoria");
+      const computedEnd = f.end_mode === "duration"
+        ? addDuration(f.start_date, parseInt(f.end_amount || "0", 10), f.end_unit)
+        : (f.end_date || "");
+      if (computedEnd && computedEnd < f.start_date) throw new Error("La fecha de fin no puede ser anterior a la de inicio");
       const payload: any = {
         full_name: sanitizeText(f.full_name, { maxLength: 120 }), position: f.position,
         phone: f.phone || null, email: f.email || null,
         document_number: f.document_number || null, user_id: f.user_id || null,
         institution: f.institution || null,
         address: sanitizeText(f.address, { maxLength: 240 }) || null,
+        start_date: f.start_date,
+        end_date: computedEnd || null,
       };
       if (editingId) {
         const { error } = await supabase.from("staff_members").update(payload).eq("id", editingId);
