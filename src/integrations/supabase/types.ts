@@ -1535,6 +1535,7 @@ export type Database = {
           deactivated_reason: string | null
           document_number: string | null
           email: string | null
+          end_date: string | null
           full_name: string
           id: string
           institution: string | null
@@ -1552,6 +1553,7 @@ export type Database = {
           deactivated_reason?: string | null
           document_number?: string | null
           email?: string | null
+          end_date?: string | null
           full_name: string
           id?: string
           institution?: string | null
@@ -1569,6 +1571,7 @@ export type Database = {
           deactivated_reason?: string | null
           document_number?: string | null
           email?: string | null
+          end_date?: string | null
           full_name?: string
           id?: string
           institution?: string | null

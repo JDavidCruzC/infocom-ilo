@@ -21,7 +21,21 @@ const DAY_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 const emptyForm = {
   full_name: "", position: "Practicante", phone: "", email: "", document_number: "", user_id: "", institution: "", address: "",
+  start_date: "", end_date: "", end_mode: "date" as "date" | "duration", end_amount: "", end_unit: "months" as "days" | "weeks" | "months" | "years",
 };
+
+const addDuration = (isoStart: string, amount: number, unit: "days" | "weeks" | "months" | "years"): string => {
+  if (!isoStart || !amount || amount <= 0) return "";
+  const d = new Date(isoStart + "T00:00:00");
+  if (isNaN(d.getTime())) return "";
+  if (unit === "days") d.setDate(d.getDate() + amount);
+  else if (unit === "weeks") d.setDate(d.getDate() + amount * 7);
+  else if (unit === "months") d.setMonth(d.getMonth() + amount);
+  else if (unit === "years") d.setFullYear(d.getFullYear() + amount);
+  return d.toISOString().slice(0, 10);
+};
+
+const UNIT_LABELS: Record<string, string> = { days: "días", weeks: "semanas", months: "meses", years: "años" };
 
 const emptyScheduleForm = {
   days: [] as number[], shift_name: "Turno Completo", start_time: "09:00", end_time: "18:00",
@@ -96,12 +110,19 @@ const StaffPage = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (f: typeof emptyForm) => {
+      if (!f.start_date) throw new Error("La fecha de inicio es obligatoria");
+      const computedEnd = f.end_mode === "duration"
+        ? addDuration(f.start_date, parseInt(f.end_amount || "0", 10), f.end_unit)
+        : (f.end_date || "");
+      if (computedEnd && computedEnd < f.start_date) throw new Error("La fecha de fin no puede ser anterior a la de inicio");
       const payload: any = {
         full_name: sanitizeText(f.full_name, { maxLength: 120 }), position: f.position,
         phone: f.phone || null, email: f.email || null,
         document_number: f.document_number || null, user_id: f.user_id || null,
         institution: f.institution || null,
         address: sanitizeText(f.address, { maxLength: 240 }) || null,
+        start_date: f.start_date,
+        end_date: computedEnd || null,
       };
       if (editingId) {
         const { error } = await supabase.from("staff_members").update(payload).eq("id", editingId);
@@ -117,7 +138,7 @@ const StaffPage = () => {
       clearDraft();
       setForm(emptyForm); setEditingId(null); setDialogOpen(false);
     },
-    onError: () => toast.error("Error al guardar"),
+    onError: (e: any) => toast.error(e?.message || "Error al guardar"),
   });
 
   const toggleActiveMutation = useMutation({
@@ -239,6 +260,11 @@ const StaffPage = () => {
       email: s.email || "", document_number: s.document_number || "", user_id: s.user_id || "",
       institution: s.institution || "",
       address: s.address || "",
+      start_date: s.start_date || "",
+      end_date: s.end_date || "",
+      end_mode: "date",
+      end_amount: "",
+      end_unit: "months",
     });
     setEditingId(s.id); setDialogOpen(true);
   };
@@ -296,6 +322,89 @@ const StaffPage = () => {
               {(form.position === "Practicante") && (
                 <div><Label>Institución / Entidad de origen</Label><Input value={form.institution} onChange={e => setForm({ ...form, institution: e.target.value })} placeholder="SENATI, TECSUP, Universidad..." /></div>
               )}
+
+              {/* 📅 Periodo de vinculación */}
+              <div className="rounded-lg border border-primary/20 bg-secondary/20 p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-primary" />
+                  <Label className="font-semibold">Periodo de vinculación</Label>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Fecha de inicio *</Label>
+                  <Input
+                    type="date"
+                    required
+                    value={form.start_date}
+                    onChange={e => setForm({ ...form, start_date: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Cuándo empieza (o empezó) su labor / prácticas.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-xs">Fecha de fin (opcional)</Label>
+                    <div className="flex rounded-md border border-border overflow-hidden text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, end_mode: "date" })}
+                        className={`px-2 py-1 ${form.end_mode === "date" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-secondary"}`}
+                      >📅 Fecha exacta</button>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, end_mode: "duration" })}
+                        className={`px-2 py-1 ${form.end_mode === "duration" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-secondary"}`}
+                      >⏱️ Duración</button>
+                    </div>
+                  </div>
+
+                  {form.end_mode === "date" ? (
+                    <Input
+                      type="date"
+                      value={form.end_date}
+                      min={form.start_date || undefined}
+                      onChange={e => setForm({ ...form, end_date: e.target.value })}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-[1fr_1.4fr] gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="Ej. 6"
+                        value={form.end_amount}
+                        onChange={e => setForm({ ...form, end_amount: e.target.value.replace(/[^0-9]/g, "") })}
+                      />
+                      <Select value={form.end_unit} onValueChange={(v: any) => setForm({ ...form, end_unit: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="days">Días</SelectItem>
+                          <SelectItem value="weeks">Semanas</SelectItem>
+                          <SelectItem value="months">Meses</SelectItem>
+                          <SelectItem value="years">Años</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const preview = form.end_mode === "duration"
+                      ? addDuration(form.start_date, parseInt(form.end_amount || "0", 10), form.end_unit)
+                      : form.end_date;
+                    if (!preview) return (
+                      <p className="text-[10px] text-muted-foreground italic">Déjalo vacío si aún no se define una fecha de retiro.</p>
+                    );
+                    const d = new Date(preview + "T00:00:00");
+                    return (
+                      <p className="text-[11px] text-primary">
+                        ✅ Finaliza el <strong>{d.toLocaleDateString("es-PE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</strong>
+                        {form.end_mode === "duration" && form.end_amount ? ` — ${form.end_amount} ${UNIT_LABELS[form.end_unit]} desde el inicio` : ""}
+                      </p>
+                    );
+                  })()}
+                </div>
+              </div>
+
+
               <div>
                 <Label>Cuenta del Sistema (opcional)</Label>
                 <Select
