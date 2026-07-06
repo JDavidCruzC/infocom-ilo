@@ -322,6 +322,89 @@ const StaffPage = () => {
               {(form.position === "Practicante") && (
                 <div><Label>Institución / Entidad de origen</Label><Input value={form.institution} onChange={e => setForm({ ...form, institution: e.target.value })} placeholder="SENATI, TECSUP, Universidad..." /></div>
               )}
+
+              {/* 📅 Periodo de vinculación */}
+              <div className="rounded-lg border border-primary/20 bg-secondary/20 p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-primary" />
+                  <Label className="font-semibold">Periodo de vinculación</Label>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Fecha de inicio *</Label>
+                  <Input
+                    type="date"
+                    required
+                    value={form.start_date}
+                    onChange={e => setForm({ ...form, start_date: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Cuándo empieza (o empezó) su labor / prácticas.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-xs">Fecha de fin (opcional)</Label>
+                    <div className="flex rounded-md border border-border overflow-hidden text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, end_mode: "date" })}
+                        className={`px-2 py-1 ${form.end_mode === "date" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-secondary"}`}
+                      >📅 Fecha exacta</button>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, end_mode: "duration" })}
+                        className={`px-2 py-1 ${form.end_mode === "duration" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-secondary"}`}
+                      >⏱️ Duración</button>
+                    </div>
+                  </div>
+
+                  {form.end_mode === "date" ? (
+                    <Input
+                      type="date"
+                      value={form.end_date}
+                      min={form.start_date || undefined}
+                      onChange={e => setForm({ ...form, end_date: e.target.value })}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-[1fr_1.4fr] gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="Ej. 6"
+                        value={form.end_amount}
+                        onChange={e => setForm({ ...form, end_amount: e.target.value.replace(/[^0-9]/g, "") })}
+                      />
+                      <Select value={form.end_unit} onValueChange={(v: any) => setForm({ ...form, end_unit: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="days">Días</SelectItem>
+                          <SelectItem value="weeks">Semanas</SelectItem>
+                          <SelectItem value="months">Meses</SelectItem>
+                          <SelectItem value="years">Años</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const preview = form.end_mode === "duration"
+                      ? addDuration(form.start_date, parseInt(form.end_amount || "0", 10), form.end_unit)
+                      : form.end_date;
+                    if (!preview) return (
+                      <p className="text-[10px] text-muted-foreground italic">Déjalo vacío si aún no se define una fecha de retiro.</p>
+                    );
+                    const d = new Date(preview + "T00:00:00");
+                    return (
+                      <p className="text-[11px] text-primary">
+                        ✅ Finaliza el <strong>{d.toLocaleDateString("es-PE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</strong>
+                        {form.end_mode === "duration" && form.end_amount ? ` — ${form.end_amount} ${UNIT_LABELS[form.end_unit]} desde el inicio` : ""}
+                      </p>
+                    );
+                  })()}
+                </div>
+              </div>
+
+
               <div>
                 <Label>Cuenta del Sistema (opcional)</Label>
                 <Select
