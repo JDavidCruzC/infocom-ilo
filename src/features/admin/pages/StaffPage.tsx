@@ -138,7 +138,7 @@ const StaffPage = () => {
       clearDraft();
       setForm(emptyForm); setEditingId(null); setDialogOpen(false);
     },
-    onError: () => toast.error("Error al guardar"),
+    onError: (e: any) => toast.error(e?.message || "Error al guardar"),
   });
 
   const toggleActiveMutation = useMutation({
