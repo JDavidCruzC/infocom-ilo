@@ -21,7 +21,21 @@ const DAY_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 const emptyForm = {
   full_name: "", position: "Practicante", phone: "", email: "", document_number: "", user_id: "", institution: "", address: "",
+  start_date: "", end_date: "", end_mode: "date" as "date" | "duration", end_amount: "", end_unit: "months" as "days" | "weeks" | "months" | "years",
 };
+
+const addDuration = (isoStart: string, amount: number, unit: "days" | "weeks" | "months" | "years"): string => {
+  if (!isoStart || !amount || amount <= 0) return "";
+  const d = new Date(isoStart + "T00:00:00");
+  if (isNaN(d.getTime())) return "";
+  if (unit === "days") d.setDate(d.getDate() + amount);
+  else if (unit === "weeks") d.setDate(d.getDate() + amount * 7);
+  else if (unit === "months") d.setMonth(d.getMonth() + amount);
+  else if (unit === "years") d.setFullYear(d.getFullYear() + amount);
+  return d.toISOString().slice(0, 10);
+};
+
+const UNIT_LABELS: Record<string, string> = { days: "días", weeks: "semanas", months: "meses", years: "años" };
 
 const emptyScheduleForm = {
   days: [] as number[], shift_name: "Turno Completo", start_time: "09:00", end_time: "18:00",
