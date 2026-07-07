@@ -307,6 +307,7 @@ const AttendancePage = () => {
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d);
       if (date > today) break;
+      if (!isWithinEmployment(staffId, date)) continue;
       if (!isRestDay(staffId, date.getDay())) workDaysCount++;
     }
 
