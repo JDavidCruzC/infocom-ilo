@@ -1582,15 +1582,18 @@ const AttendancePage = () => {
                               const rec = recordMap[s.id]?.[date];
                               const dayOfWeek = new Date(year, month, d).getDay();
                               const rest = isRestDay(s.id, dayOfWeek);
+                              const outsidePeriod = !isWithinEmployment(s.id, new Date(year, month, d));
                               // Sunday = end of week → add divider after this day
                               const isWeekEnd = dayOfWeek === 0 && idx !== days.length - 1;
                               return (
                                 <Fragment key={d}>
-                                  <div className={`flex flex-col items-center min-w-[72px] p-1 rounded text-[10px] gap-1 ${rest ? "bg-orange-500/5 border border-orange-500/20" : "bg-secondary/10"}`}>
-                                    <span className={`text-muted-foreground ${rest ? "text-orange-400 font-bold" : ""} ${dayOfWeek === 0 ? "text-orange-400" : ""}`}>
+                                  <div className={`flex flex-col items-center min-w-[72px] p-1 rounded text-[10px] gap-1 ${outsidePeriod && !rec ? "bg-muted/10 opacity-60" : rest ? "bg-orange-500/5 border border-orange-500/20" : "bg-secondary/10"}`}>
+                                    <span className={`text-muted-foreground ${rest && !outsidePeriod ? "text-orange-400 font-bold" : ""} ${dayOfWeek === 0 ? "text-orange-400" : ""}`}>
                                       {getDayOfWeek(d)} {d}
                                     </span>
-                                    {rest && !rec ? (
+                                    {outsidePeriod && !rec ? (
+                                      <span className="text-muted-foreground/30 py-3" title="Fuera del periodo de vinculación">·</span>
+                                    ) : rest && !rec ? (
                                       <span className="text-gray-500 py-3 text-[14px]">🌙</span>
                                     ) : rec?.status === "A" || rec?.status === "T" ? (
                                       <>
