@@ -173,6 +173,29 @@ const AttendancePage = () => {
     return !workDays.includes(dayOfWeek);
   };
 
+  /** Staff lookup by id (para consultar start_date / end_date) */
+  const staffById = useMemo(() => {
+    const m: Record<string, any> = {};
+    staff.forEach((s: any) => { m[s.id] = s; });
+    return m;
+  }, [staff]);
+
+  /** True si la fecha está dentro del periodo de vinculación del trabajador. */
+  const isWithinEmployment = (staffId: string, date: Date): boolean => {
+    const s = staffById[staffId];
+    if (!s) return true;
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    if (s.start_date) {
+      const [y, mo, da] = String(s.start_date).split("-").map(Number);
+      if (d < new Date(y, mo - 1, da).getTime()) return false;
+    }
+    if (s.end_date) {
+      const [y, mo, da] = String(s.end_date).split("-").map(Number);
+      if (d > new Date(y, mo - 1, da).getTime()) return false;
+    }
+    return true;
+  };
+
   const getScheduledHours = (staffId: string, dayOfWeek: number) => {
     const scheds = getScheduleForDay(staffId, dayOfWeek);
     return scheds.reduce((sum: number, s: any) => {
@@ -284,6 +307,7 @@ const AttendancePage = () => {
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d);
       if (date > today) break;
+      if (!isWithinEmployment(staffId, date)) continue;
       if (!isRestDay(staffId, date.getDay())) workDaysCount++;
     }
 
@@ -1345,6 +1369,31 @@ const AttendancePage = () => {
                               const rest = isRestDay(s.id, dayOfWeek);
                               const st = rec ? STATUS_LABELS[rec.status] : null;
                               const isFuture = new Date(year, month, d) > new Date();
+                              const outsidePeriod = !isWithinEmployment(s.id, new Date(year, month, d));
+
+                              // Fuera del periodo de vinculación y sin registro → celda vacía (pero editable por el admin)
+                              if (outsidePeriod && !rec) {
+                                const emptyCell = <span className="text-muted-foreground/20" title="Fuera del periodo de vinculación">·</span>;
+                                if (!canEditAttendanceGrid) {
+                                  return <td key={d} className="px-1 py-1 text-center bg-muted/10">{emptyCell}</td>;
+                                }
+                                return (
+                                  <td key={d} className="px-1 py-1 text-center bg-muted/10 hover:bg-primary/5 transition-colors">
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <button type="button" className="w-full h-full cursor-pointer">{emptyCell}</button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-2" align="center">
+                                        <div className="text-[10px] text-muted-foreground mb-2 text-center">Fuera del periodo — {DAY_NAMES[dayOfWeek]} {d}/{month+1}</div>
+                                        <div className="grid grid-cols-2 gap-1">
+                                          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setStatusDirect(s.id, d, "A")}>Asistió</Button>
+                                          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setStatusDirect(s.id, d, "T")}>Tardanza</Button>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </td>
+                                );
+                              }
 
                               // Rest day without attendance record
                               if (rest && !rec) {
@@ -1534,15 +1583,18 @@ const AttendancePage = () => {
                               const rec = recordMap[s.id]?.[date];
                               const dayOfWeek = new Date(year, month, d).getDay();
                               const rest = isRestDay(s.id, dayOfWeek);
+                              const outsidePeriod = !isWithinEmployment(s.id, new Date(year, month, d));
                               // Sunday = end of week → add divider after this day
                               const isWeekEnd = dayOfWeek === 0 && idx !== days.length - 1;
                               return (
                                 <Fragment key={d}>
-                                  <div className={`flex flex-col items-center min-w-[72px] p-1 rounded text-[10px] gap-1 ${rest ? "bg-orange-500/5 border border-orange-500/20" : "bg-secondary/10"}`}>
-                                    <span className={`text-muted-foreground ${rest ? "text-orange-400 font-bold" : ""} ${dayOfWeek === 0 ? "text-orange-400" : ""}`}>
+                                  <div className={`flex flex-col items-center min-w-[72px] p-1 rounded text-[10px] gap-1 ${outsidePeriod && !rec ? "bg-muted/10 opacity-60" : rest ? "bg-orange-500/5 border border-orange-500/20" : "bg-secondary/10"}`}>
+                                    <span className={`text-muted-foreground ${rest && !outsidePeriod ? "text-orange-400 font-bold" : ""} ${dayOfWeek === 0 ? "text-orange-400" : ""}`}>
                                       {getDayOfWeek(d)} {d}
                                     </span>
-                                    {rest && !rec ? (
+                                    {outsidePeriod && !rec ? (
+                                      <span className="text-muted-foreground/30 py-3" title="Fuera del periodo de vinculación">·</span>
+                                    ) : rest && !rec ? (
                                       <span className="text-gray-500 py-3 text-[14px]">🌙</span>
                                     ) : rec?.status === "A" || rec?.status === "T" ? (
                                       <>
