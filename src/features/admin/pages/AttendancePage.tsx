@@ -1368,6 +1368,31 @@ const AttendancePage = () => {
                               const rest = isRestDay(s.id, dayOfWeek);
                               const st = rec ? STATUS_LABELS[rec.status] : null;
                               const isFuture = new Date(year, month, d) > new Date();
+                              const outsidePeriod = !isWithinEmployment(s.id, new Date(year, month, d));
+
+                              // Fuera del periodo de vinculación y sin registro → celda vacía (pero editable por el admin)
+                              if (outsidePeriod && !rec) {
+                                const emptyCell = <span className="text-muted-foreground/20" title="Fuera del periodo de vinculación">·</span>;
+                                if (!canEditAttendanceGrid) {
+                                  return <td key={d} className="px-1 py-1 text-center bg-muted/10">{emptyCell}</td>;
+                                }
+                                return (
+                                  <td key={d} className="px-1 py-1 text-center bg-muted/10 hover:bg-primary/5 transition-colors">
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <button type="button" className="w-full h-full cursor-pointer">{emptyCell}</button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-2" align="center">
+                                        <div className="text-[10px] text-muted-foreground mb-2 text-center">Fuera del periodo — {DAY_NAMES[dayOfWeek]} {d}/{month+1}</div>
+                                        <div className="grid grid-cols-2 gap-1">
+                                          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setStatusDirect(s.id, d, "A")}>Asistió</Button>
+                                          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setStatusDirect(s.id, d, "T")}>Tardanza</Button>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </td>
+                                );
+                              }
 
                               // Rest day without attendance record
                               if (rest && !rec) {
