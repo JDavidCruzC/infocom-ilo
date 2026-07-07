@@ -173,6 +173,29 @@ const AttendancePage = () => {
     return !workDays.includes(dayOfWeek);
   };
 
+  /** Staff lookup by id (para consultar start_date / end_date) */
+  const staffById = useMemo(() => {
+    const m: Record<string, any> = {};
+    staff.forEach((s: any) => { m[s.id] = s; });
+    return m;
+  }, [staff]);
+
+  /** True si la fecha está dentro del periodo de vinculación del trabajador. */
+  const isWithinEmployment = (staffId: string, date: Date): boolean => {
+    const s = staffById[staffId];
+    if (!s) return true;
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    if (s.start_date) {
+      const [y, mo, da] = String(s.start_date).split("-").map(Number);
+      if (d < new Date(y, mo - 1, da).getTime()) return false;
+    }
+    if (s.end_date) {
+      const [y, mo, da] = String(s.end_date).split("-").map(Number);
+      if (d > new Date(y, mo - 1, da).getTime()) return false;
+    }
+    return true;
+  };
+
   const getScheduledHours = (staffId: string, dayOfWeek: number) => {
     const scheds = getScheduleForDay(staffId, dayOfWeek);
     return scheds.reduce((sum: number, s: any) => {
