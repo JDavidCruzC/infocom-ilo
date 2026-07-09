@@ -68,6 +68,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
   useEffect(() => {
     if (open && order) {
       const baseCost = order.final_cost ? Number(order.final_cost) : order.estimated_cost ? Number(order.estimated_cost) : 0;
+      setDiagnosisText(order.diagnosis || "");
       setItems([{
         kind: "servicio",
         item_type: "servicio",
@@ -81,6 +82,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
     } else if (!open) {
       setItems([]);
       setSearch("");
+      setDiagnosisText("");
     }
   }, [open, order, technicianName]);
 
