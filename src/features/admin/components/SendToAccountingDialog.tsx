@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,7 +11,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
-  Send, Wrench, Package, Sparkles, Plus, Trash2, Search, Receipt, Cog, Gift
+  Send, Wrench, Package, Sparkles, Plus, Trash2, Search, Receipt, Cog, Gift, Stethoscope
 } from "lucide-react";
 
 type ItemType = "producto" | "servicio";
@@ -53,6 +54,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [porCobrar, setPorCobrar] = useState(false);
+  const [diagnosisText, setDiagnosisText] = useState("");
 
   // Load products for inventory picker
   useEffect(() => {
@@ -66,6 +68,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
   useEffect(() => {
     if (open && order) {
       const baseCost = order.final_cost ? Number(order.final_cost) : order.estimated_cost ? Number(order.estimated_cost) : 0;
+      setDiagnosisText(order.diagnosis || "");
       setItems([{
         kind: "servicio",
         item_type: "servicio",
@@ -79,6 +82,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
     } else if (!open) {
       setItems([]);
       setSearch("");
+      setDiagnosisText("");
     }
   }, [open, order, technicianName]);
 
@@ -127,6 +131,10 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
       toast.error("Agrega al menos un ítem válido");
       return;
     }
+    if (!diagnosisText.trim()) {
+      toast.error("Ingresa el Diagnóstico Técnico");
+      return;
+    }
     if (total <= 0) {
       toast.error("El total debe ser mayor a 0");
       return;
@@ -146,6 +154,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
         status: "completed",
         completed_at: new Date().toISOString(),
         final_cost: total,
+        diagnosis: diagnosisText,
       }).eq("id", order.id);
 
       // Create transaction
@@ -242,6 +251,29 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
             <p><span className="text-muted-foreground">Equipo:</span> <span className="font-bold">{order.device_type} {order.device_brand || ""} {order.device_model || ""}</span></p>
             <p><span className="text-muted-foreground">Falla:</span> <span>{order.reported_issue}</span></p>
           </div>
+
+          {/* Diagnóstico Técnico */}
+          <div className="border-2 border-info/40 bg-info/5 rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-info" />
+              <Label className="text-base font-bold text-info">Diagnóstico Técnico *</Label>
+            </div>
+            <Textarea
+              value={diagnosisText}
+              onChange={(e) => setDiagnosisText(e.target.value)}
+              placeholder="Describe el diagnóstico realizado, hallazgos, causa de la falla y trabajo efectuado…"
+              rows={3}
+              className="bg-background"
+            />
+          </div>
+
+          {/* Repuestos Utilizados heading */}
+          <div className="flex items-center gap-2 pt-2">
+            <Cog className="h-4 w-4 text-warning" />
+            <Label className="text-sm font-bold text-warning">Repuestos Utilizados & Ítems</Label>
+            <span className="text-xs text-muted-foreground">— busca en inventario o escribe manualmente (no registra al stock)</span>
+          </div>
+
 
           {/* Add buttons */}
           <div className="flex flex-wrap gap-2">
@@ -371,8 +403,8 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
                         <Input value={it.tipo_equipo || ""} onChange={e => updateItem(idx, { tipo_equipo: e.target.value })} placeholder="Tipo / marca" />
                       </div>
                       <div className="md:col-span-2 space-y-1">
-                        <Label className="text-xs">Diagnóstico</Label>
-                        <Input value={it.diagnostico || ""} onChange={e => updateItem(idx, { diagnostico: e.target.value })} placeholder="Diagnóstico técnico" />
+                        <Label className="text-xs">Detalle del servicio / notas</Label>
+                        <Textarea rows={2} value={it.diagnostico || ""} onChange={e => updateItem(idx, { diagnostico: e.target.value })} placeholder="Notas específicas del servicio" />
                       </div>
                     </div>
                   )}
