@@ -133,10 +133,10 @@ const App = () => (
                 {/* Admin */}
                 <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>}>
                   <Route index element={<AdminIndexRoute />} />
-                  <Route path="recepcion" element={<PermissionRoute module="recepcion"><ReceptionPage /></PermissionRoute>} />
+                  <Route path="recepcion" element={<ReceptionPage />} />
                   <Route path="productos" element={<PermissionRoute module="inventario"><ProductsPage /></PermissionRoute>} />
                   <Route path="pedidos" element={<PermissionRoute module="pedidos"><OrdersPage /></PermissionRoute>} />
-                  <Route path="soporte" element={<PermissionRoute module="soporte"><SupportPage /></PermissionRoute>} />
+                  <Route path="soporte" element={<SupportPage />} />
                   <Route path="ventas/pos" element={<PermissionRoute module="pos"><SalesPage /></PermissionRoute>} />
                   <Route path="ventas/cotizaciones" element={<PermissionRoute module="cotizaciones"><QuotesPage /></PermissionRoute>} />
 
