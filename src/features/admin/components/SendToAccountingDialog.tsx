@@ -252,6 +252,29 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
             <p><span className="text-muted-foreground">Falla:</span> <span>{order.reported_issue}</span></p>
           </div>
 
+          {/* Diagnóstico Técnico */}
+          <div className="border-2 border-info/40 bg-info/5 rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-info" />
+              <Label className="text-base font-bold text-info">Diagnóstico Técnico *</Label>
+            </div>
+            <Textarea
+              value={diagnosisText}
+              onChange={(e) => setDiagnosisText(e.target.value)}
+              placeholder="Describe el diagnóstico realizado, hallazgos, causa de la falla y trabajo efectuado…"
+              rows={3}
+              className="bg-background"
+            />
+          </div>
+
+          {/* Repuestos Utilizados heading */}
+          <div className="flex items-center gap-2 pt-2">
+            <Cog className="h-4 w-4 text-warning" />
+            <Label className="text-sm font-bold text-warning">Repuestos Utilizados & Ítems</Label>
+            <span className="text-xs text-muted-foreground">— busca en inventario o escribe manualmente (no registra al stock)</span>
+          </div>
+
+
           {/* Add buttons */}
           <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" variant="outline" onClick={() => addItem("servicio")} className="gap-1">
