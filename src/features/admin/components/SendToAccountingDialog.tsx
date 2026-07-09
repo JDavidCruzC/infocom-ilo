@@ -131,6 +131,10 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
       toast.error("Agrega al menos un ítem válido");
       return;
     }
+    if (!diagnosisText.trim()) {
+      toast.error("Ingresa el Diagnóstico Técnico");
+      return;
+    }
     if (total <= 0) {
       toast.error("El total debe ser mayor a 0");
       return;
