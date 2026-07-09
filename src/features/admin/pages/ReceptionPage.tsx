@@ -126,7 +126,7 @@ const ReceptionPage = () => {
         spare_parts: formData.spare_parts || null,
       };
       if (editingId) {
-        if (isAdmin && formData.received_by_id) {
+        if (formData.received_by_id) {
           payload.received_by_id = formData.received_by_id;
         }
         const { error } = await supabase.from("service_orders").update(payload).eq("id", editingId);
