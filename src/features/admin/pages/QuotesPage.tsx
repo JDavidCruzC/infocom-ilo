@@ -79,11 +79,14 @@ const QuotesPage = () => {
   }, [productSearch, products]);
 
   const totals = useMemo(() => {
-    const sub = items.reduce((a, i) => a + i.cantidad * i.precio_unitario, 0);
-    const desc = sub * (form.descuento_pct / 100);
-    const base = sub - desc;
-    const igv = form.incluye_igv ? base * (form.igv_pct / 100) : 0;
-    return { sub, desc, base, igv, total: base + igv };
+    // Precios ingresados incluyen IGV (estilo Contabilidad)
+    const rawSum = items.reduce((a, i) => a + i.cantidad * i.precio_unitario, 0);
+    const desc = rawSum * (form.descuento_pct / 100);
+    const total = rawSum - desc;
+    const divisor = 1 + (form.igv_pct / 100); // 1.18 por defecto
+    const sub = form.incluye_igv ? total / divisor : total;
+    const igv = form.incluye_igv ? total - sub : 0;
+    return { sub, desc, base: sub, igv, total };
   }, [items, form.descuento_pct, form.incluye_igv, form.igv_pct]);
 
   const filteredQuotes = useMemo(() => {
