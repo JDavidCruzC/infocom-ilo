@@ -154,6 +154,7 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
         status: "completed",
         completed_at: new Date().toISOString(),
         final_cost: total,
+        diagnosis: diagnosisText,
       }).eq("id", order.id);
 
       // Create transaction
