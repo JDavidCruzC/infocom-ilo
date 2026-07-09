@@ -24,8 +24,8 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true, module: "dashboard" },
-  { to: "/admin/recepcion", icon: ClipboardList, label: "Recepción Técnica", module: "recepcion" },
-  { to: "/admin/soporte", icon: Wrench, label: "Soporte Técnico", module: "soporte" },
+  { to: "/admin/recepcion", icon: ClipboardList, label: "Recepción Técnica" },
+  { to: "/admin/soporte", icon: Wrench, label: "Soporte Técnico" },
   {
     to: "/admin/productos", icon: Package, label: "Productos",
     children: [
