@@ -126,7 +126,7 @@ const ReceptionPage = () => {
         spare_parts: formData.spare_parts || null,
       };
       if (editingId) {
-        if (isAdmin && formData.received_by_id) {
+        if (formData.received_by_id) {
           payload.received_by_id = formData.received_by_id;
         }
         const { error } = await supabase.from("service_orders").update(payload).eq("id", editingId);
@@ -279,7 +279,7 @@ const ReceptionPage = () => {
                 </div>
               )}
 
-              {editingId && isAdmin && (
+              {editingId && (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm text-primary flex items-center gap-2"><User className="h-4 w-4" /> Recepciono</h3>
                   <Select value={form.received_by_id} onValueChange={v => setForm({...form, received_by_id: v})}>
@@ -290,10 +290,9 @@ const ReceptionPage = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">Solo el administrador puede cambiar quien recepciono.</p>
+                  <p className="text-xs text-muted-foreground">Cualquier personal puede ajustar quién recepcionó el equipo.</p>
                 </div>
-              )
-              }
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
