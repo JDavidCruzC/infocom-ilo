@@ -403,8 +403,8 @@ const SendToAccountingDialog = ({ open, onOpenChange, order, userId, technicianN
                         <Input value={it.tipo_equipo || ""} onChange={e => updateItem(idx, { tipo_equipo: e.target.value })} placeholder="Tipo / marca" />
                       </div>
                       <div className="md:col-span-2 space-y-1">
-                        <Label className="text-xs">Diagnóstico</Label>
-                        <Input value={it.diagnostico || ""} onChange={e => updateItem(idx, { diagnostico: e.target.value })} placeholder="Diagnóstico técnico" />
+                        <Label className="text-xs">Detalle del servicio / notas</Label>
+                        <Textarea rows={2} value={it.diagnostico || ""} onChange={e => updateItem(idx, { diagnostico: e.target.value })} placeholder="Notas específicas del servicio" />
                       </div>
                     </div>
                   )}
