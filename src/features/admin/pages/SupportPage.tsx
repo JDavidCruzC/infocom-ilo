@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import SendToAccountingDialog from "@/features/admin/components/SendToAccountingDialog";
+import { filterSupportOrders, getNextServiceOrderStatus, getSupportMetrics } from "@/features/admin/services/technicalService";
 import {
   Wrench, Clock, CheckCircle, Package, AlertTriangle, Search,
   LayoutGrid, List, BarChart3, User, Phone, Monitor, ArrowRight,
@@ -46,7 +47,7 @@ const SupportPage = () => {
   const [pendingOrder, setPendingOrder] = useState<any>(null);
 
   // Fetch all service orders
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading, error: ordersError } = useQuery({
     queryKey: ["support_orders"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -106,45 +107,17 @@ const SupportPage = () => {
   }, [orders, profilesMap]);
 
   // Filtered orders
-  const filtered = useMemo(() => {
-    return orders.filter((o: any) => {
-      const matchSearch = !search ||
-        o.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
-        o.device_type?.toLowerCase().includes(search.toLowerCase()) ||
-        o.device_brand?.toLowerCase().includes(search.toLowerCase()) ||
-        String(o.order_number).includes(search);
-      const matchTech = filterTech === "all" || filterTech === "mine"
-        ? (filterTech === "all" || o.assigned_technician_id === user?.id || o.received_by_id === user?.id)
-        : (o.assigned_technician_id === filterTech || o.received_by_id === filterTech);
-      return matchSearch && matchTech;
-    });
-  }, [orders, search, filterTech, user]);
+  const filtered = useMemo(() => filterSupportOrders(orders, search, filterTech, user?.id), [orders, search, filterTech, user]);
 
   // Dashboard metrics
-  const metrics = useMemo(() => {
-    const myOrders = orders.filter((o: any) => o.assigned_technician_id === user?.id || o.received_by_id === user?.id);
-    const today = new Date().toISOString().split("T")[0];
-    return {
-      totalActive: orders.filter((o: any) => !["delivered", "cancelled"].includes(o.status)).length,
-      myPending: myOrders.filter((o: any) => o.status === "pending").length,
-      myInProgress: myOrders.filter((o: any) => o.status === "in_progress").length,
-      myCompleted: myOrders.filter((o: any) => o.status === "completed").length,
-      completedToday: orders.filter((o: any) => o.completed_at?.startsWith(today)).length,
-      urgent: orders.filter((o: any) => o.priority === "urgent" && !["delivered", "cancelled"].includes(o.status)).length,
-    };
-  }, [orders, user]);
-
-  const getNextStatus = (current: string): string | null => {
-    const flow: Record<string, string> = { pending: "in_progress", in_progress: "completed", completed: "delivered" };
-    return flow[current] || null;
-  };
+  const metrics = useMemo(() => getSupportMetrics(orders, user?.id), [orders, user]);
 
   // ─── Order Card ────────────────────────────────────────────────
   const OrderCard = ({ order, compact = false }: { order: any; compact?: boolean }) => {
     const st = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
     const pr = PRIORITY_MAP[order.priority] || PRIORITY_MAP.normal;
     const techName = order.assigned_technician_id ? profilesMap[order.assigned_technician_id] : null;
-    const nextStatus = getNextStatus(order.status);
+    const nextStatus = getNextServiceOrderStatus(order.status);
 
     return (
       <Card className={`${st.color} border transition-all hover:shadow-md`}>
@@ -249,6 +222,8 @@ const SupportPage = () => {
             <p>No hay órdenes que coincidan</p>
           </CardContent>
         </Card>
+      ) : ordersError ? (
+        <Card className="border-destructive/20"><CardContent className="py-12 text-center text-destructive"><AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-50" /><p>No se pudieron cargar las órdenes de soporte técnico</p><p className="text-xs text-muted-foreground mt-1">{(ordersError as any)?.message || "Revisa los permisos de acceso."}</p></CardContent></Card>
       ) : (
         filtered.map((order: any) => <OrderCard key={order.id} order={order} />)
       )}
