@@ -18,6 +18,7 @@ import CustomerDetailDialog from "@/features/admin/components/CustomerDetailDial
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { notifyAllStaff } from "@/lib/notifications";
 import { usePersistentDraft } from "@/hooks/use-persistent-draft";
+import { emptyReceptionForm as emptyForm, saveServiceOrder } from "@/features/admin/services/technicalService";
 
 const RECEPTION_COLUMNS = [
   { key: "customer_name", label: "Cliente" }, { key: "customer_phone", label: "Telefono" },
@@ -40,14 +41,6 @@ const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
   normal: { label: "Normal", color: "bg-primary/20 text-primary" },
   high: { label: "Alta", color: "bg-warning/20 text-warning" },
   urgent: { label: "Urgente", color: "bg-destructive/20 text-destructive" },
-};
-
-const emptyForm = {
-  customer_name: "", customer_phone: "", customer_email: "",
-  device_type: "", device_brand: "", device_model: "",
-  accessories: "", reported_issue: "", priority: "normal",
-  estimated_cost: "", notes: "", diagnosis: "", final_cost: "",
-  received_by_id: "", spare_parts: "",
 };
 
 const ReceptionPage = () => {
@@ -95,7 +88,7 @@ const ReceptionPage = () => {
     },
   });
 
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading, error: ordersError } = useQuery({
     queryKey: ["service_orders"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -109,33 +102,7 @@ const ReceptionPage = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (formData: typeof emptyForm) => {
-      const payload: any = {
-        customer_name: formData.customer_name,
-        customer_phone: formData.customer_phone || null,
-        customer_email: formData.customer_email || null,
-        device_type: formData.device_type,
-        device_brand: formData.device_brand || null,
-        device_model: formData.device_model || null,
-        accessories: formData.accessories || null,
-        reported_issue: formData.reported_issue,
-        priority: formData.priority,
-        estimated_cost: formData.estimated_cost ? parseFloat(formData.estimated_cost) : null,
-        final_cost: formData.final_cost ? parseFloat(formData.final_cost) : null,
-        diagnosis: formData.diagnosis || null,
-        notes: formData.notes || null,
-        spare_parts: formData.spare_parts || null,
-      };
-      if (editingId) {
-        if (formData.received_by_id) {
-          payload.received_by_id = formData.received_by_id;
-        }
-        const { error } = await supabase.from("service_orders").update(payload).eq("id", editingId);
-        if (error) throw error;
-      } else {
-        payload.received_by_id = user?.id || null;
-        const { error } = await supabase.from("service_orders").insert(payload);
-        if (error) throw error;
-      }
+      await saveServiceOrder({ client: supabase, formData, userId: user?.id, editingId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["service_orders"] });
@@ -154,7 +121,7 @@ const ReceptionPage = () => {
       setEditingId(null);
       setDialogOpen(false);
     },
-    onError: () => toast.error("Error al guardar"),
+    onError: (error: any) => toast.error(error?.message || "Error al guardar"),
   });
 
   const updateStatusMutation = useMutation({
@@ -169,6 +136,7 @@ const ReceptionPage = () => {
       queryClient.invalidateQueries({ queryKey: ["service_orders"] });
       toast.success("Estado actualizado");
     },
+    onError: (error: any) => toast.error(error?.message || "Error al actualizar estado"),
   });
 
   const deleteMutation = useMutation({
@@ -367,6 +335,8 @@ const ReceptionPage = () => {
       {/* Orders list */}
       {isLoading ? (
         <div className="flex justify-center py-12"><div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+      ) : ordersError ? (
+        <Card className="border-destructive/20"><CardContent className="py-12 text-center text-destructive"><AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-50" /><p>No se pudieron cargar las recepciones técnicas</p><p className="text-xs text-muted-foreground mt-1">{(ordersError as any)?.message || "Revisa los permisos de acceso."}</p></CardContent></Card>
       ) : filtered.length === 0 ? (
         <Card className="border-dashed border-primary/20"><CardContent className="py-12 text-center text-muted-foreground"><ClipboardList className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No hay órdenes de servicio</p></CardContent></Card>
       ) : (

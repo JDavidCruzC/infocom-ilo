@@ -10,6 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:unit": "vitest run src/**/*.unit.test.{ts,tsx}",
+    "test:integration": "vitest run src/**/*.integration.test.{ts,tsx}",
+    "test:e2e": "vitest run src/**/*.e2e.test.{ts,tsx}",
     "test:watch": "vitest"
   },
   "dependencies": {
